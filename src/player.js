@@ -15,7 +15,7 @@ const ROLE_LABEL = { target: 'Target', synergist: 'Synergists', stabilizer: 'Sta
 const BG = { dark: { clear: 0x15181d, floor: 0x252a31, mat: 0x2f4d55, ink: '#e8ecf1', guide: 0x2fd1c0 }, light: { clear: 0xecebe6, floor: 0xd9d6cf, mat: 0x5d8488, ink: '#1d2127', guide: 0x0e8f83 } };
 
 /* ---------------- state ---------------- */
-const S = { ex: 0, t: 3.4, playing: true, speed: 1, side: 'R', cam: 'threeQuarter', bg: 'dark', hover: null, show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true } };
+const S = { ex: 0, t: 3.4, clock: 0, playing: true, speed: 1, side: 'R', cam: 'threeQuarter', bg: 'dark', hover: null, show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true } };
 try { const v = JSON.parse(localStorage.getItem('reprig3d') || '{}'); if (v.bg) S.bg = v.bg; if (v.show) Object.assign(S.show, v.show); if (Number.isInteger(v.ex) && EXS[v.ex]) S.ex = v.ex; } catch (e) {}
 const remember = () => { try { localStorage.setItem('reprig3d', JSON.stringify({ bg: S.bg, show: S.show, ex: S.ex })); } catch (e) {} };
 let EX, META, tl, D, roleOf;
@@ -192,6 +192,17 @@ function setCamera(preset) {
   document.querySelectorAll('#camSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === preset)));
 }
 
+// Prescription keys are free-form strings (schema: additionalProperties string). Show whatever an
+// exercise provides, in its own order, with friendly labels; join sets and reps when both exist.
+const FACT_LABELS = { sets: 'Sets', reps: 'Reps', endRangeHold: 'End-range hold', staticOption: 'Static option', tempo: 'Tempo', rest: 'Rest', work: 'Work', frequency: 'Frequency', volume: 'Volume', boxHeight: 'Box height', holds: 'Holds', dogHold: 'Down dog hold', flow: 'Flow', stopRule: 'Stop when', sessionCap: 'Session cap', timeUnderTension: 'Time under tension', programLength: 'Program length', intensity: 'Intensity', progression: 'Progression', practice: 'Practice', timing: 'Timing' };
+function prescriptionFacts(pr = {}) {
+  const label = (k) => FACT_LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).toLowerCase().replace(/^./, (c) => c.toUpperCase());
+  const out = [];
+  if (pr.sets != null && pr.reps != null) out.push(['Sets × reps', `${pr.sets} × ${pr.reps}`]);
+  for (const [k, v] of Object.entries(pr)) { if ((k === 'sets' || k === 'reps') && pr.sets != null && pr.reps != null) continue; out.push([label(k), v]); }
+  return out;
+}
+
 /* ---------------- per frame ---------------- */
 let lastW = null, lastPose = null;
 function update() {
@@ -303,7 +314,7 @@ function buildPanel() {
   const ref = META.reference;
   $('ref').innerHTML = `Movement reference: <a href="${esc(ref.url)}" target="_blank" rel="noopener">${esc(ref.source)}${ref.productRef ? ` #${esc(ref.productRef)}` : ''}</a>. Rig, model and motion here are original.`;
   const pr = META.prescription;
-  $('facts').innerHTML = [['Sets × reps', `${pr.sets} × ${pr.reps}`], ['End-range hold', pr.endRangeHold], ['Static option', pr.staticOption], ['Tempo', pr.tempo], ['Equipment', META.equipment.join(', ')], ['Laterality', META.laterality]].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  $('facts').innerHTML = prescriptionFacts(pr).concat([['Equipment', META.equipment.join(', ')], ['Laterality', META.laterality]]).filter(([, v]) => v != null && v !== '').map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
   $('breathing').innerHTML = `<b>Breathing.</b> ${esc(META.breathing.pattern)}`;
   $('phasebar').innerHTML = EX.timeline.phases.map((p) => `<div data-ph="${esc(p.id)}" style="width:calc(${((p.end - p.start) / D) * 100}% - 2px)" title="${esc(p.label)}">${esc(p.label)}</div>`).join('');
   $('cues').innerHTML = META.cues.map((c, i) => { const ph = EX.timeline.phases.find((p) => p.id === c.phase); return `<li data-ph="${esc(c.phase)}"><b>${i + 1}. ${esc(ph ? ph.label : c.phase)}</b><span>${esc(c.text)}</span>${ph ? `<small>${esc(ph.breath === 'natural' ? 'Breathe normally' : ph.breath[0].toUpperCase() + ph.breath.slice(1))} · ${(ph.end - ph.start).toFixed(1)} s at 1.0×</small>` : ''}</li>`; }).join('');
@@ -391,6 +402,7 @@ const roStage = new ResizeObserver(() => { resize(); setCamera(S.cam); });
 let last = performance.now(), fpsE = 60, fpsT = 0;
 function frame(now) {
   const dt = Math.min(0.25, (now - last) / 1000); last = now; if (dt > 0) fpsE = fpsE * 0.92 + (1 / dt) * 0.08;
+  S.clock += dt;
   if (S.playing) S.t = (S.t + dt * S.speed) % D;
   update(); controls.update(); renderer.render(scene, camera); syncUI(false);
   if (now - fpsT > 500) { fpsT = now; $('fps').textContent = `${Math.round(fpsE)} fps`; }
