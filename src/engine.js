@@ -33,6 +33,13 @@
       return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
     },
     mirrorZ: (q) => [q[0], -q[1], -q[2], q[3]],
+    slerp: (a, b, t) => {
+      let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], bb = b;
+      if (d < 0) { d = -d; bb = [-b[0], -b[1], -b[2], -b[3]]; }
+      if (d > 0.9995) return Q.norm(a.map((v, i) => v + (bb[i] - v) * t));
+      const th = Math.acos(d), s = Math.sin(th), wa = Math.sin((1 - t) * th) / s, wb = Math.sin(t * th) / s;
+      return [a[0] * wa + bb[0] * wb, a[1] * wa + bb[1] * wb, a[2] * wa + bb[2] * wb, a[3] * wa + bb[3] * wb];
+    },
     fromBasis: (x, y, z) => {
       const m00 = x[0], m10 = x[1], m20 = x[2], m01 = y[0], m11 = y[1], m21 = y[2], m02 = z[0], m12 = z[1], m22 = z[2];
       const tr = m00 + m11 + m22; let q;
@@ -130,7 +137,23 @@
       const lq = localQuat(j, (pose.ch && pose.ch[j.id]) || {});
       W[j.id] = { p: V.add(P.p, Q.rot(P.q, j.offset)), q: Q.norm(Q.mul(P.q, lq)) };
     }
-    if (contacts) for (const c of contacts) if (pose.ik && pose.ik[c.id] && (pose.ik[c.id].weight ?? 1) > 0.5) applyIK(rig, W, c, pose.ik[c.id]);
+    if (contacts) for (const c of contacts) {
+      const k = pose.ik && pose.ik[c.id]; if (!k) continue;
+      const w = Math.max(0, Math.min(1, k.weight ?? 1));
+      if (w <= 0.001) continue;
+      if (w >= 0.999) { applyIK(rig, W, c, k); continue; }
+      // Partial weight: slerp each chain joint's local rotation between the FK pose and the IK solution,
+      // so a limb can be planted or released smoothly (takeoff, landing, hand lift-off).
+      const fk = {}, ik = Object.assign({}, W);
+      for (const j of c.chain) { fk[j] = { p: W[j].p.slice(), q: W[j].q.slice() }; ik[j] = { p: W[j].p.slice(), q: W[j].q.slice() }; }
+      applyIK(rig, ik, c, k);
+      for (const j of c.chain) {
+        const J = rig.byId[j], par = J.parent, Pq = (fk[par] || W[par]).q, Pqi = (ik[par] || W[par]).q;
+        const lf = Q.mul(Q.conj(Pq), fk[j].q), li = Q.mul(Q.conj(Pqi), ik[j].q);
+        const P = W[par];
+        W[j] = { p: V.add(P.p, Q.rot(P.q, J.offset)), q: Q.norm(Q.mul(P.q, Q.slerp(lf, li, w))) };
+      }
+    }
     return W;
   }
   function applyIK(rig, W, c, k) {
@@ -147,7 +170,7 @@
     pp = V.norm(pp);
     const E = V.add(V.add(S, V.scale(n, x)), V.scale(pp, h));
     const Wt = V.add(S, V.scale(n, d));
-    const ant = V.scale(pp, -1);
+    const ant = c.bend === 'forward' ? pp : V.scale(pp, -1); // arms: elbow points back; legs: knee points forward
     const frame = (prox, dist) => {
       const y = V.norm(V.sub(prox, dist));
       let xa = V.sub(ant, V.scale(y, V.dot(ant, y))); xa = V.norm(xa);

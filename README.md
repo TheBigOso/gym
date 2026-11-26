@@ -36,6 +36,17 @@ npm run verify
 
 Open `player.html` in a browser (needs internet for three.js and fonts).
 
+## Groundwork available to exercise authors
+
+- **Starting poses** in `build/lib.js`: `POSES.standing()`, `POSES.supine()`, `POSES.plank()` (each returns a grounded pose plus its contacts), alongside the quadruped bases in the two existing author scripts.
+- **Generic solver**: `solvePose(pose, paths, objectives)` varies any channel paths (`ch.hip_r.flex`, `root.pos.1`, ...) to meet objectives built with `obj.at`, `obj.atY`, `obj.aim`, `obj.floor`, `obj.reg`.
+- **Contacts**: `handContact(side)` and `legContact(side)` make IK limbs. `ik.<id>.weight` between 0 and 1 blends smoothly between free and planted, for takeoffs, landings and hand lift-offs. Legs use `bend: "forward"`.
+- **Props**: `props` in a module draws boxes, cones, sticks, ladders and hurdles in the player and exports them in the GLB.
+- **Checks**: `checks` in a module tells `test/verify.mjs` which joints must stay still, which contacts must not slide, the floor tolerance, and the expected range of a peak measurement.
+- **Safety**: `exercise.safety` (cautions, modify, regressions, progressions) shows in the player's Form tab.
+- **Bilateral**: `authoredSide: "bilateral"` makes the side switch mirror the view only and exports one clip.
+- **CI**: `.github/workflows/ci.yml` builds and verifies every pull request.
+
 ## Adding an exercise
 
 1. Copy `build/meta/<existing>.json` and write the new metadata, phases, activation and guides.

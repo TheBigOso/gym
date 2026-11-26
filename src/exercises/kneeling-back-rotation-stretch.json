@@ -281,7 +281,24 @@
         "title": "Kenhub — Rotatores muscles",
         "url": "https://kenhub.com/en/library/anatomy/rotatores-muscles"
       }
-    ]
+    ],
+    "safety": {
+      "cautions": [
+        "Stop if rotation causes sharp, radiating or nerve-type pain in the back, neck or arm.",
+        "Wrist or knee pain on all fours: use fists or a folded mat under the knees."
+      ],
+      "modify": [
+        "Recent spinal surgery, acute disc symptoms or osteoporosis with fracture risk: get clearance first and keep the range small."
+      ],
+      "regressions": [
+        "Smaller range: keep the hand on the lower back and rotate only part way.",
+        "Side-lying open book."
+      ],
+      "progressions": [
+        "Longer end-range holds with slow breathing.",
+        "Add a light reach-through (thread the needle) before opening."
+      ]
+    }
   },
   "camera": {
     "default": "threeQuarter",
@@ -1855,5 +1872,20 @@
       "target": "handtip_r",
       "label": "Eyes follow hand"
     }
-  ]
+  ],
+  "checks": {
+    "stillJoints": [
+      "pelvis",
+      "knee_r",
+      "knee_l"
+    ],
+    "plantedContacts": [
+      "arm_l"
+    ],
+    "measure": {
+      "name": "shoulderLineIncl",
+      "min": 38,
+      "max": 55
+    }
+  }
 }
