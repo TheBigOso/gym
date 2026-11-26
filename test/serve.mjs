@@ -1,0 +1,23 @@
+// Shared Playwright launcher: serves player.html and maps the jsDelivr three.js URLs to node_modules.
+import { chromium } from 'playwright';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+export async function openPlayer(opts = {}) {
+  const exe = ['/usr/bin/google-chrome', '/usr/bin/chromium'].find((p) => fs.existsSync(p));
+  const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const page = await browser.newPage({ viewport: opts.viewport || { width: 1400, height: 900 }, deviceScaleFactor: 1 });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.route('https://cdn.jsdelivr.net/npm/three@0.160.0/**', (route) => {
+    const rel = route.request().url().split('three@0.160.0/')[1];
+    route.fulfill({ path: path.join(root, 'node_modules/three', rel), contentType: 'text/javascript' });
+  });
+  await page.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ body: '', contentType: 'text/css' }));
+  await page.goto('file://' + path.join(root, 'player.html'));
+  await page.waitForFunction(() => window.__rr, null, { timeout: 30000 });
+  await page.waitForTimeout(400);
+  return { browser, page, errors, root };
+}

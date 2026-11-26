@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Back Rotation Stretch Rig</title>
+<title>RepRig Exercise Player</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* VOICE clinical work tool: a physio's motion-review station, calm and exact
    IDEA the exercise card a coach hands over: live demo on top, the card's facts beside it
-   PICTURE the live 2.5D rig on a stage, with muscle glow, hand path and a rotation protractor drawn on the body
+   PICTURE the live 3D skinned figure on a lit stage, with muscle glow, motion path and a rotation protractor in the scene
    COLOUR white / near-black ground, graphite or bone stage; signal red = target, amber = synergist, blue = stabilizer, violet = lengthened, teal = guides
    TYPE Barlow Semi Condensed (gym signage) for titles and figures + Inter for text
    LAYOUT laptop: stage with transport (left, ~62%), exercise card panel (right). Under 900px: title, stage, controls, card */
@@ -25,6 +25,11 @@ a{color:inherit}
 button{font:inherit;color:inherit}
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;padding:18px max(2.5vw,16px) 12px;border-bottom:1px solid var(--line)}
 .top h1{font-size:clamp(28px,3.4vw,40px);line-height:1.05;text-wrap:balance}
+.exsel{margin-top:10px;flex-wrap:wrap}
+.labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;transform:translate(8px,-50%);font:600 13px Inter,system-ui,sans-serif;white-space:nowrap;color:#e8ecf1;text-shadow:0 0 4px #0e1115,0 0 2px #0e1115}
+.stage.light .lbl{color:#1d2127;text-shadow:0 0 4px #f3f2ee,0 0 2px #f3f2ee}
+.lbl.r{transform:translate(calc(-100% - 8px),-50%)}
 .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .tag{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--chip);white-space:nowrap}
 .ref{font-size:13px;color:var(--sub);max-width:46ch}
@@ -33,7 +38,7 @@ button{font:inherit;color:inherit}
 .stage{position:relative;height:clamp(360px,62vh,640px);border-radius:14px;overflow:hidden;background:#14171c;touch-action:none;cursor:grab;user-select:none}
 .stage.light{background:#ecebe6}
 .stage:active{cursor:grabbing}
-.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;pointer-events:none;font-size:13px}
 .stage .ov{color:#e8ecf1}
 .stage.light .ov{color:#1d2127}
@@ -125,7 +130,8 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
 <body>
 <header class="top">
   <div>
-    <h1>Kneeling Back Rotation Stretch</h1>
+    <h1 id="title">Kneeling Back Rotation Stretch</h1>
+    <div class="seg exsel" id="exSeg" role="group" aria-label="Exercise"></div>
     <div class="meta" id="meta"></div>
   </div>
   <p class="ref" id="ref"></p>
@@ -133,7 +139,9 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
 <main class="wrap">
   <section class="stagecol" aria-label="Animation">
     <div class="stage" id="stage">
-      <canvas id="cv" aria-label="Animated figure performing the stretch"></canvas>
+      <canvas id="cv" aria-label="3D figure performing the exercise"></canvas>
+      <div class="labels" id="labels"></div>
+      <div class="ov loading" id="loading" style="left:50%;top:50%;transform:translate(-50%,-50%)">Loading 3D engine…</div>
       <div class="ov phase"><b id="phLabel">Rotate open</b><span class="breath" id="breath"><i></i><span id="breathTxt">Exhale</span></span></div>
       <div class="ov side" id="sideTag">Right side</div>
       <div class="ov hud" id="hud"></div>
@@ -151,7 +159,7 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
       <div class="group"><label>View</label><div class="seg" id="camSeg" role="group" aria-label="Camera"></div></div>
       <div class="group" id="toggles" aria-label="Overlays"></div>
       <div class="group"><label>Backdrop</label><div class="seg" id="bgSeg" role="group" aria-label="Backdrop"></div></div>
-      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exSvg">Frame SVG</button></div>
+      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exGlb">Download GLB</button></div>
     </div>
   </section>
   <aside class="panel" aria-label="Exercise card">
@@ -482,420 +490,340 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
   root.RepRig = { DEG, V, Q, CHANNELS, localQuat, rootQuat, buildRig, evalPose, applyIK, makeTrack, buildTimeline, camera, project, ellipseOf, shapeWorld, measures, solveLM };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 </script>
-<script>const RR_DATA={"rig":{"rigId":"reprig-female-165-v1","schemaVersion":"1.0.0","description":"Shared parametric rig: adult female, 165 cm. Segment lengths from Winter/Drillis–Contini height ratios. Bilateral items are authored for the right side and mirrored across the sagittal plane.","units":{"length":"cm","angle":"deg"},"stature":165,"axes":{"x":"anterior (forward)","y":"superior (up)","z":"right lateral"},"joints":[{"id":"pelvis","type":"root"},{"id":"spine_l5","parent":"pelvis","type":"spine","offset":[-4,9,0],"limits":{"rot":[-6,6],"flex":[-25,45],"latFlex":[-20,20]}},{"id":"spine_t12","parent":"spine_l5","type":"spine","offset":[0,15,0],"limits":{"rot":[-22,22],"flex":[-20,30],"latFlex":[-15,15]}},{"id":"spine_t6","parent":"spine_t12","type":"spine","offset":[0,13,0],"limits":{"rot":[-22,22],"flex":[-15,25],"latFlex":[-12,12]}},{"id":"neck_c7","parent":"spine_t6","type":"neck","offset":[-1,13.5,0],"limits":{"rot":[-35,35],"flex":[-30,40]}},{"id":"head_c1","parent":"neck_c7","type":"neck","offset":[2,10,0],"limits":{"rot":[-45,45],"flex":[-30,30]}},{"id":"hip","parent":"pelvis","type":"hip","bilateral":true,"offset":[0,0,8.5],"limits":{"flex":[-20,125],"abd":[-25,45],"rot":[-40,40]}},{"id":"knee","parent":"hip","type":"knee","bilateral":true,"offset":[0,-40.5,0],"limits":{"flex":[0,150]}},{"id":"ankle","parent":"knee","type":"ankle","bilateral":true,"offset":[0,-40,0],"limits":{"dorsi":[-75,25]}},{"id":"toe","parent":"ankle","type":"end","bilateral":true,"offset":[15.5,-5,0]},{"id":"sc","parent":"spine_t6","type":"clavicle","bilateral":true,"offset":[11,10,2],"limits":{"protract":[-25,30],"elevate":[-10,40]}},{"id":"shoulder","parent":"sc","type":"shoulder","bilateral":true,"offset":[-5.5,1.5,15],"limits":{"elev":[0,180],"plane":[-60,140]}},{"id":"elbow","parent":"shoulder","type":"elbow","bilateral":true,"offset":[0,-29,0],"limits":{"flex":[0,150]}},{"id":"wrist","parent":"elbow","type":"wrist","bilateral":true,"offset":[0,-24,0],"limits":{"flex":[-90,80],"dev":[-20,35]}},{"id":"handtip","parent":"wrist","type":"end","bilateral":true,"offset":[0,-17.5,0]}],"shapes":[{"id":"pelvis","kind":"ellipsoid","joint":"pelvis","c":[-2.5,2,0],"r":[10.5,10,16.5]},{"id":"buttock","kind":"ellipsoid","joint":"pelvis","bilateral":true,"c":[-7.5,-2,7.2],"r":[7.5,9,7.8]},{"id":"abdomen","kind":"ellipsoid","joint":"spine_l5","c":[5.5,8,0],"r":[9.5,10.5,13.2]},{"id":"ribcage","kind":"ellipsoid","joint":"spine_t12","c":[6.5,7.5,0],"r":[10.8,10.5,14]},{"id":"chest","kind":"ellipsoid","joint":"spine_t6","c":[5.5,7,0],"r":[10.6,10.5,15.2]},{"id":"bust","kind":"ellipsoid","joint":"spine_t6","bilateral":true,"c":[13.4,1.5,6.8],"r":[4.4,5.2,5.6]},{"id":"thigh","kind":"capsule","from":"hip","to":"knee","bilateral":true,"r":[8.2,5.2]},{"id":"shank","kind":"capsule","from":"knee","to":"ankle","bilateral":true,"r":[5,3.1]},{"id":"calf","kind":"ellipsoid","joint":"knee","bilateral":true,"c":[-2.6,-13,0],"r":[4.4,10,4.3]},{"id":"foot","kind":"ellipsoid","joint":"ankle","bilateral":true,"c":[5.5,-3,0],"r":[12,3.6,4.4]},{"id":"deltoid","kind":"ellipsoid","joint":"shoulder","bilateral":true,"c":[0,-3.5,1],"r":[5.4,7,5.4]},{"id":"upperarm","kind":"capsule","from":"shoulder","to":"elbow","bilateral":true,"r":[4.5,3.4]},{"id":"forearm","kind":"capsule","from":"elbow","to":"wrist","bilateral":true,"r":[3.5,2.3]},{"id":"hand","kind":"ellipsoid","joint":"wrist","bilateral":true,"c":[1,-8,0],"r":[1.6,8.2,4]},{"id":"neck","kind":"capsule","from":"neck_c7","to":"head_c1","r":[5,4.4]},{"id":"head","kind":"ellipsoid","joint":"head_c1","c":[3,8.5,0],"r":[9.6,11,7.8]},{"id":"face","kind":"ellipsoid","joint":"head_c1","tone":"face","c":[10.6,6.2,0],"r":[2.6,6.4,5.2]},{"id":"nose","kind":"ellipsoid","joint":"head_c1","tone":"face","c":[12.8,6.6,0],"r":[1.4,2.2,1.1]},{"id":"hair","kind":"ellipsoid","joint":"head_c1","tone":"hair","c":[-1,11,0],"r":[9.4,9.2,8.3]},{"id":"bun","kind":"ellipsoid","joint":"head_c1","tone":"hair","c":[-8.5,14.5,0],"r":[4.6,4.6,4.6]}],"muscles":[{"id":"obliques","name":"Obliques (external + internal)","bilateral":true,"parts":[{"joint":"spine_l5","c":[5,9,11.2],"r":[7.5,9.5,3]},{"joint":"spine_t12","c":[6,2,12.2],"r":[7,6,2.8]}]},{"id":"spinal_extensors","name":"Thoracic erector spinae + multifidus/rotatores","bilateral":true,"parts":[{"joint":"spine_t12","c":[-3.4,7,3.2],"r":[2.4,9,2.6]},{"joint":"spine_t6","c":[-3.6,6,3.2],"r":[2.4,8,2.6]}]},{"id":"rhomboids_midtrap","name":"Rhomboids + middle trapezius","bilateral":true,"parts":[{"joint":"spine_t6","c":[-4.2,8.5,6.5],"r":[2.2,6,4.6]}]},{"id":"post_deltoid","name":"Posterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.2,-4,1],"r":[3.2,5.8,4.2]}]},{"id":"infraspinatus","name":"Infraspinatus / teres minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[-1.2,4,10.5],"r":[2.2,5,3.8]}]},{"id":"serratus","name":"Serratus anterior","bilateral":true,"parts":[{"joint":"spine_t12","c":[7,11,12.6],"r":[5.5,6,2.4]}]},{"id":"triceps","name":"Triceps brachii","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.3,-15,0],"r":[2.6,9.5,3.2]}]},{"id":"core","name":"Transversus abdominis / rectus abdominis","parts":[{"joint":"spine_l5","c":[14.2,8,0],"r":[2.4,9,8.5]}]},{"id":"glute_med","name":"Gluteus medius","bilateral":true,"parts":[{"joint":"pelvis","c":[-3,4.5,14.2],"r":[6,5,2.6]}]},{"id":"pec","name":"Pectoralis major + minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[12.5,5,7],"r":[2.4,5.5,6.5]}]},{"id":"ant_deltoid","name":"Anterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[3.4,-4,1],"r":[3,5.5,4]}]}]},"exercise":{"schemaVersion":"1.0.0","rig":{"ref":"reprig-female-165-v1"},"exercise":{"id":"kneeling-back-rotation-stretch","name":"Kneeling Back Rotation Stretch","aliases":["Quadruped thoracic rotation (reach)","Quadruped T-spine rotation","Open-book reach from all fours"],"reference":{"source":"GymVisual","productRef":"429713","title":"Kneeling Back Rotation Stretch (female)","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html","listing":"First item on https://gymvisual.com/13-media-content (sorted A to Z), viewed 2026-11-26","note":"Used only to identify the movement. This rig, artwork and animation are original."},"type":"Stretching / dynamic mobility","bodyPart":"Back (thoracic spine)","secondaryBodyParts":["Shoulders","Chest","Core"],"equipment":["Body weight","Exercise mat (optional)"],"difficulty":"Beginner","mechanics":"Isolation (spinal mobility)","plane":"Transverse","laterality":"Unilateral (alternate sides)","authoredSide":"right","muscles":{"target":["obliques_r","obliques_l","spinal_extensors_r","spinal_extensors_l"],"synergist":["rhomboids_midtrap_r","post_deltoid_r","infraspinatus_r"],"stabilizer":["serratus_l","triceps_l","core","glute_med_r","glute_med_l"],"lengthened":["pec_r","ant_deltoid_r"]},"muscleNotes":{"obliques_r":"Internal oblique on the turning side helps drive rotation toward it.","obliques_l":"External oblique on the opposite side pairs with it to turn the rib cage.","spinal_extensors_l":"Deep rotators (multifidus/rotatores) turn the spine toward the opposite side, so the left side works on a right turn.","spinal_extensors_r":"Keeps the upper back long so the turn is rotation, not rounding.","rhomboids_midtrap_r":"Draws the shoulder blade back as the arm opens.","post_deltoid_r":"Carries the arm up and back toward the ceiling.","infraspinatus_r":"Turns the upper arm outward so the palm can face forward at the top.","serratus_l":"Pushes the floor away and holds the shoulder blade flat on the rib cage.","triceps_l":"Keeps the support elbow long without locking it.","core":"Light brace keeps the lower back and pelvis quiet.","glute_med_r":"Holds the hips level over the knees.","glute_med_l":"Holds the hips level over the knees.","pec_r":"Lengthens across the front of the chest at end range.","ant_deltoid_r":"Lengthens at the front of the shoulder at end range."},"breathing":{"pattern":"Inhale as the hand lifts and winds under the chest; exhale slowly as you rotate open toward the ceiling; keep breathing slowly in the hold, letting each exhale add a little range; inhale on the way back down.","cadence":"About 2 s wind-up, 2 s rotate, 2–3 s hold, 2 s return"},"prescription":{"sets":"1–3","reps":"8–12 per side","endRangeHold":"2–3 s per rep","staticOption":"20–30 s hold, 2–3 times per side","frequency":"Daily or as a warm-up","tempo":"2–2–2 (rotate–hold–return)"},"cues":[{"id":"c1","phase":"setup","text":"Hands under shoulders, knees under hips, tops of the feet on the mat. Spine long, gaze at the floor."},{"id":"c2","phase":"windup","text":"Push the floor away with the left hand. Lift the right hand and let it drift a little under your chest as you breathe in."},{"id":"c3","phase":"rotate","text":"Lead with the chest: sweep the right arm up and open the rib cage toward the ceiling. Eyes follow the hand."},{"id":"c4","phase":"hold","text":"Pause at end range. Hips stay square over the knees; exhale and let the upper back turn a touch further."},{"id":"c5","phase":"return","text":"Rotate back down under control, chest first, arm following."},{"id":"c6","phase":"reset","text":"Place the hand back under the shoulder, reset a neutral spine, then repeat or switch sides."}],"mistakes":[{"id":"m1","mistake":"Hips sway or rotate with the chest","fix":"Keep hips stacked over knees; imagine a glass of water on your low back. Turn only as far as the pelvis can stay still."},{"id":"m2","mistake":"Sinking into the support shoulder","fix":"Press the floor away so the shoulder blade stays flat and the support arm stays long."},{"id":"m3","mistake":"Moving the arm without turning the spine","fix":"Lead with the sternum; keep the arm in line with the chest, so the hand only goes as high as the rib cage turns."},{"id":"m4","mistake":"Side-bending instead of rotating","fix":"Keep the spine long from tailbone to head and turn around that line."},{"id":"m5","mistake":"Holding the breath or rushing","fix":"Move on a slow exhale and pause at end range; bouncing reduces the range you get."},{"id":"m6","mistake":"Cranking the neck","fix":"Let the head follow the rib cage; the eyes track the hand without forcing the neck."},{"id":"m7","mistake":"Locking the support elbow","fix":"Keep a soft bend (about 5–15°) and weight spread through the whole palm."}],"kinematics":[{"measure":"Thoracic rotation (T12–T1)","setup":"0°","peak":"≈40°","norm":"30–35° per side estimated anatomically; lumbar-locked test mean ≈41° (SD ≈11°); ≥50° counted as unrestricted","sources":["nasm","johnson2012","whetstone2024"]},{"measure":"Lumbar rotation (L5–S1 to T12)","setup":"0°","peak":"≈5°","norm":"≈10° per side available; keep it small","sources":["nasm"]},{"measure":"Total trunk rotation","setup":"0°","peak":"≈45°","norm":"≈45° thoracolumbar per side","sources":["nasm"]},{"measure":"Cervical rotation toward reaching hand","setup":"0°","peak":"≈57° plus 21° extension","norm":"Head follows the rib cage; eyes track the hand","sources":["physitrack"]},{"measure":"Hips","setup":"≈76.1° flexion (thighs vertical)","peak":"Unchanged; pelvis still","norm":"Hips over knees","sources":["physitrack"]},{"measure":"Knees","setup":"90° flexion, shins on mat","peak":"Unchanged","norm":"Knees under hips","sources":["physitrack"]},{"measure":"Support elbow","setup":"≈10° (soft)","peak":"≈10–15°","norm":"Long arm, not locked","sources":[]},{"measure":"Reaching arm","setup":"Hand flat under shoulder","peak":"Abducted ≈90° to the chest, opened past the frontal plane until vertical","norm":"Arm stays in line with the chest","sources":["physitrack"]}],"sources":[{"id":"gymvisual","title":"GymVisual — Kneeling Back Rotation Stretch (female), ref. 429713","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html"},{"id":"physitrack","title":"Physitrack — Quadruped Thoracic Rotation / Extension-Rotation","url":"https://ie.physitrack.com/home-exercise-video/quadruped-thoracic-rotation"},{"id":"johnson2012","title":"Johnson et al. 2012, Reliability of thoracic spine rotation ROM measurements in healthy adults (J Athl Train)","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC3418115"},{"id":"whetstone2024","title":"Whetstone & Matsel 2024, Visual estimation of thorax rotation in the quadruped lumbar-locked position (IJSPT)","url":"https://ijspt.scholasticahq.com/article/116154"},{"id":"nasm","title":"NASM — Optimizing thoracic spine mobility with corrective exercise (citing Neumann 2010)","url":"https://blog.nasm.org/ces/optimizing-thoracic-spine-mobility-with-corrective-exercise"},{"id":"motra","title":"Motra — Quadruped T-Spine Rotation (breathing, beginner rating)","url":"https://motra.com/exercises/quadrupedTSpineRotation"},{"id":"fitcraft","title":"FitCraft — Quadruped thread-the-needle (hip drop and breath-holding errors)","url":"https://getfitcraft.com/exercises/quadruped-thread-the-needle"},{"id":"prehab","title":"The Prehab Guys — Quadruped thoracic spine rotation (avoid side bending; opens the pecs)","url":"https://library.theprehabguys.com/vimeo-video/thoracic-spine-rotation/"},{"id":"ace","title":"ACE — Top exercises to gain thoracic mobility (10–12 reps or 20–30 s per side)","url":"https://www.acefitness.org/resources/pros/expert-articles/5203/top-exercises-to-gain-thoracic-mobility/"},{"id":"kenhub","title":"Kenhub — Rotatores muscles","url":"https://kenhub.com/en/library/anatomy/rotatores-muscles"}]},"camera":{"default":"threeQuarter","presets":{"threeQuarter":{"yaw":38,"pitch":20,"label":"3/4"},"side":{"yaw":0,"pitch":6,"label":"Side"},"front":{"yaw":88,"pitch":12,"label":"Front"},"back":{"yaw":-48,"pitch":34,"label":"Back"},"top":{"yaw":25,"pitch":72,"label":"Top"}}},"props":[{"id":"mat","kind":"mat","center":[8,0,0],"size":[180,0.6,62]}],"contacts":[{"id":"arm_l","label":"Support hand (left)","chain":["shoulder_l","elbow_l","wrist_l","handtip_l"],"pole":[-1,0.1,-0.35],"handRot":[0,-0.707107,0.707107,0]}],"timeline":{"duration":8,"fps":60,"loop":true,"interpolation":"monotoneCubic","phases":[{"id":"setup","label":"Set up","start":0,"end":0.6,"breath":"natural","cue":"c1"},{"id":"windup","label":"Wind up","start":0.6,"end":1.7,"breath":"inhale","cue":"c2"},{"id":"rotate","label":"Rotate open","start":1.7,"end":4,"breath":"exhale","cue":"c3"},{"id":"hold","label":"Hold","start":4,"end":5.6,"breath":"exhale","cue":"c4"},{"id":"return","label":"Return","start":5.6,"end":7.4,"breath":"inhale","cue":"c5"},{"id":"reset","label":"Reset","start":7.4,"end":8,"breath":"natural","cue":"c6"}]},"poses":{"tabletop":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0,"latFlex":0,"flex":0},"spine_t12":{"rot":0,"latFlex":0,"flex":0},"spine_t6":{"rot":0,"latFlex":0,"flex":0},"neck_c7":{"rot":0,"flex":0},"head_c1":{"rot":0,"flex":0},"sc_r":{"protract":5,"elevate":0},"sc_l":{"protract":5,"elevate":0},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"shoulder_r":{"plane":83.3,"elev":72,"axial":-67.7},"elbow_r":{"flex":9.9},"wrist_r":{"pron":172.4,"flex":-84.7,"dev":-14.3}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"unload":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-0.24,"latFlex":0.3,"flex":0.5},"spine_t12":{"rot":-0.88,"latFlex":0.2,"flex":0.3},"spine_t6":{"rot":-0.88,"latFlex":0.1,"flex":0.2},"neck_c7":{"rot":-1.2,"flex":1.2},"head_c1":{"rot":-1.8,"flex":1.8},"sc_r":{"protract":6,"elevate":8},"sc_l":{"protract":5.5,"elevate":-0.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":50},"wrist_r":{"pron":172.4,"flex":-69.7,"dev":-14.3},"shoulder_r":{"plane":77.4,"elev":51.6,"axial":-65}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"windup":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-1.08,"latFlex":1.1,"flex":2.2},"spine_t12":{"rot":-3.96,"latFlex":0.9,"flex":1.3},"spine_t6":{"rot":-3.96,"latFlex":0.3,"flex":0.7},"neck_c7":{"rot":-3.2,"flex":3.2},"head_c1":{"rot":-4.8,"flex":4.8},"sc_r":{"protract":14,"elevate":2},"sc_l":{"protract":7,"elevate":-0.8},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":73.3},"wrist_r":{"pron":172.4,"flex":-72.7,"dev":-14.3},"shoulder_r":{"plane":66.6,"elev":47.6,"axial":-55}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"clear":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.4},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.2},"neck_c7":{"rot":5.4,"flex":2.9},"head_c1":{"rot":8,"flex":4.3},"sc_r":{"protract":8,"elevate":3},"sc_l":{"protract":4.3,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":30},"wrist_r":{"pron":160,"flex":-45,"dev":0},"shoulder_r":{"plane":28.4,"elev":67.4,"axial":-40}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"sweep":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.68,"latFlex":-2,"flex":-2.8},"spine_t12":{"rot":6.16,"latFlex":-1.3,"flex":-2.1},"spine_t6":{"rot":6.16,"latFlex":-0.3,"flex":-1.2},"neck_c7":{"rot":9.4,"flex":3.7},"head_c1":{"rot":14.1,"flex":5.5},"sc_r":{"protract":4,"elevate":2},"sc_l":{"protract":1.2,"elevate":1.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":12},"wrist_r":{"pron":120,"flex":-10,"dev":0},"shoulder_r":{"plane":37.7,"elev":73,"axial":-25}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"rise":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":3.84,"latFlex":-4.7,"flex":-5.2},"spine_t12":{"rot":14.08,"latFlex":-2.9,"flex":-4.8},"spine_t6":{"rot":14.08,"latFlex":-0.4,"flex":-2.9},"neck_c7":{"rot":19,"flex":0.4},"head_c1":{"rot":28.6,"flex":0.6},"sc_r":{"protract":-4,"elevate":3},"sc_l":{"protract":-4.4,"elevate":3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":80,"flex":0,"dev":0},"shoulder_r":{"plane":8.1,"elev":90.5,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"peak":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.3999999999999995,"latFlex":-6.5,"flex":-6.3},"spine_t12":{"rot":19.8,"latFlex":-3.8,"flex":-6.8},"spine_t6":{"rot":19.8,"latFlex":-0.2,"flex":-4.1},"neck_c7":{"rot":22.6,"flex":-8.2},"head_c1":{"rot":33.9,"flex":-12.3},"sc_r":{"protract":-10,"elevate":5},"sc_l":{"protract":-8.8,"elevate":4.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-26.5,"elev":113.9,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"peakBreath":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.7,"latFlex":-6.8,"flex":-6.4},"spine_t12":{"rot":20.9,"latFlex":-4,"flex":-7.1},"spine_t6":{"rot":20.9,"latFlex":-0.1,"flex":-4.4},"neck_c7":{"rot":22.6,"flex":-8.2},"head_c1":{"rot":33.8,"flex":-12.2},"sc_r":{"protract":-11,"elevate":5},"sc_l":{"protract":-9.6,"elevate":4.4},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-23.9,"elev":114.3,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"descend":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":2.88,"latFlex":-3.5,"flex":-4.3},"spine_t12":{"rot":10.56,"latFlex":-2.2,"flex":-3.6},"spine_t6":{"rot":10.56,"latFlex":-0.4,"flex":-2.2},"neck_c7":{"rot":19.1,"flex":2.8},"head_c1":{"rot":28.6,"flex":4.2},"sc_r":{"protract":-2,"elevate":2},"sc_l":{"protract":-1.8,"elevate":2.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":110,"flex":-5,"dev":0},"shoulder_r":{"plane":14.1,"elev":84.7,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"touchdown":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.4},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.2},"neck_c7":{"rot":1.2,"flex":0.8},"head_c1":{"rot":1.8,"flex":1.2},"sc_r":{"protract":5,"elevate":6},"sc_l":{"protract":4.3,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":28},"wrist_r":{"pron":172.4,"flex":-72.7,"dev":-14.3},"shoulder_r":{"plane":83.6,"elev":60.3,"axial":-65}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}}},"keyframes":[{"t":0,"pose":"tabletop"},{"t":0.6,"pose":"tabletop"},{"t":1,"pose":"unload"},{"t":1.7,"pose":"windup"},{"t":2.15,"pose":"clear"},{"t":2.65,"pose":"sweep"},{"t":3.3,"pose":"rise"},{"t":4,"pose":"peak"},{"t":4.8,"pose":"peakBreath"},{"t":5.6,"pose":"peak"},{"t":6.3,"pose":"descend"},{"t":7,"pose":"touchdown"},{"t":7.4,"pose":"tabletop"},{"t":8,"pose":"tabletop"}],"activation":{"obliques_r":[[0,0.15],[1.7,0.3],[3.3,0.9],[4,0.85],[5.6,0.8],[6.6,0.5],[7.4,0.15],[8,0.15]],"obliques_l":[[0,0.15],[1.7,0.25],[3.3,0.8],[4,0.8],[5.6,0.75],[6.6,0.45],[7.4,0.15],[8,0.15]],"spinal_extensors_r":[[0,0.2],[1.7,0.25],[3.6,0.75],[5.6,0.7],[7.4,0.2],[8,0.2]],"spinal_extensors_l":[[0,0.2],[1.7,0.3],[3.6,0.8],[5.6,0.75],[7.4,0.2],[8,0.2]],"rhomboids_midtrap_r":[[0,0.1],[1.7,0.1],[3.6,0.9],[5.6,0.85],[7,0.2],[8,0.1]],"post_deltoid_r":[[0,0.1],[1.7,0.15],[3.6,0.85],[5.6,0.8],[7,0.2],[8,0.1]],"infraspinatus_r":[[0,0.1],[2.6,0.3],[3.8,0.65],[5.6,0.6],[7,0.2],[8,0.1]],"serratus_l":[[0,0.5],[1,0.7],[4,0.8],[7,0.7],[7.4,0.5],[8,0.5]],"triceps_l":[[0,0.45],[1,0.65],[4,0.7],[7,0.65],[7.4,0.45],[8,0.45]],"core":[[0,0.4],[2,0.55],[4,0.6],[7.4,0.45],[8,0.4]],"glute_med_r":[[0,0.3],[4,0.45],[8,0.3]],"glute_med_l":[[0,0.3],[4,0.5],[8,0.3]],"pec_r":[[0,0],[2.6,0.1],[3.6,0.7],[4.4,1],[5.6,0.95],[6.6,0.3],[7.4,0],[8,0]],"ant_deltoid_r":[[0,0],[2.6,0.1],[3.6,0.6],[4.4,0.85],[5.6,0.8],[6.6,0.25],[7.4,0],[8,0]]},"guides":[{"id":"handPath","kind":"path","joint":"handtip_r","from":0.6,"to":7.4,"label":"Hand path"},{"id":"rotationArc","kind":"rotationArc","joint":"spine_t6","radius":30,"normBand":[40,50],"label":"Thoracic rotation"},{"id":"gaze","kind":"gaze","joint":"head_c1","target":"handtip_r","label":"Eyes follow hand"}]},"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://reprig.app/schema/exercise-module/1.0.0","title":"RepRig exercise module","description":"One file per exercise: clinical metadata + keyframed pose data for a shared parametric rig. Angles in degrees, lengths in cm. World axes: +X forward, +Y up, +Z the figure's right. Author the right side; the player mirrors it for the left.","type":"object","required":["schemaVersion","rig","exercise","timeline","poses","keyframes"],"additionalProperties":false,"properties":{"schemaVersion":{"const":"1.0.0"},"rig":{"type":"object","required":["ref"],"properties":{"ref":{"type":"string","description":"rigId of a shared rig file, e.g. reprig-female-165-v1"}},"additionalProperties":false},"exercise":{"$ref":"#/$defs/metadata"},"camera":{"type":"object","properties":{"default":{"type":"string"},"presets":{"type":"object","additionalProperties":{"type":"object","required":["yaw","pitch"],"properties":{"yaw":{"type":"number"},"pitch":{"type":"number","minimum":-10,"maximum":89},"label":{"type":"string"}}}}}},"props":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["mat","bench","box","barbell","dumbbell","kettlebell","band","cable"]},"center":{"$ref":"#/$defs/vec3"},"size":{"$ref":"#/$defs/vec3"},"attach":{"type":"object","properties":{"joint":{"type":"string"},"offset":{"$ref":"#/$defs/vec3"}}}}}},"contacts":{"type":"array","description":"Limbs solved with two-bone IK so planted hands/feet never slide. Targets are keyed in poses under ik.\u003cid>.target.","items":{"type":"object","required":["id","chain","pole"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"chain":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":4},"pole":{"$ref":"#/$defs/vec3"},"handRot":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4,"description":"World-locked end-effector rotation, quaternion [w,x,y,z]"}}}},"timeline":{"type":"object","required":["duration","phases"],"properties":{"duration":{"type":"number","exclusiveMinimum":0},"fps":{"type":"integer","minimum":24},"loop":{"type":"boolean"},"interpolation":{"enum":["monotoneCubic","linear"]},"phases":{"type":"array","minItems":1,"items":{"type":"object","required":["id","label","start","end","breath"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"start":{"type":"number","minimum":0},"end":{"type":"number"},"breath":{"enum":["inhale","exhale","hold","natural"]},"cue":{"type":"string"}}}}}},"poses":{"type":"object","minProperties":1,"additionalProperties":{"$ref":"#/$defs/pose"}},"keyframes":{"type":"array","minItems":2,"items":{"type":"object","required":["t","pose"],"properties":{"t":{"type":"number","minimum":0},"pose":{"type":"string"},"set":{"type":"object","description":"Flat overrides, e.g. {\"ch.spine_t6.rot\": 22}","additionalProperties":{"type":"number"}}},"additionalProperties":false}},"activation":{"type":"object","description":"Per-muscle activation 0–1 over time: [[t, value], ...]. Keys are rig muscle ids with _r/_l suffix.","additionalProperties":{"type":"array","items":{"type":"array","prefixItems":[{"type":"number"},{"type":"number","minimum":0,"maximum":1}],"minItems":2,"maxItems":2}}},"guides":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["path","rotationArc","gaze","jointAngle"]},"joint":{"type":"string"},"target":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"},"radius":{"type":"number"},"normBand":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},"label":{"type":"string"}}}}},"$defs":{"vec3":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"pose":{"type":"object","properties":{"root":{"type":"object","properties":{"pos":{"$ref":"#/$defs/vec3"},"rot":{"type":"object","properties":{"yaw":{"type":"number"},"pitch":{"type":"number"},"roll":{"type":"number"}},"additionalProperties":false}}},"ch":{"type":"object","description":"Anatomical joint channels. spine/neck: flex,latFlex,rot · clavicle(sc): protract,elevate · shoulder: plane,elev,axial (ISB globe) · elbow/knee: flex · wrist: pron,flex,dev · hip: flex,abd,rot · ankle: dorsi","propertyNames":{"pattern":"^[a-z0-9]+(_[a-z0-9]+)*$"},"additionalProperties":{"type":"object","propertyNames":{"enum":["flex","latFlex","rot","protract","elevate","plane","elev","axial","pron","dev","abd","dorsi"]},"additionalProperties":{"type":"number","minimum":-360,"maximum":360}}},"ik":{"type":"object","additionalProperties":{"type":"object","required":["target"],"properties":{"target":{"$ref":"#/$defs/vec3"},"weight":{"type":"number","minimum":0,"maximum":1}}}}},"additionalProperties":false},"metadata":{"type":"object","required":["id","name","type","bodyPart","equipment","difficulty","muscles","breathing","cues","mistakes"],"properties":{"id":{"type":"string","pattern":"^[a-z0-9-]+$"},"name":{"type":"string"},"aliases":{"type":"array","items":{"type":"string"}},"reference":{"type":"object","properties":{"source":{"type":"string"},"productRef":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"},"listing":{"type":"string"},"note":{"type":"string"}}},"type":{"type":"string"},"bodyPart":{"type":"string"},"secondaryBodyParts":{"type":"array","items":{"type":"string"}},"equipment":{"type":"array","items":{"type":"string"},"minItems":1},"difficulty":{"enum":["Beginner","Intermediate","Advanced"]},"mechanics":{"type":"string"},"plane":{"enum":["Sagittal","Frontal","Transverse","Multiplanar"]},"laterality":{"type":"string"},"authoredSide":{"enum":["right","left","bilateral"]},"muscles":{"type":"object","required":["target","synergist"],"properties":{"target":{"$ref":"#/$defs/ids"},"synergist":{"$ref":"#/$defs/ids"},"stabilizer":{"$ref":"#/$defs/ids"},"lengthened":{"$ref":"#/$defs/ids"}},"additionalProperties":false},"muscleNotes":{"type":"object","additionalProperties":{"type":"string"}},"breathing":{"type":"object","required":["pattern"],"properties":{"pattern":{"type":"string"},"cadence":{"type":"string"}}},"prescription":{"type":"object","additionalProperties":{"type":"string"}},"cues":{"type":"array","minItems":1,"items":{"type":"object","required":["id","text"],"properties":{"id":{"type":"string"},"phase":{"type":"string"},"text":{"type":"string"}}}},"mistakes":{"type":"array","items":{"type":"object","required":["mistake","fix"],"properties":{"id":{"type":"string"},"mistake":{"type":"string"},"fix":{"type":"string"}}}},"kinematics":{"type":"array","items":{"type":"object","required":["measure","setup","peak"],"properties":{"measure":{"type":"string"},"setup":{"type":"string"},"peak":{"type":"string"},"norm":{"type":"string"},"sources":{"type":"array","items":{"type":"string"}}}}},"sources":{"type":"array","items":{"type":"object","required":["id","title","url"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"}}}}}},"ids":{"type":"array","items":{"type":"string","pattern":"^[a-z0-9_]+$"},"uniqueItems":true}}}};</script>
-<script>{
+<script>const RR_DATA={"rig":{"rigId":"reprig-unisex-172-v1","schemaVersion":"1.0.0","description":"Shared parametric rig: unisex adult, 172 cm, neutral proportions. Segment lengths from Winter/Drillis–Contini height ratios. Bilateral items are authored for the right side and mirrored across the sagittal plane. Rest pose: standing, arms at sides, palms forward; all joint rotations zero.","units":{"length":"cm","angle":"deg"},"stature":172,"axes":{"x":"anterior (forward)","y":"superior (up)","z":"right lateral"},"joints":[{"id":"pelvis","type":"root"},{"id":"spine_l5","parent":"pelvis","type":"spine","offset":[-4,9.4,0],"limits":{"rot":[-6,6],"flex":[-25,45],"latFlex":[-20,20]}},{"id":"spine_t12","parent":"spine_l5","type":"spine","offset":[0,15.6,0],"limits":{"rot":[-25,25],"flex":[-20,30],"latFlex":[-15,15]}},{"id":"spine_t6","parent":"spine_t12","type":"spine","offset":[0,13.5,0],"limits":{"rot":[-25,25],"flex":[-15,25],"latFlex":[-12,12]}},{"id":"neck_c7","parent":"spine_t6","type":"neck","offset":[-1,14,0],"limits":{"rot":[-35,35],"flex":[-30,40]}},{"id":"head_c1","parent":"neck_c7","type":"neck","offset":[2,10.4,0],"limits":{"rot":[-45,45],"flex":[-30,30]}},{"id":"hip","parent":"pelvis","type":"hip","bilateral":true,"offset":[0,0,8.6],"limits":{"flex":[-20,140],"abd":[-25,45],"rot":[-40,40]}},{"id":"knee","parent":"hip","type":"knee","bilateral":true,"offset":[0,-42,0],"limits":{"flex":[0,150]}},{"id":"ankle","parent":"knee","type":"ankle","bilateral":true,"offset":[0,-41.5,0],"limits":{"dorsi":[-75,25]}},{"id":"toe","parent":"ankle","type":"end","bilateral":true,"offset":[16,-5,0]},{"id":"sc","parent":"spine_t6","type":"clavicle","bilateral":true,"offset":[11.4,10.4,2.2],"limits":{"protract":[-25,30],"elevate":[-10,40]}},{"id":"shoulder","parent":"sc","type":"shoulder","bilateral":true,"offset":[-5.6,1.5,16.2],"limits":{"elev":[0,210],"plane":[-60,140]},"note":"ISB Y-X-Y globe. Near the overhead singularity a pose may stay on the continuous branch with elev > 180 instead of flipping plane by 180°."},{"id":"elbow","parent":"shoulder","type":"elbow","bilateral":true,"offset":[0,-30,0],"limits":{"flex":[0,150]}},{"id":"wrist","parent":"elbow","type":"wrist","bilateral":true,"offset":[0,-25,0],"limits":{"flex":[-90,80],"dev":[-20,35]}},{"id":"handtip","parent":"wrist","type":"end","bilateral":true,"offset":[0,-18.5,0]}],"shapes":[{"id":"pelvis","kind":"ellipsoid","joint":"pelvis","tone":"shorts","c":[-2.5,2,0],"r":[10.8,10.2,15.8]},{"id":"buttock","kind":"ellipsoid","joint":"pelvis","tone":"shorts","bilateral":true,"c":[-7.4,-2.2,7],"r":[7.2,8.6,7.4]},{"id":"abdomen","kind":"ellipsoid","joint":"spine_l5","tone":"shirt","c":[5.4,8.2,0],"r":[9.8,10.8,13.6]},{"id":"ribcage","kind":"ellipsoid","joint":"spine_t12","tone":"shirt","c":[6.5,7.8,0],"r":[11,10.8,14.8]},{"id":"chest","kind":"ellipsoid","joint":"spine_t6","tone":"shirt","c":[5.6,7.2,0],"r":[10.8,10.8,16.4]},{"id":"pecs","kind":"ellipsoid","joint":"spine_t6","tone":"shirt","bilateral":true,"c":[12.2,4.6,7.2],"r":[4,6.4,7]},{"id":"traps","kind":"ellipsoid","joint":"spine_t6","tone":"shirt","bilateral":true,"c":[-1.5,12.5,6.5],"r":[5,4,6.5]},{"id":"thigh","kind":"capsule","from":"hip","to":"knee","bilateral":true,"r":[8.7,5.4],"split":{"tone":"shorts","until":0.38}},{"id":"quad","kind":"ellipsoid","joint":"hip","bilateral":true,"c":[3,-19,0.5],"r":[5.2,14,6.2]},{"id":"shank","kind":"capsule","from":"knee","to":"ankle","bilateral":true,"r":[5.2,3.2]},{"id":"calf","kind":"ellipsoid","joint":"knee","bilateral":true,"c":[-2.6,-13.5,0],"r":[4.6,10.4,4.5]},{"id":"foot","kind":"ellipsoid","joint":"ankle","bilateral":true,"c":[5.8,-3,0],"r":[12.4,3.6,4.6]},{"id":"deltoid","kind":"ellipsoid","joint":"shoulder","tone":"shirt","bilateral":true,"c":[0,-3.6,1],"r":[5.8,7.4,5.8]},{"id":"upperarm","kind":"capsule","from":"shoulder","to":"elbow","bilateral":true,"r":[4.8,3.6],"split":{"tone":"shirt","until":0.3}},{"id":"biceps","kind":"ellipsoid","joint":"shoulder","bilateral":true,"c":[1.6,-15,0],"r":[3.2,8.5,3.4]},{"id":"forearm","kind":"capsule","from":"elbow","to":"wrist","bilateral":true,"r":[3.9,2.5]},{"id":"hand","kind":"ellipsoid","joint":"wrist","bilateral":true,"c":[1,-8.4,0],"r":[1.7,8.6,4.2]},{"id":"thumb","kind":"ellipsoid","joint":"wrist","bilateral":true,"c":[0.6,-4.6,3.6],"r":[1.4,3.4,1.5]},{"id":"neck","kind":"capsule","from":"neck_c7","to":"head_c1","r":[5.6,5]},{"id":"head","kind":"ellipsoid","joint":"head_c1","c":[3,8.6,0],"r":[9.8,11.2,8]},{"id":"jaw","kind":"ellipsoid","joint":"head_c1","c":[7.2,2.6,0],"r":[5.8,4.4,6.2]},{"id":"nose","kind":"ellipsoid","joint":"head_c1","c":[12.6,6.4,0],"r":[1.8,2.6,1.3]},{"id":"ear","kind":"ellipsoid","joint":"head_c1","bilateral":true,"c":[2.4,7.8,7.8],"r":[1.8,3.2,1.2]},{"id":"eye","kind":"ellipsoid","joint":"head_c1","tone":"eye","bilateral":true,"c":[12,9.4,3.2],"r":[0.9,1,1]},{"id":"brow","kind":"ellipsoid","joint":"head_c1","tone":"hair","bilateral":true,"c":[12.4,11.5,3.4],"r":[0.6,0.5,1.9]},{"id":"hair","kind":"ellipsoid","joint":"head_c1","tone":"hair","c":[0.2,11.6,0],"r":[9.9,9,8.5]}],"muscles":[{"id":"obliques","name":"Obliques (external + internal)","bilateral":true,"parts":[{"joint":"spine_l5","c":[5,9,11.2],"r":[7.5,9.5,3]},{"joint":"spine_t12","c":[6,2,12.2],"r":[7,6,2.8]}]},{"id":"spinal_extensors","name":"Thoracic erector spinae + multifidus/rotatores","bilateral":true,"parts":[{"joint":"spine_t12","c":[-3.4,7,3.2],"r":[2.4,9,2.6]},{"joint":"spine_t6","c":[-3.6,6,3.2],"r":[2.4,8,2.6]}]},{"id":"rhomboids_midtrap","name":"Rhomboids + middle trapezius","bilateral":true,"parts":[{"joint":"spine_t6","c":[-4.2,8.5,6.9],"r":[2.2,6,4.6]}]},{"id":"post_deltoid","name":"Posterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.2,-4,1],"r":[3.2,5.8,4.2]}]},{"id":"infraspinatus","name":"Infraspinatus / teres minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[-1.2,4,11.1],"r":[2.2,5,3.8]}]},{"id":"serratus","name":"Serratus anterior","bilateral":true,"parts":[{"joint":"spine_t12","c":[7,11,12.6],"r":[5.5,6,2.4]}]},{"id":"triceps","name":"Triceps brachii","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.3,-15,0],"r":[2.6,9.5,3.2]}]},{"id":"core","name":"Transversus abdominis / rectus abdominis","parts":[{"joint":"spine_l5","c":[14.2,8,0],"r":[2.4,9,8.5]}]},{"id":"glute_med","name":"Gluteus medius","bilateral":true,"parts":[{"joint":"pelvis","c":[-3,4.5,14.2],"r":[6,5,2.6]}]},{"id":"pec","name":"Pectoralis major + minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[12.5,5,7.4],"r":[2.4,5.5,6.5]}]},{"id":"ant_deltoid","name":"Anterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[3.4,-4,1],"r":[3,5.5,4]}]}],"palette":{"skin":"#c49a7c","shirt":"#2e6b86","shorts":"#2a2e36","hair":"#3b2d25","eye":"#231c18","lip":"#a8705c"}},"exercises":[{"schemaVersion":"1.0.0","rig":{"ref":"reprig-unisex-172-v1"},"exercise":{"id":"kneeling-back-rotation-stretch","name":"Kneeling Back Rotation Stretch","aliases":["Quadruped thoracic rotation (reach)","Quadruped T-spine rotation","Open-book reach from all fours"],"reference":{"source":"GymVisual","productRef":"429713","title":"Kneeling Back Rotation Stretch (female)","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html","listing":"First item on https://gymvisual.com/13-media-content (sorted A to Z), viewed 2026-11-26","note":"Used only to identify the movement. This rig, model and animation are original."},"type":"Stretching / dynamic mobility","bodyPart":"Back (thoracic spine)","secondaryBodyParts":["Shoulders","Chest","Core"],"equipment":["Body weight","Exercise mat (optional)"],"difficulty":"Beginner","mechanics":"Isolation (spinal mobility)","plane":"Transverse","laterality":"Unilateral (alternate sides)","authoredSide":"right","muscles":{"target":["obliques_r","obliques_l","spinal_extensors_r","spinal_extensors_l"],"synergist":["rhomboids_midtrap_r","post_deltoid_r","infraspinatus_r"],"stabilizer":["serratus_l","triceps_l","core","glute_med_r","glute_med_l"],"lengthened":["pec_r","ant_deltoid_r"]},"muscleNotes":{"obliques_r":"Internal oblique on the turning side helps drive rotation toward it.","obliques_l":"External oblique on the opposite side pairs with it to turn the rib cage.","spinal_extensors_l":"Deep rotators (multifidus/rotatores) turn the spine toward the opposite side, so the left side works on a right turn.","spinal_extensors_r":"Keeps the upper back long so the turn is rotation, not rounding.","rhomboids_midtrap_r":"Draws the shoulder blade back as the arm opens.","post_deltoid_r":"Carries the arm up and back toward the ceiling.","infraspinatus_r":"Turns the upper arm outward so the palm can face forward at the top.","serratus_l":"Pushes the floor away and holds the shoulder blade flat on the rib cage.","triceps_l":"Keeps the support elbow long without locking it.","core":"Light brace keeps the lower back and pelvis quiet.","glute_med_r":"Holds the hips level over the knees.","glute_med_l":"Holds the hips level over the knees.","pec_r":"Lengthens across the front of the chest at end range.","ant_deltoid_r":"Lengthens at the front of the shoulder at end range."},"breathing":{"pattern":"Inhale as the hand lifts and winds under the chest; exhale slowly as you rotate open toward the ceiling; keep breathing slowly in the hold, letting each exhale add a little range; inhale on the way back down.","cadence":"About 2 s wind-up, 2 s rotate, 2–3 s hold, 2 s return"},"prescription":{"sets":"1–3","reps":"8–12 per side","endRangeHold":"2–3 s per rep","staticOption":"20–30 s hold, 2–3 times per side","frequency":"Daily or as a warm-up","tempo":"2–2–2 (rotate–hold–return)"},"cues":[{"id":"c1","phase":"setup","text":"Hands under shoulders, knees under hips, tops of the feet on the mat. Spine long, gaze at the floor."},{"id":"c2","phase":"windup","text":"Push the floor away with the left hand. Lift the right hand and let it drift a little under your chest as you breathe in."},{"id":"c3","phase":"rotate","text":"Lead with the chest: sweep the right arm up and open the rib cage toward the ceiling. Eyes follow the hand."},{"id":"c4","phase":"hold","text":"Pause at end range. Hips stay square over the knees; exhale and let the upper back turn a touch further."},{"id":"c5","phase":"return","text":"Rotate back down under control, chest first, arm following."},{"id":"c6","phase":"reset","text":"Place the hand back under the shoulder, reset a neutral spine, then repeat or switch sides."}],"mistakes":[{"id":"m1","mistake":"Hips sway or rotate with the chest","fix":"Keep hips stacked over knees; imagine a glass of water on your low back. Turn only as far as the pelvis can stay still."},{"id":"m2","mistake":"Sinking into the support shoulder","fix":"Press the floor away so the shoulder blade stays flat and the support arm stays long."},{"id":"m3","mistake":"Moving the arm without turning the spine","fix":"Lead with the sternum; keep the arm in line with the chest, so the hand only goes as high as the rib cage turns."},{"id":"m4","mistake":"Side-bending instead of rotating","fix":"Keep the spine long from tailbone to head and turn around that line."},{"id":"m5","mistake":"Holding the breath or rushing","fix":"Move on a slow exhale and pause at end range; bouncing reduces the range you get."},{"id":"m6","mistake":"Cranking the neck","fix":"Let the head follow the rib cage; the eyes track the hand without forcing the neck."},{"id":"m7","mistake":"Locking the support elbow","fix":"Keep a soft bend (about 5–15°) and weight spread through the whole palm."}],"kinematics":[{"measure":"Thoracic rotation (T12–T1)","setup":"0°","peak":"≈40°","norm":"30–35° per side estimated anatomically; lumbar-locked test mean ≈41° (SD ≈11°); ≥50° counted as unrestricted","sources":["nasm","johnson2012","whetstone2024"]},{"measure":"Lumbar rotation (L5–S1 to T12)","setup":"0°","peak":"≈5°","norm":"≈10° per side available; keep it small","sources":["nasm"]},{"measure":"Total trunk rotation","setup":"0°","peak":"≈45°","norm":"≈45° thoracolumbar per side","sources":["nasm"]},{"measure":"Cervical rotation toward reaching hand","setup":"0°","peak":"≈56° plus 21° extension","norm":"Head follows the rib cage; eyes track the hand","sources":["physitrack"]},{"measure":"Hips","setup":"≈75.6° flexion (thighs vertical)","peak":"Unchanged; pelvis still","norm":"Hips over knees","sources":["physitrack"]},{"measure":"Knees","setup":"90° flexion, shins on mat","peak":"Unchanged","norm":"Knees under hips","sources":["physitrack"]},{"measure":"Support elbow","setup":"≈10° (soft)","peak":"≈10–15°","norm":"Long arm, not locked","sources":[]},{"measure":"Reaching arm","setup":"Hand flat under shoulder","peak":"Abducted ≈90° to the chest, opened past the frontal plane until vertical","norm":"Arm stays in line with the chest","sources":["physitrack"]}],"sources":[{"id":"gymvisual","title":"GymVisual — Kneeling Back Rotation Stretch (female), ref. 429713","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html"},{"id":"physitrack","title":"Physitrack — Quadruped Thoracic Rotation / Extension-Rotation","url":"https://ie.physitrack.com/home-exercise-video/quadruped-thoracic-rotation"},{"id":"johnson2012","title":"Johnson et al. 2012, Reliability of thoracic spine rotation ROM measurements in healthy adults (J Athl Train)","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC3418115"},{"id":"whetstone2024","title":"Whetstone & Matsel 2024, Visual estimation of thorax rotation in the quadruped lumbar-locked position (IJSPT)","url":"https://ijspt.scholasticahq.com/article/116154"},{"id":"nasm","title":"NASM — Optimizing thoracic spine mobility with corrective exercise (citing Neumann 2010)","url":"https://blog.nasm.org/ces/optimizing-thoracic-spine-mobility-with-corrective-exercise"},{"id":"motra","title":"Motra — Quadruped T-Spine Rotation (breathing, beginner rating)","url":"https://motra.com/exercises/quadrupedTSpineRotation"},{"id":"fitcraft","title":"FitCraft — Quadruped thread-the-needle (hip drop and breath-holding errors)","url":"https://getfitcraft.com/exercises/quadruped-thread-the-needle"},{"id":"prehab","title":"The Prehab Guys — Quadruped thoracic spine rotation (avoid side bending; opens the pecs)","url":"https://library.theprehabguys.com/vimeo-video/thoracic-spine-rotation/"},{"id":"ace","title":"ACE — Top exercises to gain thoracic mobility (10–12 reps or 20–30 s per side)","url":"https://www.acefitness.org/resources/pros/expert-articles/5203/top-exercises-to-gain-thoracic-mobility/"},{"id":"kenhub","title":"Kenhub — Rotatores muscles","url":"https://kenhub.com/en/library/anatomy/rotatores-muscles"}]},"camera":{"default":"threeQuarter","presets":{"threeQuarter":{"yaw":38,"pitch":20,"label":"3/4"},"side":{"yaw":0,"pitch":6,"label":"Side"},"front":{"yaw":88,"pitch":12,"label":"Front"},"back":{"yaw":-48,"pitch":34,"label":"Back"},"top":{"yaw":25,"pitch":72,"label":"Top"}}},"props":[{"id":"mat","kind":"mat","center":[8,0,0],"size":[180,0.6,62]}],"contacts":[{"id":"arm_l","label":"Support hand (left)","chain":["shoulder_l","elbow_l","wrist_l","handtip_l"],"pole":[-1,0.1,-0.35],"handRot":[0,-0.707107,0.707107,0]}],"timeline":{"duration":8,"fps":60,"loop":true,"interpolation":"monotoneCubic","phases":[{"id":"setup","label":"Set up","start":0,"end":0.6,"breath":"natural","cue":"c1"},{"id":"windup","label":"Wind up","start":0.6,"end":1.7,"breath":"inhale","cue":"c2"},{"id":"rotate","label":"Rotate open","start":1.7,"end":4,"breath":"exhale","cue":"c3"},{"id":"hold","label":"Hold","start":4,"end":5.6,"breath":"exhale","cue":"c4"},{"id":"return","label":"Return","start":5.6,"end":7.4,"breath":"inhale","cue":"c5"},{"id":"reset","label":"Reset","start":7.4,"end":8,"breath":"natural","cue":"c6"}]},"poses":{"tabletop":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0,"latFlex":0,"flex":0},"spine_t12":{"rot":0,"latFlex":0,"flex":0},"spine_t6":{"rot":0,"latFlex":0,"flex":0},"neck_c7":{"rot":0,"flex":0},"head_c1":{"rot":0,"flex":0},"sc_r":{"protract":5,"elevate":0},"sc_l":{"protract":5,"elevate":0},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"shoulder_r":{"plane":83.3,"elev":71.5,"axial":-67.8},"elbow_r":{"flex":9.8},"wrist_r":{"pron":172.1,"flex":-84.8,"dev":-13.9}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"unload":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-0.24,"latFlex":0.3,"flex":0.5},"spine_t12":{"rot":-0.88,"latFlex":0.2,"flex":0.3},"spine_t6":{"rot":-0.88,"latFlex":0.1,"flex":0.2},"neck_c7":{"rot":-1.2,"flex":1.2},"head_c1":{"rot":-1.8,"flex":1.8},"sc_r":{"protract":6,"elevate":8},"sc_l":{"protract":5.5,"elevate":-0.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":49.2},"wrist_r":{"pron":172.1,"flex":-69.8,"dev":-13.9},"shoulder_r":{"plane":77.5,"elev":51.2,"axial":-65}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"windup":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-1.08,"latFlex":1.1,"flex":2.3},"spine_t12":{"rot":-3.96,"latFlex":0.9,"flex":1.4},"spine_t6":{"rot":-3.96,"latFlex":0.3,"flex":0.7},"neck_c7":{"rot":-3.2,"flex":3.2},"head_c1":{"rot":-4.8,"flex":4.8},"sc_r":{"protract":14,"elevate":2},"sc_l":{"protract":7.2,"elevate":-0.9},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":74.2},"wrist_r":{"pron":172.1,"flex":-72.8,"dev":-13.9},"shoulder_r":{"plane":65.7,"elev":46.9,"axial":-55}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"clear":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.5},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.3},"neck_c7":{"rot":5.4,"flex":2.9},"head_c1":{"rot":8.1,"flex":4.4},"sc_r":{"protract":8,"elevate":3},"sc_l":{"protract":4.2,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":30},"wrist_r":{"pron":160,"flex":-45,"dev":0},"shoulder_r":{"plane":28.3,"elev":66.9,"axial":-40}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"sweep":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.68,"latFlex":-2,"flex":-2.8},"spine_t12":{"rot":6.16,"latFlex":-1.4,"flex":-2.1},"spine_t6":{"rot":6.16,"latFlex":-0.3,"flex":-1.2},"neck_c7":{"rot":9.5,"flex":3.8},"head_c1":{"rot":14.2,"flex":5.7},"sc_r":{"protract":4,"elevate":2},"sc_l":{"protract":1,"elevate":1.4},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":12},"wrist_r":{"pron":120,"flex":-10,"dev":0},"shoulder_r":{"plane":37.6,"elev":72.7,"axial":-25}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"rise":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":3.84,"latFlex":-4.7,"flex":-5.3},"spine_t12":{"rot":14.08,"latFlex":-2.9,"flex":-4.9},"spine_t6":{"rot":14.08,"latFlex":-0.3,"flex":-3},"neck_c7":{"rot":18.9,"flex":0.4},"head_c1":{"rot":28.4,"flex":0.6},"sc_r":{"protract":-4,"elevate":3},"sc_l":{"protract":-5,"elevate":3.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":80,"flex":0,"dev":0},"shoulder_r":{"plane":8.2,"elev":90.8,"axial":0}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"peak":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.3999999999999995,"latFlex":-6.6,"flex":-6.4},"spine_t12":{"rot":19.8,"latFlex":-3.9,"flex":-6.9},"spine_t6":{"rot":19.8,"latFlex":-0.1,"flex":-4.2},"neck_c7":{"rot":22.6,"flex":-8.2},"head_c1":{"rot":33.8,"flex":-12.3},"sc_r":{"protract":-10,"elevate":5},"sc_l":{"protract":-9.5,"elevate":4.5},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-26.2,"elev":114.6,"axial":0}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"peakBreath":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.7,"latFlex":-6.9,"flex":-6.5},"spine_t12":{"rot":20.9,"latFlex":-4,"flex":-7.3},"spine_t6":{"rot":20.9,"latFlex":-0.1,"flex":-4.4},"neck_c7":{"rot":22.5,"flex":-8.2},"head_c1":{"rot":33.8,"flex":-12.2},"sc_r":{"protract":-11,"elevate":5},"sc_l":{"protract":-10.4,"elevate":4.7},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-23.5,"elev":115,"axial":0}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"descend":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":2.88,"latFlex":-3.5,"flex":-4.3},"spine_t12":{"rot":10.56,"latFlex":-2.3,"flex":-3.7},"spine_t6":{"rot":10.56,"latFlex":-0.4,"flex":-2.2},"neck_c7":{"rot":19.1,"flex":2.8},"head_c1":{"rot":28.6,"flex":4.2},"sc_r":{"protract":-2,"elevate":2},"sc_l":{"protract":-2.3,"elevate":2.4},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":110,"flex":-5,"dev":0},"shoulder_r":{"plane":14.1,"elev":84.6,"axial":0}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}},"touchdown":{"root":{"pos":[0,48,0],"rot":{"pitch":-75.6}},"ch":{"hip_r":{"flex":75.6},"hip_l":{"flex":75.6},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.5},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.3},"neck_c7":{"rot":1.2,"flex":0.8},"head_c1":{"rot":1.8,"flex":1.2},"sc_r":{"protract":5,"elevate":6},"sc_l":{"protract":4.2,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-80,"dev":0},"elbow_r":{"flex":25.4},"wrist_r":{"pron":172.1,"flex":-72.8,"dev":-13.9},"shoulder_r":{"plane":84.2,"elev":60.6,"axial":-65}},"ik":{"arm_l":{"target":[49.6,2.6,-18.8],"weight":1}}}},"keyframes":[{"t":0,"pose":"tabletop"},{"t":0.6,"pose":"tabletop"},{"t":1,"pose":"unload"},{"t":1.7,"pose":"windup"},{"t":2.15,"pose":"clear"},{"t":2.65,"pose":"sweep"},{"t":3.3,"pose":"rise"},{"t":4,"pose":"peak"},{"t":4.8,"pose":"peakBreath"},{"t":5.6,"pose":"peak"},{"t":6.3,"pose":"descend"},{"t":7,"pose":"touchdown"},{"t":7.4,"pose":"tabletop"},{"t":8,"pose":"tabletop"}],"activation":{"obliques_r":[[0,0.15],[1.7,0.3],[3.3,0.9],[4,0.85],[5.6,0.8],[6.6,0.5],[7.4,0.15],[8,0.15]],"obliques_l":[[0,0.15],[1.7,0.25],[3.3,0.8],[4,0.8],[5.6,0.75],[6.6,0.45],[7.4,0.15],[8,0.15]],"spinal_extensors_r":[[0,0.2],[1.7,0.25],[3.6,0.75],[5.6,0.7],[7.4,0.2],[8,0.2]],"spinal_extensors_l":[[0,0.2],[1.7,0.3],[3.6,0.8],[5.6,0.75],[7.4,0.2],[8,0.2]],"rhomboids_midtrap_r":[[0,0.1],[1.7,0.1],[3.6,0.9],[5.6,0.85],[7,0.2],[8,0.1]],"post_deltoid_r":[[0,0.1],[1.7,0.15],[3.6,0.85],[5.6,0.8],[7,0.2],[8,0.1]],"infraspinatus_r":[[0,0.1],[2.6,0.3],[3.8,0.65],[5.6,0.6],[7,0.2],[8,0.1]],"serratus_l":[[0,0.5],[1,0.7],[4,0.8],[7,0.7],[7.4,0.5],[8,0.5]],"triceps_l":[[0,0.45],[1,0.65],[4,0.7],[7,0.65],[7.4,0.45],[8,0.45]],"core":[[0,0.4],[2,0.55],[4,0.6],[7.4,0.45],[8,0.4]],"glute_med_r":[[0,0.3],[4,0.45],[8,0.3]],"glute_med_l":[[0,0.3],[4,0.5],[8,0.3]],"pec_r":[[0,0],[2.6,0.1],[3.6,0.7],[4.4,1],[5.6,0.95],[6.6,0.3],[7.4,0],[8,0]],"ant_deltoid_r":[[0,0],[2.6,0.1],[3.6,0.6],[4.4,0.85],[5.6,0.8],[6.6,0.25],[7.4,0],[8,0]]},"guides":[{"id":"handPath","kind":"path","joint":"handtip_r","from":0.6,"to":7.4,"label":"Hand path"},{"id":"rotationArc","kind":"rotationArc","joint":"spine_t6","radius":30,"normBand":[40,50],"label":"Thoracic rotation"},{"id":"gaze","kind":"gaze","joint":"head_c1","target":"handtip_r","label":"Eyes follow hand"}]},{"schemaVersion":"1.0.0","rig":{"ref":"reprig-unisex-172-v1"},"exercise":{"id":"quadruped-thoracic-rotation","name":"Quadruped Thoracic Rotation","aliases":["Lumbar-locked thoracic rotation","Quadruped T-spine rotation, hand behind head","Sit-back thoracic rotation"],"reference":{"source":"Ask Doctor Jo (YouTube)","title":"Thoracic Rotation in Quadruped","url":"https://www.youtube.com/watch?v=snzLuyYgbVI","note":"Video used only to identify the movement. This rig, model and animation are original."},"type":"Stretching / dynamic mobility","bodyPart":"Back (thoracic spine)","secondaryBodyParts":["Shoulders","Chest","Core"],"equipment":["Body weight","Exercise mat (optional)"],"difficulty":"Beginner","mechanics":"Isolation (spinal mobility)","plane":"Transverse","laterality":"Unilateral (alternate sides)","authoredSide":"right","muscles":{"target":["obliques_r","obliques_l","spinal_extensors_r","spinal_extensors_l"],"synergist":["rhomboids_midtrap_r","post_deltoid_r","infraspinatus_r"],"stabilizer":["serratus_l","triceps_l","core","glute_med_r","glute_med_l"],"lengthened":["pec_r","ant_deltoid_r"]},"muscleNotes":{"obliques_r":"Internal oblique on the turning side helps drive the turn toward it.","obliques_l":"External oblique on the opposite side pairs with it to turn the rib cage.","spinal_extensors_l":"Deep rotators (multifidus/rotatores) turn the spine toward the opposite side, so the left side works on a right turn.","spinal_extensors_r":"Keeps the upper back long so the turn is rotation, not rounding.","rhomboids_midtrap_r":"Draws the shoulder blade back as the elbow opens toward the ceiling.","post_deltoid_r":"Carries the elbow up and back.","infraspinatus_r":"Holds the upper arm turned out with the hand behind the head.","serratus_l":"Pushes the floor away so the support shoulder blade stays flat.","triceps_l":"Keeps the support arm long without locking the elbow.","core":"Light brace; sitting back already limits the lower back.","glute_med_r":"Keeps the hips level on the heels.","glute_med_l":"Keeps the hips level on the heels.","pec_r":"Lengthens across the front of the chest at the top.","ant_deltoid_r":"Lengthens at the front of the shoulder at the top."},"breathing":{"pattern":"Inhale as the elbow drops toward the opposite hand; exhale slowly as you rotate up toward the ceiling; keep breathing in the hold; inhale on the way back.","cadence":"About 1.5 s down, 2 s up, 1–2 s hold, 1.5 s return"},"prescription":{"sets":"1–3","reps":"8–10 per side","endRangeHold":"1–2 s per rep","staticOption":"20–30 s hold at the top, 2–3 times per side","frequency":"Daily or as a warm-up","tempo":"1.5–2–1.5 (down–up–return)"},"cues":[{"id":"b1","phase":"setup","text":"On hands and knees, sit the hips back toward the heels. This locks the lower back so the turn has to come from the upper back. Place the right hand behind the head."},{"id":"b2","phase":"down","text":"Breathe in and turn the chest down, bringing the right elbow toward the left hand."},{"id":"b3","phase":"rotate","text":"Breathe out and rotate up, opening the elbow toward the ceiling. Eyes follow the elbow."},{"id":"b4","phase":"hold","text":"Pause at the top. Hips stay on the heels and the support arm stays long."},{"id":"b5","phase":"return","text":"Rotate back to the start under control."},{"id":"b6","phase":"reset","text":"Reset a long spine, then repeat or switch sides."}],"mistakes":[{"id":"n1","mistake":"Letting the hips drift forward off the heels","fix":"Stay sat back; once the hips lift, the lower back joins in and the drill stops isolating the upper back."},{"id":"n2","mistake":"Pulling on the head with the hand","fix":"Rest the fingertips lightly behind the head; the hand is only there to set the arm position."},{"id":"n3","mistake":"Flapping the elbow instead of turning the rib cage","fix":"Keep the elbow wide and in line with the chest; it only rises as far as the chest turns."},{"id":"n4","mistake":"Sinking into the support shoulder","fix":"Push the floor away so the shoulder blade stays flat on the rib cage."},{"id":"n5","mistake":"Rushing or holding the breath","fix":"Rotate up on a slow exhale and pause at the top."},{"id":"n6","mistake":"Cranking the neck","fix":"Let the head follow the rib cage; the eyes track the elbow."}],"kinematics":[{"measure":"Thoracic rotation (T12–T1)","setup":"0°","peak":"≈44°","norm":"Lumbar-locked test mean ≈41° (SD ≈11°); ≥50° counted as unrestricted","sources":["johnson2012","whetstone2024"]},{"measure":"Lumbar rotation (L5–S1 to T12)","setup":"0°","peak":"≈2°","norm":"Near zero: sitting back locks the lumbar spine","sources":["johnson2012"]},{"measure":"Total trunk rotation","setup":"0°","peak":"≈46°","norm":"≈45° thoracolumbar per side","sources":["nasm"]},{"measure":"Rotation toward the support side (elbow down)","setup":"0°","peak":"≈28°","norm":"Comfortable range only","sources":[]},{"measure":"Hips","setup":"≈133° flexion, sat back","peak":"Unchanged; hips stay back on heels","norm":"Sat back toward the heels","sources":["johnson2012"]},{"measure":"Knees","setup":"≈136° flexion","peak":"Unchanged","norm":"Shins on mat","sources":[]},{"measure":"Working arm","setup":"Hand behind head, elbow wide","peak":"Elbow points toward the ceiling","norm":"Elbow stays in line with the chest","sources":["askdoctorjo"]}],"sources":[{"id":"askdoctorjo","title":"Ask Doctor Jo — Thoracic Rotation in Quadruped (video)","url":"https://www.youtube.com/watch?v=snzLuyYgbVI"},{"id":"davidlee","title":"Dr. David Lee, PT — Quadruped Thoracic Rotation for Spine Mobility (video)","url":"https://www.youtube.com/watch?v=AzCghjjWt5k"},{"id":"johnson2012","title":"Johnson et al. 2012, Reliability of thoracic spine rotation ROM measurements in healthy adults (J Athl Train) — lumbar-locked test","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC3418115"},{"id":"whetstone2024","title":"Whetstone & Matsel 2024, Visual estimation of thorax rotation in the quadruped lumbar-locked position (IJSPT)","url":"https://ijspt.scholasticahq.com/article/116154"},{"id":"pubmed2024","title":"Comparative Analysis of Thoracic Rotation Exercises: Standing vs. Quadruped (2024)","url":"https://pubmed.ncbi.nlm.nih.gov/38902213/"},{"id":"nasm","title":"NASM — Optimizing thoracic spine mobility with corrective exercise (citing Neumann 2010)","url":"https://blog.nasm.org/ces/optimizing-thoracic-spine-mobility-with-corrective-exercise"}]},"camera":{"default":"threeQuarter","presets":{"threeQuarter":{"yaw":40,"pitch":18,"label":"3/4"},"side":{"yaw":0,"pitch":6,"label":"Side"},"front":{"yaw":88,"pitch":12,"label":"Front"},"back":{"yaw":-48,"pitch":34,"label":"Back"},"top":{"yaw":25,"pitch":72,"label":"Top"}}},"props":[{"id":"mat","kind":"mat","center":[-5,0,0],"size":[180,0.6,62]}],"contacts":[{"id":"arm_l","label":"Support hand (left)","chain":["shoulder_l","elbow_l","wrist_l","handtip_l"],"pole":[-0.6,0.8,-0.3],"handRot":[0,-0.707107,0.707107,0]}],"timeline":{"duration":8,"fps":60,"loop":true,"interpolation":"monotoneCubic","phases":[{"id":"setup","label":"Set up","start":0,"end":0.8,"breath":"natural","cue":"b1"},{"id":"down","label":"Elbow down","start":0.8,"end":2.2,"breath":"inhale","cue":"b2"},{"id":"rotate","label":"Rotate up","start":2.2,"end":4.3,"breath":"exhale","cue":"b3"},{"id":"hold","label":"Hold","start":4.3,"end":5.6,"breath":"exhale","cue":"b4"},{"id":"return","label":"Return","start":5.6,"end":7.2,"breath":"inhale","cue":"b5"},{"id":"reset","label":"Reset","start":7.2,"end":8,"breath":"natural","cue":"b6"}]},"poses":{"neutral":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0,"latFlex":0,"flex":4},"spine_t12":{"rot":0,"latFlex":0,"flex":2},"spine_t6":{"rot":0,"latFlex":0,"flex":0},"neck_c7":{"rot":0,"flex":0},"head_c1":{"rot":0,"flex":0},"sc_r":{"protract":0,"elevate":6},"sc_l":{"protract":6,"elevate":4},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":-12.1,"elev":161.6,"axial":-142.9},"elbow_r":{"flex":131.3},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"down":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-1.12,"latFlex":2.6,"flex":10.7},"spine_t12":{"rot":-13.44,"latFlex":2.9,"flex":8.2},"spine_t6":{"rot":-13.44,"latFlex":1.5,"flex":7.1},"neck_c7":{"rot":11,"flex":-8},"head_c1":{"rot":16.5,"flex":-12},"sc_r":{"protract":12,"elevate":2},"sc_l":{"protract":7.6,"elevate":4.7},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":-1.7,"elev":200.1,"axial":-141.7},"elbow_r":{"flex":113.4},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"mid":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.32,"latFlex":-1.2,"flex":2.3},"spine_t12":{"rot":3.84,"latFlex":-0.9,"flex":0.7},"spine_t6":{"rot":3.84,"latFlex":-0.2,"flex":-0.8},"neck_c7":{"rot":21.9,"flex":-8.5},"head_c1":{"rot":32.9,"flex":-12.8},"sc_r":{"protract":0,"elevate":5},"sc_l":{"protract":3.9,"elevate":4.8},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":14.3,"elev":196.1,"axial":-121.8},"elbow_r":{"flex":113.4},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"up":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.2,"latFlex":-4.5,"flex":-0.09999999999999964},"spine_t12":{"rot":14.399999999999999,"latFlex":-3.1,"flex":-3.2},"spine_t6":{"rot":14.399999999999999,"latFlex":-0.6,"flex":-4.8},"neck_c7":{"rot":22.3,"flex":-9.4},"head_c1":{"rot":33.4,"flex":-14.1},"sc_r":{"protract":-8,"elevate":6},"sc_l":{"protract":-2.4,"elevate":6.4},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":30.5,"elev":192.4,"axial":-108.7},"elbow_r":{"flex":118.3},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"peak":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.84,"latFlex":-6.6,"flex":-0.7000000000000002},"spine_t12":{"rot":22.08,"latFlex":-4.2,"flex":-6.3},"spine_t6":{"rot":22.08,"latFlex":-0.5,"flex":-8.2},"neck_c7":{"rot":22.4,"flex":-9.7},"head_c1":{"rot":33.6,"flex":-14.5},"sc_r":{"protract":-12,"elevate":7},"sc_l":{"protract":-7.5,"elevate":7.8},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":42.3,"elev":190.6,"axial":-98.9},"elbow_r":{"flex":121},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"peakBreath":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.94,"latFlex":-6.9,"flex":-0.7999999999999998},"spine_t12":{"rot":23.279999999999998,"latFlex":-4.4,"flex":-6.6},"spine_t6":{"rot":23.279999999999998,"latFlex":-0.4,"flex":-8.4},"neck_c7":{"rot":22.4,"flex":-9.7},"head_c1":{"rot":33.6,"flex":-14.5},"sc_r":{"protract":-13,"elevate":7},"sc_l":{"protract":-8.4,"elevate":8.1},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":45.4,"elev":190.2,"axial":-96.2},"elbow_r":{"flex":121.6},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}},"back":{"root":{"pos":[-30,35.4,0],"rot":{"pitch":-87}},"ch":{"hip_r":{"flex":132.6},"hip_l":{"flex":132.6},"knee_r":{"flex":135.6},"knee_l":{"flex":135.6},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.72,"latFlex":-2.8,"flex":0.7000000000000002},"spine_t12":{"rot":8.64,"latFlex":-2,"flex":-0.7999999999999998},"spine_t6":{"rot":8.64,"latFlex":-0.4,"flex":-1.8},"neck_c7":{"rot":22.1,"flex":-8.8},"head_c1":{"rot":33.1,"flex":-13.2},"sc_r":{"protract":-3,"elevate":6},"sc_l":{"protract":1,"elevate":5.7},"shoulder_l":{"plane":90,"elev":110,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":170,"flex":-60,"dev":0},"shoulder_r":{"plane":20.4,"elev":194.2,"axial":-116.8},"elbow_r":{"flex":115.5},"wrist_r":{"pron":90,"flex":15,"dev":0}},"ik":{"arm_l":{"target":[67.9,2.6,-18.8],"weight":1}}}},"keyframes":[{"t":0,"pose":"neutral"},{"t":0.8,"pose":"neutral"},{"t":1.9,"pose":"down"},{"t":2.2,"pose":"down"},{"t":2.9,"pose":"mid"},{"t":3.6,"pose":"up"},{"t":4.3,"pose":"peak"},{"t":4.95,"pose":"peakBreath"},{"t":5.6,"pose":"peak"},{"t":6.4,"pose":"back"},{"t":7.2,"pose":"neutral"},{"t":8,"pose":"neutral"}],"activation":{"obliques_r":[[0,0.2],[2.2,0.45],[3.6,0.9],[4.3,0.85],[5.6,0.8],[6.6,0.45],[7.2,0.2],[8,0.2]],"obliques_l":[[0,0.2],[1.6,0.5],[2.2,0.4],[3.6,0.8],[5.6,0.75],[6.6,0.45],[7.2,0.2],[8,0.2]],"spinal_extensors_r":[[0,0.25],[2.2,0.3],[3.9,0.75],[5.6,0.7],[7.2,0.25],[8,0.25]],"spinal_extensors_l":[[0,0.25],[2.2,0.35],[3.9,0.8],[5.6,0.75],[7.2,0.25],[8,0.25]],"rhomboids_midtrap_r":[[0,0.3],[2.2,0.15],[3.9,0.9],[5.6,0.85],[7.2,0.3],[8,0.3]],"post_deltoid_r":[[0,0.35],[2.2,0.2],[3.9,0.8],[5.6,0.75],[7.2,0.35],[8,0.35]],"infraspinatus_r":[[0,0.45],[4.3,0.6],[8,0.45]],"serratus_l":[[0,0.6],[2.2,0.7],[4.3,0.8],[7.2,0.6],[8,0.6]],"triceps_l":[[0,0.5],[2.2,0.6],[4.3,0.7],[7.2,0.5],[8,0.5]],"core":[[0,0.35],[4.3,0.5],[8,0.35]],"glute_med_r":[[0,0.25],[4.3,0.35],[8,0.25]],"glute_med_l":[[0,0.25],[4.3,0.4],[8,0.25]],"pec_r":[[0,0.1],[2.2,0],[3.9,0.75],[4.6,1],[5.6,0.95],[6.6,0.3],[7.2,0.1],[8,0.1]],"ant_deltoid_r":[[0,0.15],[2.2,0.05],[3.9,0.6],[4.6,0.85],[5.6,0.8],[6.6,0.3],[7.2,0.15],[8,0.15]]},"guides":[{"id":"elbowPath","kind":"path","joint":"elbow_r","from":0.8,"to":7.2,"label":"Elbow path"},{"id":"rotationArc","kind":"rotationArc","joint":"spine_t6","radius":30,"normBand":[40,50],"label":"Thoracic rotation"},{"id":"gaze","kind":"gaze","joint":"head_c1","target":"elbow_r","label":"Eyes follow elbow"}]}],"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://reprig.app/schema/exercise-module/1.0.0","title":"RepRig exercise module","description":"One file per exercise: clinical metadata + keyframed pose data for a shared parametric rig. Angles in degrees, lengths in cm. World axes: +X forward, +Y up, +Z the figure's right. Author the right side; the player mirrors it for the left.","type":"object","required":["schemaVersion","rig","exercise","timeline","poses","keyframes"],"additionalProperties":false,"properties":{"schemaVersion":{"const":"1.0.0"},"rig":{"type":"object","required":["ref"],"properties":{"ref":{"type":"string","description":"rigId of a shared rig file, e.g. reprig-female-165-v1"}},"additionalProperties":false},"exercise":{"$ref":"#/$defs/metadata"},"camera":{"type":"object","properties":{"default":{"type":"string"},"presets":{"type":"object","additionalProperties":{"type":"object","required":["yaw","pitch"],"properties":{"yaw":{"type":"number"},"pitch":{"type":"number","minimum":-10,"maximum":89},"label":{"type":"string"}}}}}},"props":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["mat","bench","box","barbell","dumbbell","kettlebell","band","cable"]},"center":{"$ref":"#/$defs/vec3"},"size":{"$ref":"#/$defs/vec3"},"attach":{"type":"object","properties":{"joint":{"type":"string"},"offset":{"$ref":"#/$defs/vec3"}}}}}},"contacts":{"type":"array","description":"Limbs solved with two-bone IK so planted hands/feet never slide. Targets are keyed in poses under ik.\u003cid>.target.","items":{"type":"object","required":["id","chain","pole"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"chain":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":4},"pole":{"$ref":"#/$defs/vec3"},"handRot":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4,"description":"World-locked end-effector rotation, quaternion [w,x,y,z]"}}}},"timeline":{"type":"object","required":["duration","phases"],"properties":{"duration":{"type":"number","exclusiveMinimum":0},"fps":{"type":"integer","minimum":24},"loop":{"type":"boolean"},"interpolation":{"enum":["monotoneCubic","linear"]},"phases":{"type":"array","minItems":1,"items":{"type":"object","required":["id","label","start","end","breath"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"start":{"type":"number","minimum":0},"end":{"type":"number"},"breath":{"enum":["inhale","exhale","hold","natural"]},"cue":{"type":"string"}}}}}},"poses":{"type":"object","minProperties":1,"additionalProperties":{"$ref":"#/$defs/pose"}},"keyframes":{"type":"array","minItems":2,"items":{"type":"object","required":["t","pose"],"properties":{"t":{"type":"number","minimum":0},"pose":{"type":"string"},"set":{"type":"object","description":"Flat overrides, e.g. {\"ch.spine_t6.rot\": 22}","additionalProperties":{"type":"number"}}},"additionalProperties":false}},"activation":{"type":"object","description":"Per-muscle activation 0–1 over time: [[t, value], ...]. Keys are rig muscle ids with _r/_l suffix.","additionalProperties":{"type":"array","items":{"type":"array","prefixItems":[{"type":"number"},{"type":"number","minimum":0,"maximum":1}],"minItems":2,"maxItems":2}}},"guides":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["path","rotationArc","gaze","jointAngle"]},"joint":{"type":"string"},"target":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"},"radius":{"type":"number"},"normBand":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},"label":{"type":"string"}}}}},"$defs":{"vec3":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"pose":{"type":"object","properties":{"root":{"type":"object","properties":{"pos":{"$ref":"#/$defs/vec3"},"rot":{"type":"object","properties":{"yaw":{"type":"number"},"pitch":{"type":"number"},"roll":{"type":"number"}},"additionalProperties":false}}},"ch":{"type":"object","description":"Anatomical joint channels. spine/neck: flex,latFlex,rot · clavicle(sc): protract,elevate · shoulder: plane,elev,axial (ISB globe) · elbow/knee: flex · wrist: pron,flex,dev · hip: flex,abd,rot · ankle: dorsi","propertyNames":{"pattern":"^[a-z0-9]+(_[a-z0-9]+)*$"},"additionalProperties":{"type":"object","propertyNames":{"enum":["flex","latFlex","rot","protract","elevate","plane","elev","axial","pron","dev","abd","dorsi"]},"additionalProperties":{"type":"number","minimum":-360,"maximum":360}}},"ik":{"type":"object","additionalProperties":{"type":"object","required":["target"],"properties":{"target":{"$ref":"#/$defs/vec3"},"weight":{"type":"number","minimum":0,"maximum":1}}}}},"additionalProperties":false},"metadata":{"type":"object","required":["id","name","type","bodyPart","equipment","difficulty","muscles","breathing","cues","mistakes"],"properties":{"id":{"type":"string","pattern":"^[a-z0-9-]+$"},"name":{"type":"string"},"aliases":{"type":"array","items":{"type":"string"}},"reference":{"type":"object","properties":{"source":{"type":"string"},"productRef":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"},"listing":{"type":"string"},"note":{"type":"string"}}},"type":{"type":"string"},"bodyPart":{"type":"string"},"secondaryBodyParts":{"type":"array","items":{"type":"string"}},"equipment":{"type":"array","items":{"type":"string"},"minItems":1},"difficulty":{"enum":["Beginner","Intermediate","Advanced"]},"mechanics":{"type":"string"},"plane":{"enum":["Sagittal","Frontal","Transverse","Multiplanar"]},"laterality":{"type":"string"},"authoredSide":{"enum":["right","left","bilateral"]},"muscles":{"type":"object","required":["target","synergist"],"properties":{"target":{"$ref":"#/$defs/ids"},"synergist":{"$ref":"#/$defs/ids"},"stabilizer":{"$ref":"#/$defs/ids"},"lengthened":{"$ref":"#/$defs/ids"}},"additionalProperties":false},"muscleNotes":{"type":"object","additionalProperties":{"type":"string"}},"breathing":{"type":"object","required":["pattern"],"properties":{"pattern":{"type":"string"},"cadence":{"type":"string"}}},"prescription":{"type":"object","additionalProperties":{"type":"string"}},"cues":{"type":"array","minItems":1,"items":{"type":"object","required":["id","text"],"properties":{"id":{"type":"string"},"phase":{"type":"string"},"text":{"type":"string"}}}},"mistakes":{"type":"array","items":{"type":"object","required":["mistake","fix"],"properties":{"id":{"type":"string"},"mistake":{"type":"string"},"fix":{"type":"string"}}}},"kinematics":{"type":"array","items":{"type":"object","required":["measure","setup","peak"],"properties":{"measure":{"type":"string"},"setup":{"type":"string"},"peak":{"type":"string"},"norm":{"type":"string"},"sources":{"type":"array","items":{"type":"string"}}}}},"sources":{"type":"array","items":{"type":"object","required":["id","title","url"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"}}}}}},"ids":{"type":"array","items":{"type":"string","pattern":"^[a-z0-9_]+$"},"uniqueItems":true}}}};</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">// RepRig 3D player: drives a skinned Three.js mesh from the shared engine and exercise modules; exports glTF.
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
 const R = RepRig, V = R.V, Q = R.Q;
-const RIG = RR_DATA.rig, EX = RR_DATA.exercise, SCHEMA = RR_DATA.schema;
-const META = EX.exercise;
+const RIG = RR_DATA.rig, EXS = RR_DATA.exercises, SCHEMA = RR_DATA.schema;
+const U = 0.01; // cm -> m
 const rig = R.buildRig(RIG);
-const tl = R.buildTimeline(EX);
-const D = tl.duration;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const PARTNER = (id) => (id.endsWith('_r') ? id.slice(0, -2) + '_l' : id.endsWith('_l') ? id.slice(0, -2) + '_r' : id);
+const ROLE = { target: 0xe53e3a, synergist: 0xf2a91e, stabilizer: 0x3b8fe0, lengthened: 0x9a63e8 };
+const ROLE_LABEL = { target: 'Target', synergist: 'Synergists', stabilizer: 'Stabilizers', lengthened: 'Lengthened' };
+const BG = { dark: { clear: 0x15181d, floor: 0x252a31, mat: 0x2f4d55, ink: '#e8ecf1', guide: 0x2fd1c0 }, light: { clear: 0xecebe6, floor: 0xd9d6cf, mat: 0x5d8488, ink: '#1d2127', guide: 0x0e8f83 } };
 
 /* ---------------- state ---------------- */
-const P0 = EX.camera.presets[EX.camera.default];
-const S = {
-  t: 3.2, playing: true, speed: 1, side: 'R', cam: EX.camera.default, yaw: P0.yaw, pitch: P0.pitch, bg: 'dark', hover: null,
-  show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true },
-};
-try { const saved = JSON.parse(localStorage.getItem('reprig-view') || '{}'); if (saved.bg) S.bg = saved.bg; if (saved.show) Object.assign(S.show, saved.show); } catch (e) {}
-const remember = () => { try { localStorage.setItem('reprig-view', JSON.stringify({ bg: S.bg, show: S.show })); } catch (e) {} };
+const S = { ex: 0, t: 3.4, playing: true, speed: 1, side: 'R', cam: 'threeQuarter', bg: 'dark', hover: null, show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true } };
+try { const v = JSON.parse(localStorage.getItem('reprig3d') || '{}'); if (v.bg) S.bg = v.bg; if (v.show) Object.assign(S.show, v.show); if (Number.isInteger(v.ex) && EXS[v.ex]) S.ex = v.ex; } catch (e) {}
+const remember = () => { try { localStorage.setItem('reprig3d', JSON.stringify({ bg: S.bg, show: S.show, ex: S.ex })); } catch (e) {} };
+let EX, META, tl, D, roleOf;
 
-const ROLE = { target: [229, 62, 58], synergist: [242, 169, 30], stabilizer: [59, 143, 224], lengthened: [154, 99, 232] };
-const ROLE_LABEL = { target: 'Target', synergist: 'Synergists', stabilizer: 'Stabilizers', lengthened: 'Lengthened' };
-const roleOf = {};
-for (const role in META.muscles) for (const id of META.muscles[role]) roleOf[id] = role;
-const PAL = {
-  dark: { bg: ['#20252d', '#0e1115'], floor: [38, 43, 51], mat: [44, 58, 64], matEdge: [70, 92, 100], body: [182, 190, 202], hair: [52, 56, 66], face: [204, 210, 219], shadow: 0.5, ink: '#e8ecf1', guide: '#2fd1c0', arc: '#2fd1c0', band: 'rgba(47,209,192,.16)', grid: 'rgba(255,255,255,.035)' },
-  light: { bg: ['#f3f2ee', '#dedcd5'], floor: [214, 211, 203], mat: [93, 132, 136], matEdge: [70, 104, 108], body: [176, 183, 195], hair: [62, 66, 76], face: [196, 202, 211], shadow: 0.28, ink: '#1d2127', guide: '#0e8f83', arc: '#0e8f83', band: 'rgba(14,143,131,.14)', grid: 'rgba(0,0,0,.03)' },
-};
-const BIG = new Set(['pelvis', 'abdomen', 'ribcage', 'chest', 'buttock_r', 'buttock_l']);
-
-/* ---------------- canvas ---------------- */
-const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
-const shadowCv = document.createElement('canvas'), sctx = shadowCv.getContext('2d');
-let CW = 0, CH = 0, DPR = 1;
-function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  CW = stage.clientWidth; CH = stage.clientHeight;
-  cv.width = Math.round(CW * DPR); cv.height = Math.round(CH * DPR); shadowCv.width = Math.max(1, Math.round(CW / 4)); shadowCv.height = Math.max(1, Math.round(CH / 4));
-  fitCache = {}; draw();
-}
-const roStage = new ResizeObserver(resize);
-
-/* ---------------- framing ---------------- */
-let fitCache = {};
-const handPathWorld = (() => {
-  const g = EX.guides.find((x) => x.kind === 'path'); if (!g) return null;
-  const pts = [];
-  for (let i = 0; i <= 140; i++) { const t = g.from + ((g.to - g.from) * i) / 140; pts.push({ t, p: R.evalPose(rig, tl.pose(t), EX.contacts)[g.joint].p }); }
-  return { g, pts };
-})();
-const SAMPLES = Array.from({ length: 24 }, (_, i) => R.evalPose(rig, tl.pose((i / 24) * D), EX.contacts));
-function fit(cam, mirror) {
-  const key = `${S.yaw.toFixed(1)}|${S.pitch.toFixed(1)}|${mirror}|${CW}x${CH}`;
-  if (fitCache[key]) return fitCache[key];
-  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-  const add = (p, m) => { const s = R.project(cam, p, mirror); x0 = Math.min(x0, s[0] - m); x1 = Math.max(x1, s[0] + m); y0 = Math.min(y0, s[1] - m); y1 = Math.max(y1, s[1] + m); };
-  for (const W of SAMPLES) for (const id in W) add(W[id].p, 9);
-  const padTop = 54, padBot = S.show.angles && CW > 520 ? 26 : 22, padX = 26;
-  const sc = Math.min((CW - padX * 2) / (x1 - x0), (CH - padTop - padBot) / (y1 - y0));
-  const f = { s: sc, ox: padX + ((CW - padX * 2) - (x1 - x0) * sc) / 2 - x0 * sc, oy: padTop + ((CH - padTop - padBot) - (y1 - y0) * sc) / 2 + y1 * sc };
-  fitCache = { [key]: f }; return f;
-}
-
-/* ---------------- colour helpers ---------------- */
-const rgb = (c, a) => (a == null ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})` : `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`);
-const mul = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
-const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-const LIGHT = V.norm([-0.55, -0.83, 0]); // screen space, from upper left
-
-/* ---------------- geometry -> screen primitives ---------------- */
-function capsulePath(p, a, ra, b, rb) {
-  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
-  if (d + Math.min(ra, rb) <= Math.max(ra, rb) + 0.01) { const big = ra >= rb ? [a, ra] : [b, rb]; p.moveTo(big[0][0] + big[1], big[0][1]); p.arc(big[0][0], big[0][1], big[1], 0, Math.PI * 2, true); return; }
-  const th = Math.atan2(dy, dx), al = Math.acos((ra - rb) / d);
-  p.moveTo(a[0] + ra * Math.cos(th + al), a[1] + ra * Math.sin(th + al));
-  p.lineTo(b[0] + rb * Math.cos(th + al), b[1] + rb * Math.sin(th + al));
-  p.arc(b[0], b[1], rb, th + al, th - al, true);
-  p.lineTo(a[0] + ra * Math.cos(th - al), a[1] + ra * Math.sin(th - al));
-  p.arc(a[0], a[1], ra, th - al, th + al, true);
-  p.closePath();
-}
-function screenEllipse(cam, mirror, f, c, axes) {
-  const e = R.ellipseOf(cam, c, axes, mirror);
-  return { cx: f.ox + e.cx * f.s, cy: f.oy - e.cy * f.s, rx: Math.max(0.3, e.rx * f.s), ry: Math.max(0.3, e.ry * f.s), rot: -e.rot, depth: e.depth };
-}
-function buildScene(t, opt) {
-  const cam = R.camera(S.yaw, S.pitch), mirror = S.side === 'L', f = fit(cam, mirror);
-  const pose = tl.pose(t), W = R.evalPose(rig, pose, EX.contacts);
-  const P = (p) => { const s = R.project(cam, p, mirror); return [f.ox + s[0] * f.s, f.oy - s[1] * f.s, s[2]]; };
-  const items = [], shadows = [];
+/* ---------------- figure: skinned mesh built from the rig's shapes ---------------- */
+function smooth(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+function buildFigure(withMuscles) {
+  const bones = {}, list = [];
+  for (const j of rig.joints) {
+    const b = new THREE.Bone(); b.name = j.id;
+    if (j.parent) { b.position.set(j.offset[0] * U, j.offset[1] * U, j.offset[2] * U); bones[j.parent].add(b); }
+    bones[j.id] = b; list.push(b);
+  }
+  const rest = R.evalPose(rig, { root: { pos: [0, 0, 0] }, ch: {} });
+  const bi = Object.fromEntries(list.map((b, i) => [b.name, i]));
+  const pal = Object.fromEntries(Object.entries(RIG.palette).map(([k, v]) => [k, new THREE.Color(v)]));
+  pal.body = pal.skin;
+  const P = [], N = [], C = [], SI = [], SW = [], I = [];
+  const push = (p, n, col, idx, w) => { P.push(p[0] * U, p[1] * U, p[2] * U); N.push(...n); C.push(col.r, col.g, col.b); SI.push(idx[0], idx[1] ?? 0, idx[2] ?? 0, 0); SW.push(w[0], w[1] ?? 0, w[2] ?? 0, 0); };
+  const sphere = new THREE.SphereGeometry(1, 28, 18);
   for (const s of rig.shapes) {
-    const g = R.shapeWorld(W, s);
-    if (g.kind === 'capsule') {
-      const a = P(g.a), b = P(g.b);
-      items.push({ type: 'cap', id: s.id, tone: s.tone, a, b, ra: g.r[0] * f.s, rb: g.r[1] * f.s, depth: (a[2] + b[2]) / 2 + s.bias, big: false });
-      shadows.push({ type: 'cap', a: P([g.a[0], 0, g.a[2]]), b: P([g.b[0], 0, g.b[2]]), ra: g.r[0] * f.s, rb: g.r[1] * f.s, h: (g.a[1] + g.b[1]) / 2 });
+    const base = P.length / 3;
+    if (s.kind === 'ellipsoid') {
+      const o = rest[s.joint].p, pa = sphere.attributes.position, col = pal[s.tone] || pal.skin;
+      for (let i = 0; i < pa.count; i++) {
+        const u = [pa.getX(i), pa.getY(i), pa.getZ(i)];
+        const p = [o[0] + s.c[0] + u[0] * s.r[0], o[1] + s.c[1] + u[1] * s.r[1], o[2] + s.c[2] + u[2] * s.r[2]];
+        push(p, V.norm([u[0] / s.r[0], u[1] / s.r[1], u[2] / s.r[2]]), col, [bi[s.joint]], [1]);
+      }
+      const ix = sphere.index.array; for (let i = 0; i < ix.length; i++) I.push(base + ix[i]);
     } else {
-      const e = screenEllipse(cam, mirror, f, g.c, g.axes);
-      items.push(Object.assign({ type: 'ell', id: s.id, tone: s.tone, big: BIG.has(s.id) }, e, { depth: e.depth + s.bias }));
-      const fl = g.axes.map((x) => [x[0], 0, x[2]]);
-      shadows.push(Object.assign({ type: 'ell', h: g.c[1] }, screenEllipse(cam, mirror, f, [g.c[0], 0, g.c[2]], fl)));
+      const F = rest[s.from].p, T = rest[s.to].p, ax = V.sub(T, F), Lc = V.len(ax), [r0, r1] = s.r;
+      const prof = [];
+      for (let k = 0; k <= 6; k++) { const a = -Math.PI / 2 + (k / 6) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.max(1e-3, r0 * Math.cos(a)), r0 * Math.sin(a))); }
+      for (let k = 1; k < 8; k++) { const t = k / 8; prof.push(new THREE.Vector2(r0 + (r1 - r0) * t, Lc * t)); }
+      for (let k = 0; k <= 6; k++) { const a = (k / 6) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.max(1e-3, r1 * Math.cos(a)), Lc + r1 * Math.sin(a))); }
+      const g = new THREE.LatheGeometry(prof, 24); g.computeVertexNormals();
+      const qa = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...V.norm(ax)));
+      const pa = g.attributes.position, na = g.attributes.normal, v = new THREE.Vector3(), nv = new THREE.Vector3();
+      const parent = rig.byId[s.from].parent, fi = bi[s.from], ti = bi[s.to], pi = parent ? bi[parent] : fi;
+      for (let i = 0; i < pa.count; i++) {
+        v.set(pa.getX(i), pa.getY(i), pa.getZ(i)); const t = v.y / Lc; v.applyQuaternion(qa);
+        nv.set(na.getX(i), na.getY(i), na.getZ(i)).applyQuaternion(qa);
+        const wT = smooth(0.6, 1.05, t) * 0.5, wP = (1 - smooth(-0.05, 0.28, t)) * 0.3;
+        const col = s.split && t < s.split.until ? pal[s.split.tone] : pal[s.tone] || pal.skin;
+        push([F[0] + v.x, F[1] + v.y, F[2] + v.z], [nv.x, nv.y, nv.z], col, [fi, ti, pi], [1 - wT - wP, wT, wP]);
+      }
+      const ix = g.index.array; for (let i = 0; i < ix.length; i++) I.push(base + ix[i]);
     }
   }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
+  geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+  geo.setIndex(I);
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0 });
+  mat.name = 'reprig_body';
+  const mesh = new THREE.SkinnedMesh(geo, mat); mesh.name = 'Body'; mesh.castShadow = true; mesh.receiveShadow = true;
+  const skeleton = new THREE.Skeleton(list);
+  mesh.add(bones.pelvis); mesh.bind(skeleton);
   const muscles = [];
-  for (const m of rig.muscles) {
-    const role = roleOf[m.id]; if (!role) continue;
-    const on = S.show[role] || S.hover === m.id || (opt && opt.allMuscles);
-    if (!on) continue;
-    const act = tl.activation(m.id, t), boost = S.hover === m.id ? 1 : 0;
-    for (const part of m.parts) {
-      const J = W[part.joint];
-      const c = V.add(J.p, Q.rot(J.q, part.c));
-      const axes = [Q.rot(J.q, [part.r[0], 0, 0]), Q.rot(J.q, [0, part.r[1], 0]), Q.rot(J.q, [0, 0, part.r[2]])];
-      const e = screenEllipse(cam, mirror, f, c, axes);
-      const it = Object.assign({ type: 'mus', id: m.id, role, act: Math.max(act, boost), hover: !!boost }, e);
-      items.push(it); muscles.push(it);
+  if (withMuscles) {
+    for (const m of rig.muscles) for (const part of m.parts) {
+      const mm = new THREE.Mesh(sphere, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, roughness: 0.5 }));
+      mm.position.set(part.c[0] * U, part.c[1] * U, part.c[2] * U); mm.scale.set(part.r[0] * U * 1.03, part.r[1] * U * 1.03, part.r[2] * U * 1.03);
+      mm.renderOrder = 2; mm.visible = false; mm.userData.muscle = m.id;
+      bones[part.joint].add(mm); muscles.push(mm);
     }
   }
-  items.sort((a, b) => a.depth - b.depth);
-  return { cam, mirror, f, pose, W, P, items, shadows, muscles };
+  return { mesh, bones, list, skeleton, muscles };
 }
-
-/* ---------------- drawing ---------------- */
-function shapePath(it, p) {
-  if (it.type === 'cap') capsulePath(p, it.a, it.ra, it.b, it.rb);
-  else { p.moveTo(it.cx + it.rx * Math.cos(it.rot), it.cy + it.rx * Math.sin(it.rot)); p.ellipse(it.cx, it.cy, it.rx, it.ry, it.rot, 0, Math.PI * 2, true); }
-}
-function toneColor(pal, tone) { return tone === 'hair' ? pal.hair : tone === 'face' ? pal.face : pal.body; }
-function fillShape(c, it, base, dmin, dmax, pal) {
-  const k = 0.8 + 0.2 * ((it.depth - dmin) / (dmax - dmin || 1));
-  const mid = mul(base, k), hi = mix(mid, [255, 255, 255], it.tone === 'hair' ? 0.18 : it.big ? 0.26 : 0.4), lo = mul(mid, it.tone === 'hair' ? 0.7 : it.big ? 0.8 : 0.68);
-  const p = new Path2D(); shapePath(it, p);
-  if (it.type === 'cap') {
-    const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1;
-    let nx = -dy / L, ny = dx / L; if (nx * LIGHT[0] + ny * LIGHT[1] > 0) { nx = -nx; ny = -ny; }
-    const mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2, r = (it.ra + it.rb) / 2;
-    const g = c.createLinearGradient(mx - nx * r, my - ny * r, mx + nx * r, my + ny * r);
-    g.addColorStop(0, rgb(lo)); g.addColorStop(0.55, rgb(mid)); g.addColorStop(0.9, rgb(hi)); g.addColorStop(1, rgb(mix(hi, mid, 0.4)));
-    c.fillStyle = g; c.fill(p);
-  } else {
-    c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry);
-    const cr = Math.cos(-it.rot), sr = Math.sin(-it.rot);
-    let lx = (LIGHT[0] * cr - LIGHT[1] * sr) / it.rx, ly = (LIGHT[0] * sr + LIGHT[1] * cr) / it.ry; const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
-    const g = c.createRadialGradient(lx * 0.42, ly * 0.42, 0.05, 0, 0, 1.08);
-    g.addColorStop(0, rgb(hi)); g.addColorStop(0.55, rgb(mid)); g.addColorStop(1, rgb(lo));
-    c.restore(); c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill(); c.restore();
+function localQuats(W, mirror) {
+  const out = {};
+  for (const j of rig.joints) {
+    const src = mirror ? PARTNER(j.id) : j.id;
+    let lq = j.parent ? Q.mul(Q.conj(W[mirror ? PARTNER(j.parent) : j.parent].q), W[src].q) : W[src].q;
+    if (mirror) lq = Q.mirrorZ(lq);
+    out[j.id] = lq;
   }
-  if (!it.big) { c.lineWidth = 0.8; c.strokeStyle = rgb(mul(mid, 0.55), 0.55); c.stroke(p); }
+  const p = W.pelvis.p; out.__root = [p[0] * U, p[1] * U, (mirror ? -p[2] : p[2]) * U];
+  return out;
 }
-function fillMuscle(c, it, clip) {
-  const col = ROLE[it.role], a = 0.3 + 0.7 * it.act;
-  c.save(); c.clip(clip);
-  c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry);
-  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
-  g.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.15), Math.min(1, a))); g.addColorStop(0.7, rgb(col, a * 0.85)); g.addColorStop(1, rgb(col, 0));
-  c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill();
-  c.restore();
-  if (it.hover) { c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry); c.lineWidth = 1.6 / Math.max(it.rx, it.ry); c.strokeStyle = rgb(col, 0.95); c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.stroke(); c.restore(); }
+function applyLocal(fig, L) {
+  for (const j of rig.joints) { const q = L[j.id]; fig.bones[j.id].quaternion.set(q[1], q[2], q[3], q[0]); }
+  fig.bones.pelvis.position.set(...L.__root);
 }
-function floorQuad(c, P, x0, x1, z0, z1) { const q = [P([x0, 0, z0]), P([x1, 0, z0]), P([x1, 0, z1]), P([x0, 0, z1])]; c.beginPath(); q.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); return q; }
 
-function render(c, sc, t, w, h, opts) {
-  const pal = PAL[S.bg];
-  const bg = c.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, pal.bg[0]); bg.addColorStop(1, pal.bg[1]);
-  c.fillStyle = bg; c.fillRect(0, 0, w, h);
-  // floor grid + mat
-  c.save(); c.strokeStyle = pal.grid; c.lineWidth = 1;
-  for (let x = -150; x <= 150; x += 25) { const a = sc.P([x, 0, -110]), b = sc.P([x, 0, 110]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
-  for (let z = -110; z <= 110; z += 25) { const a = sc.P([-150, 0, z]), b = sc.P([150, 0, z]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
-  c.restore();
+/* ---------------- scene ---------------- */
+const stage = $('stage'), canvas = $('cv');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, 0.05, 60);
+const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.dampingFactor = 0.12; controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 1; controls.maxDistance = 9;
+scene.add(new THREE.HemisphereLight(0xf3f6ff, 0x5a5048, 1.15));
+const key = new THREE.DirectionalLight(0xffffff, 2.1); key.position.set(1.6, 3.4, 2.4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -1.6, right: 1.6, top: 1.6, bottom: -1.6, near: 0.5, far: 9 }); key.shadow.bias = -0.0004; key.shadow.radius = 4;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xbfd8ff, 0.8); rim.position.set(-2.5, 1.8, -2); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(4.5, 64), new THREE.MeshStandardMaterial({ roughness: 0.95 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const matMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.85 })); matMesh.receiveShadow = true; scene.add(matMesh);
+const fig = buildFigure(true); scene.add(fig.mesh);
+
+// guides
+const guideGroup = new THREE.Group(); scene.add(guideGroup);
+const pathMat = new THREE.LineDashedMaterial({ dashSize: 0.035, gapSize: 0.03, transparent: true, opacity: 0.9 });
+let pathLine = null, pathTop = null;
+const dot = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 12), new THREE.MeshBasicMaterial()); guideGroup.add(dot);
+const arcLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ transparent: true })); guideGroup.add(arcLine);
+const bandMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false })); guideGroup.add(bandMesh);
+const refLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ dashSize: 0.02, gapSize: 0.02, transparent: true, opacity: 0.6 })); guideGroup.add(refLine);
+const gazeLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ dashSize: 0.012, gapSize: 0.02, transparent: true, opacity: 0.6 })); guideGroup.add(gazeLine);
+const labels = { path: mkLabel(), arc: mkLabel() };
+function mkLabel() { const d = document.createElement('div'); d.className = 'lbl'; $('labels').appendChild(d); return d; }
+const toV3 = (p, mirror) => new THREE.Vector3(p[0] * U, p[1] * U, (mirror ? -p[2] : p[2]) * U);
+function setLine(line, pts) { line.geometry.dispose(); line.geometry = new THREE.BufferGeometry().setFromPoints(pts); if (line.material.isLineDashedMaterial) line.computeLineDistances(); }
+
+/* ---------------- exercise loading ---------------- */
+let pathWorld = [], center = new THREE.Vector3(), radius = 1;
+function loadExercise(i) {
+  S.ex = i; EX = EXS[i]; META = EX.exercise; tl = R.buildTimeline(EX); D = tl.duration;
+  roleOf = {}; for (const role in META.muscles) for (const id of META.muscles[role]) roleOf[id] = role;
+  const g = EX.guides.find((x) => x.kind === 'path');
+  pathWorld = [];
+  if (g) for (let k = 0; k <= 160; k++) { const t = g.from + ((g.to - g.from) * k) / 160; pathWorld.push(R.evalPose(rig, tl.pose(t), EX.contacts)[g.joint].p); }
+  // framing from samples
+  const box = new THREE.Box3();
+  for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); }
+  box.getCenter(center); radius = box.getSize(new THREE.Vector3()).length() / 2;
   const mat = EX.props.find((p) => p.kind === 'mat');
-  if (mat) {
-    const [mx, , mz] = mat.center, [sx, , sz] = mat.size;
-    floorQuad(c, sc.P, mx - sx / 2, mx + sx / 2, mz - sz / 2, mz + sz / 2);
-    c.fillStyle = rgb(pal.mat); c.fill(); c.lineWidth = 1.2; c.strokeStyle = rgb(pal.matEdge); c.stroke();
-  }
-  // soft shadow
-  if (!opts || !opts.noShadow) {
-    const k = shadowCv.width / w;
-    sctx.setTransform(k, 0, 0, k, 0, 0); sctx.clearRect(0, 0, w, h);
-    sctx.filter = `blur(${Math.max(1.2, sc.f.s * 1.1)}px)`;
-    for (const s of sc.shadows) { const p = new Path2D(); shapePath(s, p); sctx.globalAlpha = Math.max(0.15, 1 - s.h / 90); sctx.fillStyle = '#000'; sctx.fill(p); }
-    sctx.filter = 'none';
-    c.save(); c.globalAlpha = pal.shadow; c.imageSmoothingQuality = 'high'; c.drawImage(shadowCv, 0, 0, w, h); c.restore();
-  }
-  // body + muscles, depth sorted
-  const body = sc.items.filter((i) => i.type !== 'mus');
-  let dmin = 1e9, dmax = -1e9; for (const b of body) { dmin = Math.min(dmin, b.depth); dmax = Math.max(dmax, b.depth); }
-  const clip = new Path2D(); for (const b of body) shapePath(b, clip);
-  for (const it of sc.items) { if (it.type === 'mus') fillMuscle(c, it, clip); else fillShape(c, it, toneColor(pal, it.tone), dmin, dmax, pal); }
-  if (S.show.paths && (!opts || !opts.noGuides)) drawGuides(c, sc, t, pal);
+  matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
+  S.t = Math.min(S.t, D - 0.01);
+  buildPanel(); rebuildGuides(); setCamera(EX.camera.default);
+}
+function rebuildGuides() {
+  const m = S.side === 'L';
+  if (pathLine) { guideGroup.remove(pathLine); pathLine.geometry.dispose(); }
+  pathLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pathWorld.map((p) => toV3(p, m))), pathMat); pathLine.computeLineDistances(); guideGroup.add(pathLine);
+  pathTop = pathWorld.length ? pathWorld.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
+  center.z = 0;
+}
+function setCamera(preset) {
+  S.cam = preset; const p = EX.camera.presets[preset]; if (!p) return;
+  const yaw = p.yaw * R.DEG, pitch = p.pitch * R.DEG, m = S.side === 'L' ? -1 : 1;
+  const dist = (radius * 0.82) / Math.sin((camera.fov * R.DEG) / 2) / Math.min(1, Math.max(0.55, camera.aspect));
+  const tgt = center.clone(); tgt.y = Math.max(0.25, center.y - 0.03);
+  camera.position.set(tgt.x + dist * Math.sin(yaw) * Math.cos(pitch), tgt.y + dist * Math.sin(pitch), tgt.z + m * dist * Math.cos(yaw) * Math.cos(pitch));
+  controls.target.copy(tgt); controls.update();
+  document.querySelectorAll('#camSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === preset)));
 }
 
-function arrowHead(c, a, b, size, col) {
-  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
-  c.save(); c.fillStyle = col; c.translate(b[0], b[1]); c.rotate(ang);
-  c.beginPath(); c.moveTo(0, 0); c.lineTo(-size, -size * 0.55); c.lineTo(-size, size * 0.55); c.closePath(); c.fill(); c.restore();
-}
-function label(c, x, y, txt, pal, align) {
-  c.save(); c.font = '600 13px Inter, system-ui, sans-serif'; c.textAlign = align || 'left'; c.textBaseline = 'middle';
-  c.lineWidth = 4; c.strokeStyle = S.bg === 'dark' ? 'rgba(14,17,21,.85)' : 'rgba(243,242,238,.9)'; c.strokeText(txt, x, y); c.fillStyle = pal.ink; c.fillText(txt, x, y); c.restore();
-}
-function drawGuides(c, sc, t, pal) {
-  // 1. hand path
-  if (handPathWorld) {
-    const pts = handPathWorld.pts.map((q) => sc.P(q.p));
-    c.save(); c.setLineDash([5, 5]); c.lineWidth = 2; c.strokeStyle = pal.guide; c.globalAlpha = 0.85;
-    c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.stroke(); c.restore();
-    for (const k of [0.28, 0.42, 0.72, 0.86]) { const i = Math.floor(k * (pts.length - 1)); arrowHead(c, pts[i - 2], pts[i], 9, pal.guide); }
-    const g = handPathWorld.g;
-    if (t >= g.from && t <= g.to) { const hp = sc.P(sc.W[g.joint].p); c.save(); c.fillStyle = pal.guide; c.beginPath(); c.arc(hp[0], hp[1], 5, 0, Math.PI * 2); c.fill(); c.globalAlpha = 0.25; c.beginPath(); c.arc(hp[0], hp[1], 11, 0, Math.PI * 2); c.fill(); c.restore(); }
-    const top = pts.reduce((a, b) => (b[1] < a[1] ? b : a));
-    label(c, top[0] + 12, top[1] - 4, 'Hand path', pal);
+/* ---------------- per frame ---------------- */
+let lastW = null, lastPose = null;
+function update() {
+  const pose = tl.pose(S.t), W = R.evalPose(rig, pose, EX.contacts), mirror = S.side === 'L';
+  lastW = W; lastPose = pose;
+  applyLocal(fig, localQuats(W, mirror));
+  // muscles
+  for (const mm of fig.muscles) {
+    const id = mm.userData.muscle, role = roleOf[id], on = role && (S.show[role] || S.hover === id);
+    mm.visible = !!on;
+    if (on) { const a = Math.max(tl.activation(id, S.t), S.hover === id ? 1 : 0); mm.material.color.setHex(ROLE[role]); mm.material.emissive.setHex(ROLE[role]); mm.material.emissiveIntensity = 0.15 + 0.55 * a; mm.material.opacity = 0.22 + 0.58 * a; }
   }
-  // 2. thoracic rotation protractor around the trunk axis
-  const arcG = EX.guides.find((g) => g.kind === 'rotationArc');
+  // guides
+  guideGroup.visible = S.show.paths;
+  const pal = BG[S.bg], col = new THREE.Color(pal.guide);
+  pathMat.color.copy(col); dot.material.color.copy(col); arcLine.material.color.copy(col); bandMesh.material.color.copy(col); refLine.material.color.copy(col); gazeLine.material.color.set(pal.ink);
+  const g = EX.guides.find((x) => x.kind === 'path');
+  dot.visible = !!g && S.t >= g.from && S.t <= g.to; if (g) dot.position.copy(toV3(W[g.joint].p, mirror));
+  const meas = R.measures(W), arcG = EX.guides.find((x) => x.kind === 'rotationArc');
   if (arcG) {
-    const m = R.measures(sc.W), Rr = arcG.radius;
-    const ctr = V.scale(V.add(sc.W.shoulder_r.p, sc.W.shoulder_l.p), 0.5);
-    const at = (deg, rr) => { const a = deg * R.DEG; return sc.P(V.add(ctr, V.add(V.scale(m.hz, Math.cos(a) * rr), V.scale(m.up, Math.sin(a) * rr)))); };
-    const cP = sc.P(ctr);
-    c.save();
-    // norm band
-    const [b0, b1] = arcG.normBand; c.fillStyle = pal.band; c.beginPath(); c.moveTo(cP[0], cP[1]);
-    for (let d = b0; d <= b1; d += 2) { const p = at(d, Rr + 6); c.lineTo(p[0], p[1]); } c.closePath(); c.fill();
-    // ticks + reference
-    c.strokeStyle = pal.arc; c.globalAlpha = 0.5; c.lineWidth = 1;
-    for (const d of [0, 15, 30, 45, 60]) { const a = at(d, Rr - 3), b = at(d, Rr + 3); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
-    const r0 = at(0, Rr + 8); c.setLineDash([3, 4]); c.beginPath(); c.moveTo(cP[0], cP[1]); c.lineTo(r0[0], r0[1]); c.stroke(); c.setLineDash([]);
-    // live arc
-    const cur = m.shoulderLineIncl; c.globalAlpha = 1; c.lineWidth = 3; c.beginPath();
-    const n = Math.max(2, Math.ceil(Math.abs(cur) / 2));
-    for (let i = 0; i <= n; i++) { const p = at((cur * i) / n, Rr); i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); } c.stroke();
-    const e1 = at(cur, Rr), e0 = at(cur - Math.sign(cur || 1) * 3, Rr); if (Math.abs(cur) > 4) arrowHead(c, e0, e1, 9, pal.arc);
-    const sl = at(cur, 0), sr = at(cur, Rr + 2); c.globalAlpha = 0.9; c.lineWidth = 1.5; c.beginPath(); c.moveTo(sl[0], sl[1]); c.lineTo(sr[0], sr[1]); c.stroke();
-    c.restore();
-    const lp = at(cur, Rr + 16);
-    label(c, lp[0], lp[1], `${Math.round(Math.abs(cur))}° rotation`, pal, lp[0] < cP[0] ? 'right' : 'left');
+    const ctr = V.scale(V.add(W.shoulder_r.p, W.shoulder_l.p), 0.5), rr = arcG.radius;
+    const at = (deg, r) => { const a = deg * R.DEG; return toV3(V.add(ctr, V.add(V.scale(meas.hz, Math.cos(a) * r), V.scale(meas.up, Math.sin(a) * r))), mirror); };
+    const cur = meas.shoulderLineIncl, n = Math.max(2, Math.ceil(Math.abs(cur) / 2)), pts = [];
+    for (let k = 0; k <= n; k++) pts.push(at((cur * k) / n, rr));
+    setLine(arcLine, pts); setLine(refLine, [toV3(ctr, mirror), at(0, rr + 8)]);
+    const band = [toV3(ctr, mirror)]; for (let d = arcG.normBand[0]; d <= arcG.normBand[1]; d += 2) band.push(at(d, rr + 6));
+    const bg = new THREE.BufferGeometry().setFromPoints(band); const idx = []; for (let k = 1; k < band.length - 1; k++) idx.push(0, k, k + 1); bg.setIndex(idx); bandMesh.geometry.dispose(); bandMesh.geometry = bg;
+    placeLabel(labels.arc, at(cur, rr + 14), `${Math.round(Math.abs(cur))}° rotation`);
   }
-  // 3. gaze ray during rotate/hold
-  const ph = tl.phaseAt(t);
-  if (ph.id === 'rotate' || ph.id === 'hold') {
-    const H = sc.W.head_c1, eye = V.add(H.p, Q.rot(H.q, [11, 8, 0])), dir = Q.rot(H.q, [1, 0, 0]);
-    const a = sc.P(eye), b = sc.P(V.add(eye, V.scale(dir, 40)));
-    const fade = ph.id === 'rotate' ? Math.min(1, (t - ph.start) / 0.8) : 1;
-    c.save(); c.globalAlpha = 0.55 * fade; c.strokeStyle = pal.ink; c.setLineDash([2, 5]); c.lineWidth = 1.5; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.restore();
-  }
+  const gz = EX.guides.find((x) => x.kind === 'gaze'), ph = tl.phaseAt(S.t);
+  gazeLine.visible = !!gz && (ph.id === 'rotate' || ph.id === 'hold');
+  if (gazeLine.visible) { const H = W.head_c1, eye = V.add(H.p, Q.rot(H.q, [11, 9, 0])); setLine(gazeLine, [toV3(eye, mirror), toV3(V.add(eye, V.scale(Q.rot(H.q, [1, 0, 0]), 40)), mirror)]); }
+  if (pathTop && g) placeLabel(labels.path, toV3(pathTop, mirror), g.label); else labels.path.style.display = 'none';
+}
+function placeLabel(el, v3, text) {
+  if (!S.show.paths) { el.style.display = 'none'; return; }
+  const p = v3.clone().project(camera);
+  if (p.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = 'block'; el.textContent = text;
+  const x = (p.x * 0.5 + 0.5) * stage.clientWidth, y = (-p.y * 0.5 + 0.5) * stage.clientHeight;
+  el.classList.toggle('r', x > stage.clientWidth * 0.8);
+  el.style.left = `${x}px`; el.style.top = `${y}px`;
+}
+function applyBackdrop() {
+  const pal = BG[S.bg]; renderer.setClearColor(pal.clear, 1); floor.material.color.setHex(pal.floor); matMesh.material.color.setHex(pal.mat);
+  scene.fog = new THREE.Fog(pal.clear, 6, 11); stage.classList.toggle('light', S.bg === 'light');
 }
 
-let lastScene = null;
-function draw() {
-  if (!CW) return;
-  const sc = buildScene(S.t);
-  lastScene = sc;
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  render(ctx, sc, S.t, CW, CH);
-}
-
-/* ---------------- SVG export of the current frame ---------------- */
-function frameSVG() {
-  const sc = buildScene(S.t), pal = PAL[S.bg];
-  const body = sc.items.filter((i) => i.type !== 'mus');
-  let dmin = 1e9, dmax = -1e9; for (const b of body) { dmin = Math.min(dmin, b.depth); dmax = Math.max(dmax, b.depth); }
-  const pathD = (it) => {
-    if (it.type === 'cap') { const p = []; const P2 = { moveTo: (x, y) => p.push(`M${x.toFixed(2)} ${y.toFixed(2)}`), lineTo: (x, y) => p.push(`L${x.toFixed(2)} ${y.toFixed(2)}`), arc: (cx, cy, r, s, e, ccw) => { const ex = cx + r * Math.cos(e), ey = cy + r * Math.sin(e); let sw = ccw ? s - e : e - s; while (sw < 0) sw += Math.PI * 2; p.push(`A${r.toFixed(2)} ${r.toFixed(2)} 0 ${sw > Math.PI ? 1 : 0} ${ccw ? 0 : 1} ${ex.toFixed(2)} ${ey.toFixed(2)}`); }, closePath: () => p.push('Z') }; capsulePath(P2, it.a, it.ra, it.b, it.rb); return p.join(''); }
-    return null;
-  };
-  let defs = '', out = '', clip = '', gi = 0;
-  for (const b of body) { const d = pathD(b); clip += d ? `<path d="${d}"/>` : `<ellipse cx="${b.cx.toFixed(2)}" cy="${b.cy.toFixed(2)}" rx="${b.rx.toFixed(2)}" ry="${b.ry.toFixed(2)}" transform="rotate(${(b.rot / R.DEG).toFixed(2)} ${b.cx.toFixed(2)} ${b.cy.toFixed(2)})"/>`; }
-  defs += `<clipPath id="body">${clip}</clipPath>`;
-  for (const it of sc.items) {
-    if (it.type === 'mus') {
-      const col = ROLE[it.role], a = (0.3 + 0.7 * it.act).toFixed(2), id = `g${gi++}`;
-      defs += `<radialGradient id="${id}"><stop offset="0" stop-color="${rgb(col)}" stop-opacity="${a}"/><stop offset="0.7" stop-color="${rgb(col)}" stop-opacity="${(a * 0.85).toFixed(2)}"/><stop offset="1" stop-color="${rgb(col)}" stop-opacity="0"/></radialGradient>`;
-      out += `<ellipse clip-path="url(#body)" fill="url(#${id})" cx="${it.cx.toFixed(2)}" cy="${it.cy.toFixed(2)}" rx="${it.rx.toFixed(2)}" ry="${it.ry.toFixed(2)}" transform="rotate(${(it.rot / R.DEG).toFixed(2)} ${it.cx.toFixed(2)} ${it.cy.toFixed(2)})"/>`;
-      continue;
-    }
-    const k = 0.8 + 0.2 * ((it.depth - dmin) / (dmax - dmin || 1)), base = toneColor(pal, it.tone), mid = mul(base, k), hi = mix(mid, [255, 255, 255], 0.42), lo = mul(mid, 0.66), id = `g${gi++}`;
-    const stroke = it.big ? '' : ` stroke="${rgb(mul(mid, 0.55))}" stroke-opacity=".55" stroke-width=".8"`;
-    if (it.type === 'cap') {
-      const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = -dy / L, ny = dx / L; if (nx * LIGHT[0] + ny * LIGHT[1] > 0) { nx = -nx; ny = -ny; }
-      const mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2, r = (it.ra + it.rb) / 2;
-      defs += `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${(mx - nx * r).toFixed(2)}" y1="${(my - ny * r).toFixed(2)}" x2="${(mx + nx * r).toFixed(2)}" y2="${(my + ny * r).toFixed(2)}"><stop offset="0" stop-color="${rgb(lo)}"/><stop offset=".55" stop-color="${rgb(mid)}"/><stop offset=".9" stop-color="${rgb(hi)}"/></linearGradient>`;
-      out += `<path d="${pathD(it)}" fill="url(#${id})"${stroke}/>`;
-    } else {
-      defs += `<radialGradient id="${id}" fx=".32" fy=".3"><stop offset="0" stop-color="${rgb(hi)}"/><stop offset=".55" stop-color="${rgb(mid)}"/><stop offset="1" stop-color="${rgb(lo)}"/></radialGradient>`;
-      out += `<ellipse cx="${it.cx.toFixed(2)}" cy="${it.cy.toFixed(2)}" rx="${it.rx.toFixed(2)}" ry="${it.ry.toFixed(2)}" transform="rotate(${(it.rot / R.DEG).toFixed(2)} ${it.cx.toFixed(2)} ${it.cy.toFixed(2)})" fill="url(#${id})"${stroke}/>`;
-    }
+/* ---------------- glTF export ---------------- */
+function bakeClip(ex, mirror, fps) {
+  const tlx = R.buildTimeline(ex), Dx = tlx.duration, n = Math.round(Dx * fps) + 1, times = new Float32Array(n);
+  const q = {}, rootP = new Float32Array(n * 3);
+  for (const j of rig.joints) q[j.id] = new Float32Array(n * 4);
+  for (let k = 0; k < n; k++) {
+    const t = Math.min(Dx, k / fps); times[k] = t;
+    const L = localQuats(R.evalPose(rig, tlx.pose(t), ex.contacts), mirror);
+    for (const j of rig.joints) { const v = L[j.id]; q[j.id].set([v[1], v[2], v[3], v[0]], k * 4); }
+    rootP.set(L.__root, k * 3);
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CW} ${CH}" width="${CW}" height="${CH}"><defs>${defs}</defs>${out}</svg>`;
+  const tracks = rig.joints.map((j) => new THREE.QuaternionKeyframeTrack(`${j.id}.quaternion`, times, q[j.id]));
+  tracks.push(new THREE.VectorKeyframeTrack('pelvis.position', times, rootP));
+  return new THREE.AnimationClip(`${ex.exercise.id}_${mirror ? 'left' : 'right'}`, Dx, tracks);
+}
+async function exportGLB(i) {
+  const ex = EXS[i], f = buildFigure(false);
+  const armature = new THREE.Group(); armature.name = 'Armature';
+  armature.rotation.y = -Math.PI / 2; // figure faces +X in rig space; glTF convention faces +Z
+  armature.add(f.mesh); armature.userData = { rig: RIG.rigId, exercise: ex.exercise.id, units: 'meters', note: 'Clips: <id>_right, <id>_left. Generated by RepRig.' };
+  applyLocal(f, localQuats(R.evalPose(rig, R.buildTimeline(ex).pose(0), ex.contacts), false));
+  armature.updateMatrixWorld(true);
+  const clips = [bakeClip(ex, false, 30), bakeClip(ex, true, 30)];
+  const buf = await new GLTFExporter().parseAsync(armature, { binary: true, animations: clips });
+  return buf;
 }
 
 /* ---------------- UI ---------------- */
 const fmt = (v) => `${v >= 0 ? '' : '−'}${Math.abs(v).toFixed(0)}°`;
-const sideWord = (id) => { const s = id.endsWith('_r') ? 'right' : id.endsWith('_l') ? 'left' : ''; if (!s) return ''; return S.side === 'L' ? (s === 'right' ? 'left' : 'right') : s; };
+const sideWord = (id) => { const s = id.endsWith('_r') ? 'right' : id.endsWith('_l') ? 'left' : ''; return !s ? '' : S.side === 'L' ? (s === 'right' ? 'left' : 'right') : s; };
 const muscleName = (id) => { const m = rig.muscles.find((x) => x.id === id); const w = sideWord(id); return m ? m.name + (w ? ` (${w})` : '') : id; };
-
 function seg(el, items, cur, onPick) {
   el.innerHTML = items.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${String(v) === String(cur)}">${esc(l)}</button>`).join('');
-  el.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; onPick(b.dataset.v); el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); };
+  el.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); onPick(b.dataset.v); };
 }
-function buildUI() {
-  $('meta').innerHTML = [META.type, META.bodyPart, META.equipment[0], META.difficulty, `${META.plane} plane`].map((x) => `<span class="tag">${esc(x)}</span>`).join('');
-  $('ref').innerHTML = `Movement reference: <a href="${esc(META.reference.url)}" target="_blank" rel="noopener">GymVisual #${esc(META.reference.productRef)}</a>, first item on its media page. Rig, artwork and motion here are original.`;
-  const pr = META.prescription;
-  $('facts').innerHTML = [['Sets × reps', `${pr.sets} × ${pr.reps}`], ['End-range hold', pr.endRangeHold], ['Static option', pr.staticOption], ['Tempo', pr.tempo], ['Equipment', META.equipment.join(', ')], ['Laterality', META.laterality]]
-    .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
-  $('breathing').innerHTML = `<b>Breathing.</b> ${esc(META.breathing.pattern)}`;
-  // phases
-  $('phasebar').innerHTML = EX.timeline.phases.map((p) => `<div data-ph="${esc(p.id)}" style="width:calc(${((p.end - p.start) / D) * 100}% - 2px)" title="${esc(p.label)}">${esc(p.label)}</div>`).join('');
-  // transport
+function buildStatic() {
+  seg($('exSeg'), EXS.map((e, i) => [i, `${String.fromCharCode(65 + i)} · ${e.exercise.name}`]), S.ex, (v) => { loadExercise(+v); remember(); });
   seg($('speed'), [['0.5', '0.5×'], ['1', '1.0×'], ['1.5', '1.5×']], S.speed, (v) => { S.speed = +v; });
-  seg($('sideSeg'), [['L', 'Left'], ['R', 'Right']], S.side, (v) => { S.side = v; fitCache = {}; refreshSide(); draw(); });
-  seg($('camSeg'), Object.entries(EX.camera.presets).map(([k, p]) => [k, p.label]), S.cam, (v) => { S.cam = v; S.yaw = EX.camera.presets[v].yaw; S.pitch = EX.camera.presets[v].pitch; draw(); });
-  seg($('bgSeg'), [['dark', 'Dark'], ['light', 'Light']], S.bg, (v) => { S.bg = v; stage.classList.toggle('light', v === 'light'); remember(); draw(); });
-  stage.classList.toggle('light', S.bg === 'light');
-  const tg = [['target', ROLE_LABEL.target, ROLE.target], ['synergist', ROLE_LABEL.synergist, ROLE.synergist], ['stabilizer', ROLE_LABEL.stabilizer, ROLE.stabilizer], ['lengthened', ROLE_LABEL.lengthened, ROLE.lengthened], ['paths', 'Path guides', [22, 179, 163]], ['angles', 'Angles', [120, 128, 140]]];
-  $('toggles').innerHTML = tg.map(([k, l, c]) => `<button type="button" class="chip" data-k="${k}" style="--c:${rgb(c)}" aria-pressed="${S.show[k]}"><i></i>${esc(l)}</button>`).join('');
-  $('toggles').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; const k = b.dataset.k; S.show[k] = !S.show[k]; b.setAttribute('aria-pressed', String(S.show[k])); if (k === 'angles') $('hud').classList.toggle('off', !S.show.angles); remember(); draw(); };
+  seg($('sideSeg'), [['L', 'Left'], ['R', 'Right']], S.side, (v) => { S.side = v; rebuildGuides(); setCamera(S.cam); $('sideTag').textContent = `${v === 'R' ? 'Right' : 'Left'} side`; renderAnatomy(); });
+  seg($('bgSeg'), [['dark', 'Dark'], ['light', 'Light']], S.bg, (v) => { S.bg = v; applyBackdrop(); remember(); });
+  const tg = [['target', ROLE_LABEL.target, '#e53e3a'], ['synergist', ROLE_LABEL.synergist, '#f2a91e'], ['stabilizer', ROLE_LABEL.stabilizer, '#3b8fe0'], ['lengthened', ROLE_LABEL.lengthened, '#9a63e8'], ['paths', 'Path guides', '#16b3a3'], ['angles', 'Angles', '#78808c']];
+  $('toggles').innerHTML = tg.map(([k, l, c]) => `<button type="button" class="chip" data-k="${k}" style="--c:${c}" aria-pressed="${S.show[k]}"><i></i>${esc(l)}</button>`).join('');
+  $('toggles').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; const k = b.dataset.k; S.show[k] = !S.show[k]; b.setAttribute('aria-pressed', String(S.show[k])); $('hud').classList.toggle('off', !S.show.angles); remember(); };
   $('hud').classList.toggle('off', !S.show.angles);
-  // tabs
   const tabs = [['form', 'Form'], ['anatomy', 'Anatomy'], ['kin', 'Kinematics'], ['json', 'Rig JSON'], ['src', 'Sources']];
   $('tabs').innerHTML = tabs.map(([k, l], i) => `<button role="tab" type="button" id="tab-${k}" aria-controls="p-${k}" aria-selected="${i === 0}">${esc(l)}</button>`).join('');
-  const pick = (k) => { tabs.forEach(([x]) => { $(`tab-${x}`).setAttribute('aria-selected', String(x === k)); $(`p-${x}`).classList.toggle('on', x === k); }); };
+  const pick = (k) => tabs.forEach(([x]) => { $(`tab-${x}`).setAttribute('aria-selected', String(x === k)); $(`p-${x}`).classList.toggle('on', x === k); });
   $('tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) pick(b.id.slice(4)); };
   pick('form');
-  // form
-  $('cues').innerHTML = META.cues.map((c, i) => { const ph = EX.timeline.phases.find((p) => p.id === c.phase); return `<li data-ph="${esc(c.phase)}"><b>${i + 1}. ${esc(ph ? ph.label : c.phase)}</b><span>${esc(c.text)}</span>${ph ? `<small>${esc(ph.breath === 'natural' ? 'Breathe normally' : ph.breath[0].toUpperCase() + ph.breath.slice(1))} · ${(ph.end - ph.start).toFixed(1)} s at 1.0×</small>` : ''}</li>`; }).join('');
-  $('mist').innerHTML = META.mistakes.map((m) => `<li><b>${esc(m.mistake)}</b><span>${esc(m.fix)}</span></li>`).join('');
-  $('cues').onclick = (e) => { const li = e.target.closest('li'); if (!li) return; const ph = EX.timeline.phases.find((p) => p.id === li.dataset.ph); if (ph) { S.t = ph.start + 0.01; draw(); } };
-  renderAnatomy(); renderKin(); renderJSON('module');
-  $('src').innerHTML = META.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></li>`).join('');
   seg($('jsonSeg'), [['module', 'Exercise module'], ['rig', 'Shared rig'], ['schema', 'JSON Schema']], 'module', (v) => renderJSON(v));
 }
-function renderAnatomy() {
-  $('anat').innerHTML = Object.keys(ROLE_LABEL).map((role) => `<h3>${ROLE_LABEL[role]}</h3><ul class="mus">${(META.muscles[role] || []).map((id) => `<li tabindex="0" data-id="${esc(id)}" style="--c:${rgb(ROLE[role])}"><i></i><span>${esc(muscleName(id))}</span>${META.muscleNotes[id] ? `<small>${esc(META.muscleNotes[id])}</small>` : ''}</li>`).join('')}</ul>`).join('');
-  const set = (id) => { S.hover = id; draw(); };
-  $('anat').onmouseover = (e) => { const li = e.target.closest('li'); if (li) set(li.dataset.id); };
-  $('anat').onmouseleave = () => set(null);
-  $('anat').onfocusin = (e) => { const li = e.target.closest('li'); if (li) set(li.dataset.id); };
-  $('anat').onfocusout = () => set(null);
-}
-function liveKin() {
-  const sc = lastScene; if (!sc) return {};
-  const ch = sc.pose.ch, m = R.measures(sc.W);
-  return {
-    'Thoracic rotation (T12–T1)': ch.spine_t12.rot + ch.spine_t6.rot, 'Lumbar rotation (L5–S1 to T12)': ch.spine_l5.rot,
-    'Total trunk rotation': ch.spine_l5.rot + ch.spine_t12.rot + ch.spine_t6.rot, 'Cervical rotation toward reaching hand': ch.neck_c7.rot + ch.head_c1.rot,
-    Hips: ch.hip_r.flex, Knees: m.knee, 'Support elbow': m.elbowL,
-  };
-}
-function renderKin() {
+function buildPanel() {
+  $('title').textContent = META.name;
+  $('meta').innerHTML = [META.type, META.bodyPart, META.equipment[0], META.difficulty, `${META.plane} plane`].map((x) => `<span class="tag">${esc(x)}</span>`).join('');
+  const ref = META.reference;
+  $('ref').innerHTML = `Movement reference: <a href="${esc(ref.url)}" target="_blank" rel="noopener">${esc(ref.source)}${ref.productRef ? ` #${esc(ref.productRef)}` : ''}</a>. Rig, model and motion here are original.`;
+  const pr = META.prescription;
+  $('facts').innerHTML = [['Sets × reps', `${pr.sets} × ${pr.reps}`], ['End-range hold', pr.endRangeHold], ['Static option', pr.staticOption], ['Tempo', pr.tempo], ['Equipment', META.equipment.join(', ')], ['Laterality', META.laterality]].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  $('breathing').innerHTML = `<b>Breathing.</b> ${esc(META.breathing.pattern)}`;
+  $('phasebar').innerHTML = EX.timeline.phases.map((p) => `<div data-ph="${esc(p.id)}" style="width:calc(${((p.end - p.start) / D) * 100}% - 2px)" title="${esc(p.label)}">${esc(p.label)}</div>`).join('');
+  $('cues').innerHTML = META.cues.map((c, i) => { const ph = EX.timeline.phases.find((p) => p.id === c.phase); return `<li data-ph="${esc(c.phase)}"><b>${i + 1}. ${esc(ph ? ph.label : c.phase)}</b><span>${esc(c.text)}</span>${ph ? `<small>${esc(ph.breath === 'natural' ? 'Breathe normally' : ph.breath[0].toUpperCase() + ph.breath.slice(1))} · ${(ph.end - ph.start).toFixed(1)} s at 1.0×</small>` : ''}</li>`; }).join('');
+  $('cues').onclick = (e) => { const li = e.target.closest('li'); const ph = li && EX.timeline.phases.find((p) => p.id === li.dataset.ph); if (ph) { S.t = ph.start + 0.01; syncUI(true); } };
+  $('mist').innerHTML = META.mistakes.map((m) => `<li><b>${esc(m.mistake)}</b><span>${esc(m.fix)}</span></li>`).join('');
+  renderAnatomy();
   $('kin').innerHTML = `<thead><tr><th>Measure</th><th>Setup</th><th>Peak</th><th>Live</th><th>Reference range</th></tr></thead><tbody>${META.kinematics.map((k) => `<tr><td>${esc(k.measure)}</td><td>${esc(k.setup)}</td><td>${esc(k.peak)}</td><td class="live" data-m="${esc(k.measure)}">–</td><td>${esc(k.norm || '')}</td></tr>`).join('')}</tbody>`;
-  $('kinNote').textContent = 'Live values come from the rig at the current frame. Rotation is positive toward the working side. Norms: thoracic ≈3° per vertebra and lumbar ≈2° per segment (Neumann via NASM); lumbar-locked test mean ≈41° (Johnson 2012); ≥50° counted as unrestricted (Whetstone & Matsel 2024).';
+  $('kinNote').textContent = 'Live values come from the rig at the current frame. Rotation is positive toward the working side.';
+  $('src').innerHTML = META.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></li>`).join('');
+  renderJSON(jsonCur); curPhase = null;
 }
-const JSON_FILES = { module: () => JSON.stringify(EX, null, 2), rig: () => JSON.stringify(RIG, null, 2), schema: () => JSON.stringify(SCHEMA, null, 2) };
-const JSON_NAMES = { module: `${META.id}.json`, rig: `${RIG.rigId}.json`, schema: 'exercise-module.schema.json' };
-const JSON_NOTES = {
-  module: 'One file per exercise: metadata, phases, named poses (anatomical joint angles), keyframes, IK contacts, muscle activation and guides. This file validates against the schema tab.',
-  rig: 'Shared by every exercise: joint hierarchy, segment lengths, body shapes and muscle regions. Bilateral items are authored once and mirrored.',
-  schema: 'JSON Schema (draft 2020-12) for exercise modules. Hand it to the batch prompt so each new exercise comes back in this exact shape.',
-};
+function renderAnatomy() {
+  $('anat').innerHTML = Object.keys(ROLE_LABEL).map((role) => `<h3>${ROLE_LABEL[role]}</h3><ul class="mus">${(META.muscles[role] || []).map((id) => `<li tabindex="0" data-id="${esc(id)}" style="--c:#${ROLE[role].toString(16).padStart(6, '0')}"><i></i><span>${esc(muscleName(id))}</span>${META.muscleNotes && META.muscleNotes[id] ? `<small>${esc(META.muscleNotes[id])}</small>` : ''}</li>`).join('')}</ul>`).join('');
+  $('anat').onmouseover = (e) => { const li = e.target.closest('li'); if (li) S.hover = li.dataset.id; };
+  $('anat').onmouseleave = () => { S.hover = null; };
+  $('anat').onfocusin = (e) => { const li = e.target.closest('li'); if (li) S.hover = li.dataset.id; };
+  $('anat').onfocusout = () => { S.hover = null; };
+}
 let jsonCur = 'module';
-function renderJSON(k) { jsonCur = k; $('jsonPre').textContent = JSON_FILES[k](); $('jsonNote').textContent = JSON_NOTES[k]; }
+const JSON_FILE = { module: () => JSON.stringify(EX, null, 2), rig: () => JSON.stringify(RIG, null, 2), schema: () => JSON.stringify(SCHEMA, null, 2) };
+const JSON_NAME = { module: () => `${META.id}.json`, rig: () => `${RIG.rigId}.json`, schema: () => 'exercise-module.schema.json' };
+const JSON_NOTE = { module: 'One file per exercise: metadata, phases, named poses (anatomical joint angles), keyframes, IK contacts, muscle activation and guides. Validates against the schema tab.', rig: 'Shared by every exercise: joint hierarchy, segment lengths, body shapes, palette and muscle regions. Bilateral items are authored once and mirrored.', schema: 'JSON Schema (draft 2020-12) for exercise modules. Hand it to the batch prompt so each new exercise comes back in this shape.' };
+function renderJSON(k) { jsonCur = k; $('jsonPre').textContent = JSON_FILE[k](); $('jsonNote').textContent = JSON_NOTE[k]; }
 
 let dl = null;
 try { const u = window.claude && window.claude.use && window.claude.use('downloads'); if (u && u.then) u.then((d) => { dl = d; }).catch(() => {}); } catch (e) {}
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
 async function copy(text, what) { try { await navigator.clipboard.writeText(text); toast(`Copied ${what}`); } catch (e) { toast('Copy was blocked by the browser'); } }
-async function save(name, data, fallback) {
-  if (dl) { try { await dl.save({ filename: name, data }); toast(`Saved ${name}`); return; } catch (e) { if (e && /declin|cancel|abort/i.test(String(e.message || e))) { toast('Download cancelled'); return; } } }
-  fallback();
-}
-$('copyJson').onclick = () => copy(JSON_FILES[jsonCur](), JSON_NAMES[jsonCur]);
-$('dlJson').onclick = () => save(JSON_NAMES[jsonCur], JSON_FILES[jsonCur](), () => copy(JSON_FILES[jsonCur](), `${JSON_NAMES[jsonCur]} (download unavailable here)`));
-$('exSvg').onclick = () => { const svg = frameSVG(); save(`${META.id}-${S.side}-${S.t.toFixed(2)}s.svg`, svg, () => copy(svg, 'SVG frame markup')); };
-$('exPng').onclick = () => { draw(); cv.toBlob((b) => { const name = `${META.id}-${S.side}-${S.t.toFixed(2)}s.png`; save(name, b, () => { $('modalImg').src = URL.createObjectURL(b); $('modal').classList.add('on'); }); }, 'image/png'); };
+async function save(name, data) { if (!dl) return false; try { await dl.save({ filename: name, data }); toast(`Saved ${name}`); } catch (e) { toast('Download cancelled'); } return true; }
+$('copyJson').onclick = () => copy(JSON_FILE[jsonCur](), JSON_NAME[jsonCur]());
+$('dlJson').onclick = async () => { if (!(await save(JSON_NAME[jsonCur](), JSON_FILE[jsonCur]()))) copy(JSON_FILE[jsonCur](), `${JSON_NAME[jsonCur]()} (downloads unavailable here)`); };
+$('exPng').onclick = () => { renderer.render(scene, camera); canvas.toBlob(async (b) => { const name = `${META.id}-${S.side}-${S.t.toFixed(2)}s.png`; if (!(await save(name, b))) { $('modalImg').src = URL.createObjectURL(b); $('modal').classList.add('on'); } }, 'image/png'); };
+$('exGlb').onclick = async () => { toast('Building GLB…'); const buf = await exportGLB(S.ex); const ok = await save(`${META.id}.glb`, new Blob([buf], { type: 'model/gltf-binary' })); if (!ok) toast('Downloads are not available in this view. The repo has the GLB in exports/.'); };
 $('modalClose').onclick = () => $('modal').classList.remove('on');
-
-function refreshSide() {
-  $('sideTag').textContent = `${S.side === 'R' ? 'Right' : 'Left'} side`;
-  renderAnatomy();
-}
 const ICON = { play: '<path d="M6 3.5v13l11-6.5z" fill="currentColor"/>', pause: '<rect x="4.5" y="3.5" width="4" height="13" rx="1" fill="currentColor"/><rect x="11.5" y="3.5" width="4" height="13" rx="1" fill="currentColor"/>' };
 function setPlaying(p) { S.playing = p; $('playIcon').innerHTML = p ? ICON.pause : ICON.play; $('play').setAttribute('aria-label', p ? 'Pause' : 'Play'); }
 $('play').onclick = () => setPlaying(!S.playing);
 let wasPlaying = false;
 $('scrub').addEventListener('pointerdown', () => { wasPlaying = S.playing; setPlaying(false); });
-$('scrub').addEventListener('input', (e) => { S.t = (e.target.value / 1000) * D; draw(); syncUI(true); });
+$('scrub').addEventListener('input', (e) => { S.t = (e.target.value / 1000) * D; syncUI(true); });
 $('scrub').addEventListener('change', () => { if (wasPlaying) setPlaying(true); });
-
-// orbit
-let drag = null;
-stage.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, yaw: S.yaw, pitch: S.pitch }; stage.setPointerCapture(e.pointerId); });
-stage.addEventListener('pointermove', (e) => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) < 2) return;
-  S.yaw = drag.yaw + dx * 0.45 * (S.side === 'L' ? -1 : 1); S.pitch = Math.max(-5, Math.min(85, drag.pitch + dy * 0.35));
-  $('camSeg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
-  draw();
-});
-stage.addEventListener('pointerup', () => { drag = null; });
-stage.addEventListener('dblclick', () => { const p = EX.camera.presets[S.cam]; S.yaw = p.yaw; S.pitch = p.pitch; $('camSeg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S.cam))); draw(); });
+stage.addEventListener('dblclick', () => setCamera(S.cam));
+controls.addEventListener('start', () => document.querySelectorAll('#camSeg button').forEach((b) => b.setAttribute('aria-pressed', 'false')));
 window.addEventListener('keydown', (e) => {
   if (e.target.closest('input,textarea,[contenteditable]') && e.target.id !== 'scrub') return;
   if (e.code === 'Space') { e.preventDefault(); setPlaying(!S.playing); }
-  else if (e.key === 'ArrowRight' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t + 1 / 60) % D; draw(); syncUI(true); }
-  else if (e.key === 'ArrowLeft' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t - 1 / 60 + D) % D; draw(); syncUI(true); }
+  else if (e.key === 'ArrowRight' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t + 1 / 60) % D; syncUI(true); }
+  else if (e.key === 'ArrowLeft' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t - 1 / 60 + D) % D; syncUI(true); }
 });
 
 let curPhase = null, hudT = 0;
 function syncUI(force) {
-  const p = (S.t / D) * 100;
-  const sc = $('scrub'); if (document.activeElement !== sc || force) sc.value = Math.round((S.t / D) * 1000); sc.style.setProperty('--p', `${p}%`);
+  const sc = $('scrub'); sc.value = Math.round((S.t / D) * 1000); sc.style.setProperty('--p', `${(S.t / D) * 100}%`);
   $('time').textContent = `${S.t.toFixed(1)} / ${D.toFixed(1)} s`;
   const ph = tl.phaseAt(S.t);
   if (ph !== curPhase) {
@@ -905,38 +833,33 @@ function syncUI(force) {
     document.querySelectorAll('#cues li').forEach((li) => li.classList.toggle('on', li.dataset.ph === ph.id));
   }
   const k = (S.t - ph.start) / (ph.end - ph.start);
-  const bs = ph.breath === 'inhale' ? 0.75 + 0.5 * k : ph.breath === 'exhale' ? 1.25 - 0.5 * k : 1;
-  $('breath').style.setProperty('--bs', bs.toFixed(3));
+  $('breath').style.setProperty('--bs', (ph.breath === 'inhale' ? 0.75 + 0.5 * k : ph.breath === 'exhale' ? 1.25 - 0.5 * k : 1).toFixed(3));
   const now = performance.now();
-  if (force || now - hudT > 90) { hudT = now; updateHUD(); }
+  if ((force || now - hudT > 90) && lastW) { hudT = now; updateHUD(); }
 }
 function updateHUD() {
-  const sc = lastScene; if (!sc) return;
-  const ch = sc.pose.ch, m = R.measures(sc.W);
-  const sideL = S.side === 'R' ? 'L' : 'R';
+  const ch = lastPose.ch, m = R.measures(lastW), sideL = S.side === 'R' ? 'L' : 'R';
   const rows = [['Thoracic rotation', ch.spine_t12.rot + ch.spine_t6.rot], ['Lumbar rotation', ch.spine_l5.rot], ['Shoulder-line tilt', m.shoulderLineIncl], ['Neck rotation', ch.neck_c7.rot + ch.head_c1.rot], [`Support elbow (${sideL})`, m.elbowL], ['Hips / knees', null]];
   $('hud').innerHTML = rows.map(([l, v]) => `<span>${esc(l)}</span><em>${v == null ? `${Math.round(ch.hip_r.flex)}° / ${Math.round(m.knee)}°` : fmt(v)}</em>`).join('');
-  const live = liveKin();
+  const live = { 'Thoracic rotation (T12–T1)': ch.spine_t12.rot + ch.spine_t6.rot, 'Lumbar rotation (L5–S1 to T12)': ch.spine_l5.rot, 'Total trunk rotation': ch.spine_l5.rot + ch.spine_t12.rot + ch.spine_t6.rot, 'Cervical rotation toward reaching hand': ch.neck_c7.rot + ch.head_c1.rot, Hips: ch.hip_r.flex, Knees: m.knee, 'Support elbow': m.elbowL };
   document.querySelectorAll('#kin td.live').forEach((td) => { const v = live[td.dataset.m]; td.textContent = v == null ? '–' : fmt(v); });
 }
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+const roStage = new ResizeObserver(() => { resize(); setCamera(S.cam); });
 
-// loop
 let last = performance.now(), fpsE = 60, fpsT = 0;
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (dt > 0) fpsE = fpsE * 0.92 + (1 / dt) * 0.08;
+  const dt = Math.min(0.25, (now - last) / 1000); last = now; if (dt > 0) fpsE = fpsE * 0.92 + (1 / dt) * 0.08;
   if (S.playing) S.t = (S.t + dt * S.speed) % D;
-  draw(); syncUI(false);
+  update(); controls.update(); renderer.render(scene, camera); syncUI(false);
   if (now - fpsT > 500) { fpsT = now; $('fps').textContent = `${Math.round(fpsE)} fps`; }
   requestAnimationFrame(frame);
 }
-const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (stage.clientWidth < 600) S.show.angles = false;
-buildUI(); refreshSide(); setPlaying(!reduce);
-roStage.observe(stage); resize(); syncUI(true);
-requestAnimationFrame(frame);
-window.__rr = { S, rig, tl, R, frameSVG, scene: () => lastScene, setT: (t) => { S.t = t; draw(); syncUI(true); }, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), pose: (t) => tl.pose(t) };
-}
+buildStatic(); applyBackdrop(); resize(); loadExercise(S.ex); roStage.observe(stage);
+setPlaying(!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
+$('loading').remove(); syncUI(true); requestAnimationFrame(frame);
+window.__rr = { S, R, rig, exportGLB, load: loadExercise, setT: (t) => { S.t = t; update(); renderer.render(scene, camera); syncUI(true); }, setCam: setCamera, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), get tl() { return tl; }, get EX() { return EX; } };
 </script>
 </body>
 </html>

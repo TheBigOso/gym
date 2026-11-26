@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Back Rotation Stretch Rig</title>
+<title>RepRig Exercise Player</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* VOICE clinical work tool: a physio's motion-review station, calm and exact
    IDEA the exercise card a coach hands over: live demo on top, the card's facts beside it
-   PICTURE the live 2.5D rig on a stage, with muscle glow, hand path and a rotation protractor drawn on the body
+   PICTURE the live 3D skinned figure on a lit stage, with muscle glow, motion path and a rotation protractor in the scene
    COLOUR white / near-black ground, graphite or bone stage; signal red = target, amber = synergist, blue = stabilizer, violet = lengthened, teal = guides
    TYPE Barlow Semi Condensed (gym signage) for titles and figures + Inter for text
    LAYOUT laptop: stage with transport (left, ~62%), exercise card panel (right). Under 900px: title, stage, controls, card */
@@ -25,6 +25,11 @@ a{color:inherit}
 button{font:inherit;color:inherit}
 .top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;padding:18px max(2.5vw,16px) 12px;border-bottom:1px solid var(--line)}
 .top h1{font-size:clamp(28px,3.4vw,40px);line-height:1.05;text-wrap:balance}
+.exsel{margin-top:10px;flex-wrap:wrap}
+.labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;transform:translate(8px,-50%);font:600 13px Inter,system-ui,sans-serif;white-space:nowrap;color:#e8ecf1;text-shadow:0 0 4px #0e1115,0 0 2px #0e1115}
+.stage.light .lbl{color:#1d2127;text-shadow:0 0 4px #f3f2ee,0 0 2px #f3f2ee}
+.lbl.r{transform:translate(calc(-100% - 8px),-50%)}
 .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .tag{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--chip);white-space:nowrap}
 .ref{font-size:13px;color:var(--sub);max-width:46ch}
@@ -33,7 +38,7 @@ button{font:inherit;color:inherit}
 .stage{position:relative;height:clamp(360px,62vh,640px);border-radius:14px;overflow:hidden;background:#14171c;touch-action:none;cursor:grab;user-select:none}
 .stage.light{background:#ecebe6}
 .stage:active{cursor:grabbing}
-.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;pointer-events:none;font-size:13px}
 .stage .ov{color:#e8ecf1}
 .stage.light .ov{color:#1d2127}
@@ -125,7 +130,8 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
 <body>
 <header class="top">
   <div>
-    <h1>Kneeling Back Rotation Stretch</h1>
+    <h1 id="title">Kneeling Back Rotation Stretch</h1>
+    <div class="seg exsel" id="exSeg" role="group" aria-label="Exercise"></div>
     <div class="meta" id="meta"></div>
   </div>
   <p class="ref" id="ref"></p>
@@ -133,7 +139,9 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
 <main class="wrap">
   <section class="stagecol" aria-label="Animation">
     <div class="stage" id="stage">
-      <canvas id="cv" aria-label="Animated figure performing the stretch"></canvas>
+      <canvas id="cv" aria-label="3D figure performing the exercise"></canvas>
+      <div class="labels" id="labels"></div>
+      <div class="ov loading" id="loading" style="left:50%;top:50%;transform:translate(-50%,-50%)">Loading 3D engine…</div>
       <div class="ov phase"><b id="phLabel">Rotate open</b><span class="breath" id="breath"><i></i><span id="breathTxt">Exhale</span></span></div>
       <div class="ov side" id="sideTag">Right side</div>
       <div class="ov hud" id="hud"></div>
@@ -151,7 +159,7 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
       <div class="group"><label>View</label><div class="seg" id="camSeg" role="group" aria-label="Camera"></div></div>
       <div class="group" id="toggles" aria-label="Overlays"></div>
       <div class="group"><label>Backdrop</label><div class="seg" id="bgSeg" role="group" aria-label="Backdrop"></div></div>
-      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exSvg">Frame SVG</button></div>
+      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exGlb">Download GLB</button></div>
     </div>
   </section>
   <aside class="panel" aria-label="Exercise card">
@@ -168,6 +176,7 @@ pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10p
 <div class="modal" id="modal"><div><p class="note">Right-click or long-press the frame to save it.</p><img id="modalImg" alt="Exported frame"><p class="row" style="margin:10px 0 0"><button class="btn" id="modalClose">Close</button></p></div></div>
 <script>/*__ENGINE__*/</script>
 <script>/*__DATA__*/</script>
-<script>/*__APP__*/</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">/*__APP__*/</script>
 </body>
 </html>

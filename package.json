@@ -1,0 +1,19 @@
+{
+  "name": "gym",
+  "private": true,
+  "description": "RepRig: data-driven 3D exercise animation pipeline",
+  "scripts": {
+    "author": "node build/author-kneeling-back-rotation.js && node build/author-quadruped-thoracic-rotation.js",
+    "validate": "node build/validate.js",
+    "assemble": "node build/assemble.js",
+    "export": "node build/export-gltf.mjs",
+    "verify": "node test/verify.mjs",
+    "build": "npm run author && npm run validate && npm run assemble && npm run export"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "4.1.1",
+    "ajv": "8.17.1",
+    "playwright": "1.49.1",
+    "three": "0.160.0"
+  }
+}
