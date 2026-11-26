@@ -1,0 +1,30 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Author, validate, assemble, export
+        run: npm run build
+      - name: Verify
+        run: npm run verify
+      - name: Fail if generated files are out of date
+        run: git diff --exit-code -- src/exercises || (echo "::error::Run npm run build and commit the generated files" && exit 1)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: player-and-glb
+          path: |
+            player.html
+            exports/*.glb

@@ -242,7 +242,25 @@
         "title": "NASM — Optimizing thoracic spine mobility with corrective exercise (citing Neumann 2010)",
         "url": "https://blog.nasm.org/ces/optimizing-thoracic-spine-mobility-with-corrective-exercise"
       }
-    ]
+    ],
+    "safety": {
+      "cautions": [
+        "Stop if rotation causes sharp, radiating or nerve-type pain.",
+        "Knee discomfort when sitting back: place a cushion between hips and heels."
+      ],
+      "modify": [
+        "Hip or knee flexion limits that stop you sitting back: sit back only as far as is comfortable.",
+        "Recent spinal surgery or osteoporosis with fracture risk: get clearance first."
+      ],
+      "regressions": [
+        "Keep the hips over the knees (less lumbar lock).",
+        "Forearm-supported version."
+      ],
+      "progressions": [
+        "Pause 2–3 s at the top.",
+        "Add a light band pulling the elbow up."
+      ]
+    }
   },
   "camera": {
     "default": "threeQuarter",
@@ -1483,5 +1501,20 @@
       "target": "elbow_r",
       "label": "Eyes follow elbow"
     }
-  ]
+  ],
+  "checks": {
+    "stillJoints": [
+      "pelvis",
+      "knee_r",
+      "knee_l"
+    ],
+    "plantedContacts": [
+      "arm_l"
+    ],
+    "measure": {
+      "name": "shoulderLineIncl",
+      "min": 38,
+      "max": 55
+    }
+  }
 }

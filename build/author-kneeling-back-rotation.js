@@ -64,7 +64,7 @@ const ex = {
     { t: 2.65, pose: 'sweep' }, { t: 3.3, pose: 'rise' }, { t: 4.0, pose: 'peak' }, { t: 4.8, pose: 'peakBreath' }, { t: 5.6, pose: 'peak' },
     { t: 6.3, pose: 'descend' }, { t: 7.0, pose: 'touchdown' }, { t: 7.4, pose: 'tabletop' }, { t: 8.0, pose: 'tabletop' },
   ],
-  activation: meta.activation, guides: meta.guides,
+  activation: meta.activation, guides: meta.guides, checks: meta.checks,
 };
 const pk = poses.peak.ch, kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`;
 kin[0].peak = d(pk.spine_t12.rot + pk.spine_t6.rot); kin[1].peak = d(pk.spine_l5.rot); kin[2].peak = d(pk.spine_l5.rot + pk.spine_t12.rot + pk.spine_t6.rot);

@@ -120,3 +120,55 @@ function write(ex) {
   return f;
 }
 module.exports = { R, V, Q, rig, rigDef, UA, FA, reach, flexFor, r1, clone, wrap, handRotL, handRotR, fk, solveSpine, plantRight, armToTarget, gaze, shapeMinY, timelineCheck, write };
+
+/* ---------------- Generic constraint solver and starting poses (Batch 1 groundwork, issue #53) ---------------- */
+const getPath = (o, p) => p.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+function setPathV(o, p, v) { const ks = p.split('.'); let a = o; for (let i = 0; i < ks.length - 1; i++) { if (a[ks[i]] == null) a[ks[i]] = /^\d+$/.test(ks[i + 1]) ? [] : {}; a = a[ks[i]]; } a[ks[ks.length - 1]] = v; }
+// Objective builders: each returns (W, pose) => residual[]
+const obj = {
+  at: (joint, target, w = 3) => (W) => V.sub(W[joint].p, target).map((v) => v * w),
+  atY: (joint, y, w = 3) => (W) => [(W[joint].p[1] - y) * w],
+  aim: (from, to, dir, w = 20) => (W) => V.sub(V.norm(V.sub(W[to].p, W[from].p)), V.norm(dir)).map((v) => v * w),
+  floor: (w = 3, clearance = 0) => (W) => [Math.min(0, shapeMinY(W).y - clearance) * w],
+  reg: (path, value, w = 0.05) => (W, pose) => [((getPath(pose, path) ?? 0) - value) * w],
+};
+// solvePose: vary the listed channel paths (e.g. 'ch.hip_r.flex', 'root.pos.1') to satisfy objectives.
+function solvePose(pose, paths, objectives, opt = {}) {
+  const set = (x) => { const q = clone(pose); paths.forEach((p, i) => setPathV(q, p, x[i])); return q; };
+  const res = (x) => { const q = set(x), W = fk(q, opt.contacts); return objectives.flatMap((f) => f(W, q)); };
+  const x0 = paths.map((p) => getPath(pose, p) ?? 0);
+  const sol = R.solveLM(x0, res, { iters: opt.iters || 300 });
+  return { pose: set(sol.x.map(r1)), cost: sol.cost };
+}
+// Shift the root vertically so the lowest body point sits on the floor (y = 0).
+function groundPose(pose, contacts) { const p = clone(pose); p.root.pos[1] = r1(p.root.pos[1] - shapeMinY(fk(p, contacts)).y); return p; }
+const footRot = (yawDeg = 0) => Q.axis([0, 1, 0], yawDeg); // world-locked flat foot, toes along +X turned by yaw
+const legContact = (side, bend = 'forward') => ({ id: `leg_${side}`, label: `${side === 'r' ? 'Right' : 'Left'} foot`, chain: [`hip_${side}`, `knee_${side}`, `ankle_${side}`, `toe_${side}`], pole: [1, 0, side === 'r' ? 0.15 : -0.15], bend, handRot: footRot(0).map((v) => +v.toFixed(6)) });
+const handContact = (side) => ({ id: `arm_${side}`, label: `${side === 'r' ? 'Right' : 'Left'} hand`, chain: [`shoulder_${side}`, `elbow_${side}`, `wrist_${side}`, `handtip_${side}`], pole: [-1, 0.1, side === 'r' ? 0.35 : -0.35], handRot: (side === 'l' ? handRotL : handRotR).map((v) => +v.toFixed(6)) });
+const ANKLE_H = 6.6; // ankle joint height when the foot is flat (foot shape bottom)
+const zero = () => ({ rot: 0, flex: 0, latFlex: 0 });
+const POSES = {
+  // Standing tall, feet under hips, arms at sides. Feet planted with leg IK targets.
+  standing({ stance = rig.byId.hip_r.offset[2], toeOut = 8 } = {}) {
+    const legLen = V.len(rig.byId.knee_r.offset) + V.len(rig.byId.ankle_r.offset);
+    const p = { root: { pos: [0, r1(legLen + ANKLE_H), 0], rot: {} }, ch: { spine_l5: zero(), spine_t12: zero(), spine_t6: zero(), neck_c7: { rot: 0, flex: 0 }, head_c1: { rot: 0, flex: 0 }, sc_r: { protract: 0, elevate: 0 }, sc_l: { protract: 0, elevate: 0 }, shoulder_r: { plane: 0, elev: 6, axial: 0 }, shoulder_l: { plane: 0, elev: 6, axial: 0 }, elbow_r: { flex: 8 }, elbow_l: { flex: 8 }, ankle_r: { dorsi: 0 }, ankle_l: { dorsi: 0 }, hip_r: { flex: 0, abd: 0, rot: -toeOut }, hip_l: { flex: 0, abd: 0, rot: -toeOut } } };
+    p.ik = { leg_r: { target: [0, ANKLE_H, r1(stance)], weight: 1 }, leg_l: { target: [0, ANKLE_H, r1(-stance)], weight: 1 } };
+    return { pose: p, contacts: [legContact('r'), legContact('l')] };
+  },
+  // Lying on the back, head toward -X, knees bent, feet flat (pass kneeFlex 0 for straight legs).
+  supine({ kneeFlex = 90 } = {}) {
+    const hipFlex = kneeFlex ? kneeFlex / 2 + 10 : 0;
+    const p = { root: { pos: [0, 12, 0], rot: { pitch: 90 } }, ch: { spine_l5: zero(), spine_t12: zero(), spine_t6: zero(), neck_c7: { rot: 0, flex: 0 }, head_c1: { rot: 0, flex: 0 }, hip_r: { flex: hipFlex }, hip_l: { flex: hipFlex }, knee_r: { flex: kneeFlex }, knee_l: { flex: kneeFlex }, ankle_r: { dorsi: kneeFlex ? -10 : 0 }, ankle_l: { dorsi: kneeFlex ? -10 : 0 }, shoulder_r: { plane: 0, elev: 10, axial: 0 }, shoulder_l: { plane: 0, elev: 10, axial: 0 } } };
+    return { pose: groundPose(p), contacts: [] };
+  },
+  // High plank: hands under shoulders, body in one line, on the balls of the feet.
+  plank() {
+    const p = { root: { pos: [0, 60, 0], rot: { pitch: -78 } }, ch: { spine_l5: zero(), spine_t12: zero(), spine_t6: zero(), neck_c7: { rot: 0, flex: 0 }, head_c1: { rot: 0, flex: 0 }, hip_r: { flex: 0 }, hip_l: { flex: 0 }, knee_r: { flex: 0 }, knee_l: { flex: 0 }, ankle_r: { dorsi: 10 }, ankle_l: { dorsi: 10 }, shoulder_r: { plane: 90, elev: 78, axial: 0 }, shoulder_l: { plane: 90, elev: 78, axial: 0 }, sc_r: { protract: 6, elevate: 0 }, sc_l: { protract: 6, elevate: 0 }, elbow_r: { flex: 5 }, elbow_l: { flex: 5 } } };
+    // Solve root height + pitch so the toes and wrists touch the floor with arms vertical.
+    const s = solvePose(p, ['root.pos.1', 'root.rot.pitch', 'shoulder_r.elev'.replace(/^/, 'ch.'), 'ch.shoulder_l.elev'], [obj.atY('toe_r', 1.5), obj.atY('toe_l', 1.5), obj.atY('wrist_r', 2.6), obj.atY('wrist_l', 2.6), (W) => [(W.wrist_r.p[0] - W.shoulder_r.p[0]) * 2, (W.wrist_l.p[0] - W.shoulder_l.p[0]) * 2]]);
+    const W = fk(s.pose);
+    s.pose.ik = { arm_r: { target: [r1(W.wrist_r.p[0]), 2.6, r1(W.wrist_r.p[2])], weight: 1 }, arm_l: { target: [r1(W.wrist_l.p[0]), 2.6, r1(W.wrist_l.p[2])], weight: 1 } };
+    return { pose: s.pose, contacts: [handContact('r'), handContact('l')] };
+  },
+};
+Object.assign(module.exports, { getPath, setPathV, obj, solvePose, groundPose, footRot, legContact, handContact, POSES, ANKLE_H });

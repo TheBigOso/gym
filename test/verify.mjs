@@ -13,19 +13,36 @@ const check = (ok, msg) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`); if 
 for (const f of fs.readdirSync('src/exercises')) {
   const ex = JSON.parse(fs.readFileSync(`src/exercises/${f}`, 'utf8')), id = ex.exercise.id, tl = R.buildTimeline(ex);
   check(validate(ex), `${id}: validates against schema`);
-  const tgt = Object.values(ex.poses)[0].ik.arm_l.target, W0 = R.evalPose(rig, tl.pose(0), ex.contacts);
-  let slide = 0, knee = 0, pelvis = 0, floor = 1e9, peak = -99;
+  const ck = ex.checks || {}, W0 = R.evalPose(rig, tl.pose(0), ex.contacts);
+  const still = ck.stillJoints || [], planted = ck.plantedContacts || [];
+  let slide = 0, drift = 0, floor = 1e9, peak = -1e9;
+  const measure = (W, pose) => {
+    const m = ck.measure && ck.measure.name; if (!m) return null;
+    if (m === 'shoulderLineIncl') return R.measures(W).shoulderLineIncl;
+    if (m === 'kneeFlexion') return Math.max(R.measures(W).knee, 180 - V.angle(V.sub(W.hip_l.p, W.knee_l.p), V.sub(W.ankle_l.p, W.knee_l.p)));
+    if (m === 'hipFlexion') return Math.max(pose.ch.hip_r?.flex ?? 0, pose.ch.hip_l?.flex ?? 0);
+    if (m === 'trunkFlexion') return V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]);
+    if (m === 'rootTravel') return V.len(V.sub(W.pelvis.p, W0.pelvis.p));
+  };
+  let prev = null;
   for (let i = 0; i <= 800; i++) {
-    const t = (i / 800) * tl.duration, W = R.evalPose(rig, tl.pose(t), ex.contacts);
-    slide = Math.max(slide, V.len(V.sub(W.wrist_l.p, tgt)));
-    knee = Math.max(knee, V.len(V.sub(W.knee_r.p, W0.knee_r.p)), V.len(V.sub(W.knee_l.p, W0.knee_l.p)));
-    pelvis = Math.max(pelvis, V.len(V.sub(W.pelvis.p, W0.pelvis.p)));
-    floor = Math.min(floor, L.shapeMinY(W).y); peak = Math.max(peak, R.measures(W).shoulderLineIncl);
+    const t = (i / 800) * tl.duration, pose = tl.pose(t), W = R.evalPose(rig, pose, ex.contacts);
+    for (const id of planted) {
+      const k = pose.ik && pose.ik[id]; if (!k || (k.weight ?? 1) < 0.999) continue;
+      const c = ex.contacts.find((x) => x.id === id), end = W[c.chain[2]].p;
+      slide = Math.max(slide, V.len(V.sub(end, k.target)));
+      if (prev && prev[id] && (prev[id].w ?? 1) >= 0.999) slide = Math.max(slide, V.len(V.sub(k.target, prev[id].target)));
+    }
+    prev = pose.ik ? JSON.parse(JSON.stringify(pose.ik)) : null;
+    for (const j of still) drift = Math.max(drift, V.len(V.sub(W[j].p, W0[j].p)));
+    floor = Math.min(floor, L.shapeMinY(W).y);
+    const mv = measure(W, pose); if (mv != null) peak = Math.max(peak, mv);
   }
-  check(slide < 0.05, `${id}: support hand stays planted (max ${slide.toFixed(3)} cm)`);
-  check(knee < 0.05 && pelvis < 0.05, `${id}: knees and pelvis still (knees ${knee.toFixed(3)} cm, pelvis ${pelvis.toFixed(3)} cm)`);
-  check(floor > -0.5, `${id}: nothing below the floor (lowest ${floor.toFixed(2)} cm)`);
-  check(peak > 38 && peak < 55, `${id}: peak shoulder-line rotation ${peak.toFixed(1)}° (expected 38–55°)`);
+  if (planted.length) check(slide < 0.05, `${id}: planted contacts (${planted.join(', ')}) do not slide (max ${slide.toFixed(3)} cm)`);
+  if (still.length) check(drift < 0.05, `${id}: still joints (${still.join(', ')}) stay put (max ${drift.toFixed(3)} cm)`);
+  check(floor > -(ck.floorTolerance ?? 0.5), `${id}: nothing below the floor (lowest ${floor.toFixed(2)} cm)`);
+  if (ck.measure) check(peak >= ck.measure.min && peak <= ck.measure.max, `${id}: peak ${ck.measure.name} ${peak.toFixed(1)} (expected ${ck.measure.min}–${ck.measure.max})`);
+  check(!!ex.exercise.safety, `${id}: has safety notes`);
   const viol = [];
   for (const [name, p] of Object.entries(ex.poses)) for (const j in p.ch) { const lim = rig.byId[j] && rig.byId[j].limits; if (!lim) continue; for (const c in p.ch[j]) if (lim[c] && (p.ch[j][c] < lim[c][0] - 0.5 || p.ch[j][c] > lim[c][1] + 0.5)) viol.push(`${name}.${j}.${c}=${p.ch[j][c]}`); }
   check(!viol.length, `${id}: joint limits ${viol.length ? viol.join(', ') : 'respected'}`);
@@ -33,7 +50,7 @@ for (const f of fs.readdirSync('src/exercises')) {
 }
 const { browser, page, errors } = await openPlayer();
 const res = await page.evaluate(() => { __rr.S.playing = false; const out = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); out.push(document.getElementById('title').textContent); } return out; });
-check(res.length === 2, `player loads both exercises: ${res.join(' | ')}`);
+check(res.length === fs.readdirSync('src/exercises').length, `player loads all exercises: ${res.join(' | ')}`);
 await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__w0 = performance.now(); });
 await page.waitForTimeout(1500);
 const ratio = await page.evaluate(() => { const S = __rr.S; const r = S.t / ((performance.now() - window.__w0) / 1000); S.playing = false; return r; });
