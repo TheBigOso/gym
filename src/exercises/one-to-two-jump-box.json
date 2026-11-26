@@ -3180,6 +3180,108 @@
           "weight": 0
         }
       }
+    },
+    "reach2": {
+      "root": {
+        "pos": [
+          51.1,
+          135.3,
+          0.1
+        ],
+        "rot": {
+          "pitch": -12,
+          "roll": 0
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": 5,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 4,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 2,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": 6
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": 9
+        },
+        "sc_r": {
+          "protract": 0,
+          "elevate": 0
+        },
+        "sc_l": {
+          "protract": 0,
+          "elevate": 0
+        },
+        "shoulder_r": {
+          "plane": 90,
+          "elev": 100,
+          "axial": 0
+        },
+        "shoulder_l": {
+          "plane": 90,
+          "elev": 100,
+          "axial": 0
+        },
+        "elbow_r": {
+          "flex": 18
+        },
+        "elbow_l": {
+          "flex": 18
+        },
+        "ankle_r": {
+          "dorsi": -6
+        },
+        "ankle_l": {
+          "dorsi": -8
+        },
+        "hip_r": {
+          "flex": 40,
+          "abd": 0,
+          "rot": 0
+        },
+        "hip_l": {
+          "flex": 40,
+          "abd": 0,
+          "rot": 0
+        },
+        "knee_r": {
+          "flex": 32
+        },
+        "knee_l": {
+          "flex": 32
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            61,
+            51.6,
+            8.6
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            61,
+            51.6,
+            -8.6
+          ],
+          "weight": 0
+        }
+      }
     }
   },
   "keyframes": [
@@ -3241,7 +3343,7 @@
     },
     {
       "t": 2.6700000000000004,
-      "pose": "preland",
+      "pose": "reach2",
       "set": {
         "ik.leg_r.weight": 0,
         "ik.leg_l.weight": 0

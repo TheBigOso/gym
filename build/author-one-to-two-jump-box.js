@@ -126,6 +126,8 @@ const T_APEX = 2.5, T_PRE = 2.64, T_REC = 2.41;
 add('recover', { root: arc(T_REC), pitch: -10, spine: [4, 3, 2], head: 14, arm: { plane: 90, elev: 116, elbow: 20 }, legs: { r: { ch: { flex: 32, knee: 108, dorsi: -22 } }, l: { ch: { flex: 76, knee: 100, dorsi: -9 } } }, ik: { r: [TBr, 0], l: [TBl, 0] } });
 add('apex', { root: arc(T_APEX), pitch: -10, spine: [4, 3, 2], head: 16, arm: { plane: 90, elev: 112, elbow: 20 }, legs: { r: { ch: { flex: 72, knee: 92, dorsi: -8 } }, l: { ch: { flex: 74, knee: 90, dorsi: -8 } } }, ik: { r: [TBr, 0], l: [TBl, 0] } });
 add('preland', { root: arc(T_PRE), pitch: -12, spine: [5, 4, 2], head: 15, arm: { plane: 90, elev: 100, elbow: 18 }, legs: { r: { ch: { flex: 46, knee: 40, dorsi: -8 } }, l: { ch: { flex: 46, knee: 40, dorsi: -8 } } }, ik: { r: [TBr, 0], l: [TBl, 0] } });
+// Keep moving along the arc right up to contact (a repeated preland pose froze the body for 30 ms).
+add('reach2', { root: arc(T_LAND - 0.03), pitch: -12, spine: [5, 4, 2], head: 15, arm: { plane: 90, elev: 100, elbow: 18 }, legs: { r: { ch: { flex: 40, knee: 32, dorsi: -6 } }, l: { ch: { flex: 40, knee: 32, dorsi: -8 } } }, ik: { r: [TBr, 0], l: [TBl, 0] } });
 
 for (const [n, p] of Object.entries(P)) { const W = L.fk(p); rep.push(`${n.padEnd(9)} root ${p.root.pos.map((v) => v.toFixed(1)).join(',')} kneeR ${p.ch.knee_r.flex} kneeL ${p.ch.knee_l.flex} hipR ${p.ch.hip_r.flex} hipL ${p.ch.hip_l.flex} dorsiR ${p.ch.ankle_r.dorsi} dorsiL ${p.ch.ankle_l.dorsi} err ${(p._err || []).join(' ')} minY ${L.shapeMinY(W).y.toFixed(2)}`); delete p._cost; delete p._err; }
 
@@ -134,7 +136,7 @@ const keyframes = [
   { t: 0, pose: 'stand' }, { t: 0.7, pose: 'stand' },
   { t: 1.0, pose: 'stepBack' }, { t: 1.4, pose: 'stagger' },
   { t: 1.6, pose: 'stagger' }, { t: 1.75, pose: 'loadMid' }, { t: 1.95, pose: 'load' }, { t: 2.1, pose: 'swing' }, { t: 2.22, pose: 'drive' }, { t: 2.27, pose: 'push' }, { t: T_OFF, pose: 'toeoff' },
-  { t: T_REC, pose: 'recover' }, { t: T_APEX, pose: 'apex' }, { t: T_PRE, pose: 'preland' }, { t: T_LAND - 0.03, pose: 'preland', set: { 'ik.leg_r.weight': 0, 'ik.leg_l.weight': 0 } },
+  { t: T_REC, pose: 'recover' }, { t: T_APEX, pose: 'apex' }, { t: T_PRE, pose: 'preland' }, { t: T_LAND - 0.03, pose: 'reach2', set: { 'ik.leg_r.weight': 0, 'ik.leg_l.weight': 0 } },
   { t: T_LAND, pose: 'contact' }, { t: 3.0, pose: 'absorb' }, { t: 3.4, pose: 'absorb' },
   { t: 4.2, pose: 'standBox' }, { t: 4.6, pose: 'standBox' },
   { t: 4.9, pose: 'shift' }, { t: 5.15, pose: 'liftL' }, { t: 5.45, pose: 'reach' }, { t: 5.75, pose: 'touch' }, { t: 5.85, pose: 'touchMid' }, { t: 5.95, pose: 'transfer' },
