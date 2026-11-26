@@ -167,6 +167,7 @@ function loadExercise(i) {
   // framing from samples
   const box = new THREE.Box3();
   for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); }
+  for (const pr of EX.props || []) { if (pr.kind === 'mat') continue; const c = pr.center || [0, 0, 0], sz = pr.size || [0, 0, 0]; box.expandByPoint(toV3([c[0] - sz[0] / 2, c[1], c[2] - sz[2] / 2], false)); box.expandByPoint(toV3([c[0] + sz[0] / 2, c[1] + sz[1], c[2] + sz[2] / 2], false)); }
   box.getCenter(center); radius = box.getSize(new THREE.Vector3()).length() / 2;
   const mat = EX.props.find((p) => p.kind === 'mat');
   matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
@@ -210,6 +211,8 @@ function update() {
   const g = EX.guides.find((x) => x.kind === 'path');
   dot.visible = !!g && S.t >= g.from && S.t <= g.to; if (g) dot.position.copy(toV3(W[g.joint].p, mirror));
   const meas = R.measures(W), arcG = EX.guides.find((x) => x.kind === 'rotationArc');
+  arcLine.visible = bandMesh.visible = refLine.visible = !!arcG;
+  if (!arcG) labels.arc.style.display = 'none';
   if (arcG) {
     const ctr = V.scale(V.add(W.shoulder_r.p, W.shoulder_l.p), 0.5), rr = arcG.radius;
     const at = (deg, r) => { const a = deg * R.DEG; return toV3(V.add(ctr, V.add(V.scale(meas.hz, Math.cos(a) * r), V.scale(meas.up, Math.sin(a) * r))), mirror); };
@@ -370,9 +373,15 @@ function syncUI(force) {
   if ((force || now - hudT > 90) && lastW) { hudT = now; updateHUD(); }
 }
 function updateHUD() {
-  const ch = lastPose.ch, m = R.measures(lastW), sideL = S.side === 'R' ? 'L' : 'R';
-  const rows = [['Thoracic rotation', ch.spine_t12.rot + ch.spine_t6.rot], ['Lumbar rotation', ch.spine_l5.rot], ['Shoulder-line tilt', m.shoulderLineIncl], ['Neck rotation', ch.neck_c7.rot + ch.head_c1.rot], [`Support elbow (${sideL})`, m.elbowL], ['Hips / knees', null]];
-  $('hud').innerHTML = rows.map(([l, v]) => `<span>${esc(l)}</span><em>${v == null ? `${Math.round(ch.hip_r.flex)}° / ${Math.round(m.knee)}°` : fmt(v)}</em>`).join('');
+  const ch = lastPose.ch, m = R.measures(lastW), sideL = S.side === 'R' ? 'L' : 'R', g = (j, c) => (ch[j] && ch[j][c]) || 0;
+  const kneeL = 180 - V.angle(V.sub(lastW.hip_l.p, lastW.knee_l.p), V.sub(lastW.ankle_l.p, lastW.knee_l.p));
+  const trunk = V.angle(V.sub(lastW.neck_c7.p, lastW.pelvis.p), [0, 1, 0]);
+  const travel = V.len(V.sub(lastW.pelvis.p, R.evalPose(rig, tl.pose(0), EX.contacts).pelvis.p));
+  const rotation = EX.guides.some((x) => x.kind === 'rotationArc');
+  const rows = rotation
+    ? [['Thoracic rotation', g('spine_t12', 'rot') + g('spine_t6', 'rot')], ['Lumbar rotation', g('spine_l5', 'rot')], ['Shoulder-line tilt', m.shoulderLineIncl], ['Neck rotation', g('neck_c7', 'rot') + g('head_c1', 'rot')], [`Support elbow (${sideL})`, m.elbowL], ['Hips / knees', `${Math.round(g('hip_r', 'flex'))}° / ${Math.round(m.knee)}°`]]
+    : [['Knee flexion R / L', `${Math.round(S.side === 'L' ? kneeL : m.knee)}° / ${Math.round(S.side === 'L' ? m.knee : kneeL)}°`], ['Hip flexion R / L', `${Math.round(g(S.side === 'L' ? 'hip_l' : 'hip_r', 'flex'))}° / ${Math.round(g(S.side === 'L' ? 'hip_r' : 'hip_l', 'flex'))}°`], ['Trunk from vertical', trunk], ['Spine flexion', g('spine_l5', 'flex') + g('spine_t12', 'flex') + g('spine_t6', 'flex')], ['Travel', `${Math.round(travel)} cm`]];
+  $('hud').innerHTML = rows.map(([l, v]) => `<span>${esc(l)}</span><em>${typeof v === 'string' ? esc(v) : fmt(v)}</em>`).join('');
   const live = { 'Thoracic rotation (T12–T1)': ch.spine_t12.rot + ch.spine_t6.rot, 'Lumbar rotation (L5–S1 to T12)': ch.spine_l5.rot, 'Total trunk rotation': ch.spine_l5.rot + ch.spine_t12.rot + ch.spine_t6.rot, 'Cervical rotation toward reaching hand': ch.neck_c7.rot + ch.head_c1.rot, Hips: ch.hip_r.flex, Knees: m.knee, 'Support elbow': m.elbowL };
   document.querySelectorAll('#kin td.live').forEach((td) => { const v = live[td.dataset.m]; td.textContent = v == null ? '–' : fmt(v); });
 }
