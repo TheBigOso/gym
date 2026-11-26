@@ -1,0 +1,73 @@
+{
+  "rigId": "reprig-female-165-v1",
+  "schemaVersion": "1.0.0",
+  "description": "Shared parametric rig: adult female, 165 cm. Segment lengths from Winter/Drillis–Contini height ratios. Bilateral items are authored for the right side and mirrored across the sagittal plane.",
+  "units": { "length": "cm", "angle": "deg" },
+  "stature": 165,
+  "axes": { "x": "anterior (forward)", "y": "superior (up)", "z": "right lateral" },
+  "joints": [
+    { "id": "pelvis", "type": "root" },
+    { "id": "spine_l5", "parent": "pelvis", "type": "spine", "offset": [-4, 9, 0], "limits": { "rot": [-6, 6], "flex": [-25, 45], "latFlex": [-20, 20] } },
+    { "id": "spine_t12", "parent": "spine_l5", "type": "spine", "offset": [0, 15, 0], "limits": { "rot": [-22, 22], "flex": [-20, 30], "latFlex": [-15, 15] } },
+    { "id": "spine_t6", "parent": "spine_t12", "type": "spine", "offset": [0, 13, 0], "limits": { "rot": [-22, 22], "flex": [-15, 25], "latFlex": [-12, 12] } },
+    { "id": "neck_c7", "parent": "spine_t6", "type": "neck", "offset": [-1, 13.5, 0], "limits": { "rot": [-35, 35], "flex": [-30, 40] } },
+    { "id": "head_c1", "parent": "neck_c7", "type": "neck", "offset": [2, 10, 0], "limits": { "rot": [-45, 45], "flex": [-30, 30] } },
+    { "id": "hip", "parent": "pelvis", "type": "hip", "bilateral": true, "offset": [0, 0, 8.5], "limits": { "flex": [-20, 125], "abd": [-25, 45], "rot": [-40, 40] } },
+    { "id": "knee", "parent": "hip", "type": "knee", "bilateral": true, "offset": [0, -40.5, 0], "limits": { "flex": [0, 150] } },
+    { "id": "ankle", "parent": "knee", "type": "ankle", "bilateral": true, "offset": [0, -40, 0], "limits": { "dorsi": [-75, 25] } },
+    { "id": "toe", "parent": "ankle", "type": "end", "bilateral": true, "offset": [15.5, -5, 0] },
+    { "id": "sc", "parent": "spine_t6", "type": "clavicle", "bilateral": true, "offset": [11, 10, 2], "limits": { "protract": [-25, 30], "elevate": [-10, 40] } },
+    { "id": "shoulder", "parent": "sc", "type": "shoulder", "bilateral": true, "offset": [-5.5, 1.5, 15], "limits": { "elev": [0, 180], "plane": [-60, 140] } },
+    { "id": "elbow", "parent": "shoulder", "type": "elbow", "bilateral": true, "offset": [0, -29, 0], "limits": { "flex": [0, 150] } },
+    { "id": "wrist", "parent": "elbow", "type": "wrist", "bilateral": true, "offset": [0, -24, 0], "limits": { "flex": [-90, 80], "dev": [-20, 35] } },
+    { "id": "handtip", "parent": "wrist", "type": "end", "bilateral": true, "offset": [0, -17.5, 0] }
+  ],
+  "shapes": [
+    { "id": "pelvis", "kind": "ellipsoid", "joint": "pelvis", "c": [-2.5, 2, 0], "r": [10.5, 10, 16.5] },
+    { "id": "buttock", "kind": "ellipsoid", "joint": "pelvis", "bilateral": true, "c": [-7.5, -2, 7.2], "r": [7.5, 9, 7.8] },
+    { "id": "abdomen", "kind": "ellipsoid", "joint": "spine_l5", "c": [5.5, 8, 0], "r": [9.5, 10.5, 13.2] },
+    { "id": "ribcage", "kind": "ellipsoid", "joint": "spine_t12", "c": [6.5, 7.5, 0], "r": [10.8, 10.5, 14] },
+    { "id": "chest", "kind": "ellipsoid", "joint": "spine_t6", "c": [5.5, 7, 0], "r": [10.6, 10.5, 15.2] },
+    { "id": "bust", "kind": "ellipsoid", "joint": "spine_t6", "bilateral": true, "c": [13.4, 1.5, 6.8], "r": [4.4, 5.2, 5.6] },
+    { "id": "thigh", "kind": "capsule", "from": "hip", "to": "knee", "bilateral": true, "r": [8.2, 5.2] },
+    { "id": "shank", "kind": "capsule", "from": "knee", "to": "ankle", "bilateral": true, "r": [5.0, 3.1] },
+    { "id": "calf", "kind": "ellipsoid", "joint": "knee", "bilateral": true, "c": [-2.6, -13, 0], "r": [4.4, 10, 4.3] },
+    { "id": "foot", "kind": "ellipsoid", "joint": "ankle", "bilateral": true, "c": [5.5, -3, 0], "r": [12, 3.6, 4.4] },
+    { "id": "deltoid", "kind": "ellipsoid", "joint": "shoulder", "bilateral": true, "c": [0, -3.5, 1], "r": [5.4, 7, 5.4] },
+    { "id": "upperarm", "kind": "capsule", "from": "shoulder", "to": "elbow", "bilateral": true, "r": [4.5, 3.4] },
+    { "id": "forearm", "kind": "capsule", "from": "elbow", "to": "wrist", "bilateral": true, "r": [3.5, 2.3] },
+    { "id": "hand", "kind": "ellipsoid", "joint": "wrist", "bilateral": true, "c": [1.0, -8, 0], "r": [1.6, 8.2, 4.0] },
+    { "id": "neck", "kind": "capsule", "from": "neck_c7", "to": "head_c1", "r": [5.0, 4.4] },
+    { "id": "head", "kind": "ellipsoid", "joint": "head_c1", "c": [3, 8.5, 0], "r": [9.6, 11, 7.8] },
+    { "id": "face", "kind": "ellipsoid", "joint": "head_c1", "tone": "face", "c": [10.6, 6.2, 0], "r": [2.6, 6.4, 5.2] },
+    { "id": "nose", "kind": "ellipsoid", "joint": "head_c1", "tone": "face", "c": [12.8, 6.6, 0], "r": [1.4, 2.2, 1.1] },
+    { "id": "hair", "kind": "ellipsoid", "joint": "head_c1", "tone": "hair", "c": [-1, 11, 0], "r": [9.4, 9.2, 8.3] },
+    { "id": "bun", "kind": "ellipsoid", "joint": "head_c1", "tone": "hair", "c": [-8.5, 14.5, 0], "r": [4.6, 4.6, 4.6] }
+  ],
+  "muscles": [
+    { "id": "obliques", "name": "Obliques (external + internal)", "bilateral": true, "parts": [
+      { "joint": "spine_l5", "c": [5, 9, 11.2], "r": [7.5, 9.5, 3.0] },
+      { "joint": "spine_t12", "c": [6, 2, 12.2], "r": [7, 6, 2.8] } ] },
+    { "id": "spinal_extensors", "name": "Thoracic erector spinae + multifidus/rotatores", "bilateral": true, "parts": [
+      { "joint": "spine_t12", "c": [-3.4, 7, 3.2], "r": [2.4, 9, 2.6] },
+      { "joint": "spine_t6", "c": [-3.6, 6, 3.2], "r": [2.4, 8, 2.6] } ] },
+    { "id": "rhomboids_midtrap", "name": "Rhomboids + middle trapezius", "bilateral": true, "parts": [
+      { "joint": "spine_t6", "c": [-4.2, 8.5, 6.5], "r": [2.2, 6, 4.6] } ] },
+    { "id": "post_deltoid", "name": "Posterior deltoid", "bilateral": true, "parts": [
+      { "joint": "shoulder", "c": [-3.2, -4, 1], "r": [3.2, 5.8, 4.2] } ] },
+    { "id": "infraspinatus", "name": "Infraspinatus / teres minor", "bilateral": true, "parts": [
+      { "joint": "spine_t6", "c": [-1.2, 4, 10.5], "r": [2.2, 5, 3.8] } ] },
+    { "id": "serratus", "name": "Serratus anterior", "bilateral": true, "parts": [
+      { "joint": "spine_t12", "c": [7, 11, 12.6], "r": [5.5, 6, 2.4] } ] },
+    { "id": "triceps", "name": "Triceps brachii", "bilateral": true, "parts": [
+      { "joint": "shoulder", "c": [-3.3, -15, 0], "r": [2.6, 9.5, 3.2] } ] },
+    { "id": "core", "name": "Transversus abdominis / rectus abdominis", "parts": [
+      { "joint": "spine_l5", "c": [14.2, 8, 0], "r": [2.4, 9, 8.5] } ] },
+    { "id": "glute_med", "name": "Gluteus medius", "bilateral": true, "parts": [
+      { "joint": "pelvis", "c": [-3, 4.5, 14.2], "r": [6, 5, 2.6] } ] },
+    { "id": "pec", "name": "Pectoralis major + minor", "bilateral": true, "parts": [
+      { "joint": "spine_t6", "c": [12.5, 5, 7], "r": [2.4, 5.5, 6.5] } ] },
+    { "id": "ant_deltoid", "name": "Anterior deltoid", "bilateral": true, "parts": [
+      { "joint": "shoulder", "c": [3.4, -4, 1], "r": [3, 5.5, 4] } ] }
+  ]
+}

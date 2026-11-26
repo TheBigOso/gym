@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back Rotation Stretch Rig</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinical work tool: a physio's motion-review station, calm and exact
+   IDEA the exercise card a coach hands over: live demo on top, the card's facts beside it
+   PICTURE the live 2.5D rig on a stage, with muscle glow, hand path and a rotation protractor drawn on the body
+   COLOUR white / near-black ground, graphite or bone stage; signal red = target, amber = synergist, blue = stabilizer, violet = lengthened, teal = guides
+   TYPE Barlow Semi Condensed (gym signage) for titles and figures + Inter for text
+   LAYOUT laptop: stage with transport (left, ~62%), exercise card panel (right). Under 900px: title, stage, controls, card */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d0f12);--ink:light-dark(#121417,#e9ecef);--sub:light-dark(#5b6370,#9aa3ae);--line:light-dark(#e3e5e8,#252a31);--surf:light-dark(#f5f6f7,#151820);--chip:light-dark(#eef0f2,#1b1f27);--accent:#e5484d;--amber:#f2a91e;--blue:#3b8fe0;--violet:#9a63e8;--teal:#16b3a3}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Barlow Semi Condensed","Arial Narrow",sans-serif;font-weight:700;letter-spacing:-.01em;margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;padding:18px max(2.5vw,16px) 12px;border-bottom:1px solid var(--line)}
+.top h1{font-size:clamp(28px,3.4vw,40px);line-height:1.05;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.ref{font-size:13px;color:var(--sub);max-width:46ch}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:0;align-items:start}
+.stagecol{padding:14px max(1.6vw,12px) 18px max(2.5vw,16px);border-right:1px solid var(--line)}
+.stage{position:relative;height:clamp(360px,62vh,640px);border-radius:14px;overflow:hidden;background:#14171c;touch-action:none;cursor:grab;user-select:none}
+.stage.light{background:#ecebe6}
+.stage:active{cursor:grabbing}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.ov{position:absolute;pointer-events:none;font-size:13px}
+.stage .ov{color:#e8ecf1}
+.stage.light .ov{color:#1d2127}
+.phase{left:14px;top:12px;display:flex;align-items:center;gap:10px}
+.phase b{font:700 22px/1 "Barlow Semi Condensed",sans-serif}
+.breath{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;border-radius:999px;background:rgba(127,135,150,.18);font-weight:600}
+.breath i{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;transform:scale(var(--bs,1));transition:transform .25s linear}
+.hud{left:12px;bottom:12px;display:grid;grid-template-columns:auto auto;gap:2px 12px;padding:9px 11px;border-radius:10px;background:rgba(10,12,16,.55);color:#e8ecf1}
+.stage.light .hud{background:rgba(255,255,255,.72);color:#1d2127}
+.hud span{opacity:.75;white-space:nowrap}
+.hud em{font:600 14px/1.3 "Barlow Semi Condensed",sans-serif;font-style:normal;text-align:right;white-space:nowrap}
+.hud.off{display:none}
+.side{right:14px;top:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(127,135,150,.18)}
+.fps{right:12px;bottom:10px;opacity:.6;font-variant-numeric:tabular-nums}
+.hint{right:12px;bottom:28px;opacity:.55}
+.transport{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:12px;margin-top:12px}
+.play{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}
+.play:focus-visible,.seg button:focus-visible,.chip:focus-visible,.tabs button:focus-visible,.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.play svg{width:18px;height:18px}
+.scrub{position:relative;height:44px}
+.phasebar{position:absolute;left:0;right:0;top:26px;display:flex;gap:2px;height:16px}
+.phasebar div{flex:none;border-radius:3px;background:var(--chip);font-size:11px;line-height:16px;color:var(--sub);text-align:center;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.phasebar div.on{background:color-mix(in srgb,var(--accent) 22%,var(--chip));color:var(--ink)}
+.scrub input{position:absolute;left:0;right:0;top:4px;width:100%;margin:0;height:20px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+.scrub input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--line) var(--p,0%))}
+.scrub input::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--line) var(--p,0%))}
+.scrub input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+.scrub input::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+.time{font:600 16px "Barlow Semi Condensed",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:2px;background:var(--surf)}
+.seg button{border:0;background:transparent;min-height:36px;padding:0 11px;border-radius:8px;cursor:pointer;font-size:14px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:600}
+.viewbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:12px}
+.group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.group>label{font-size:13px;color:var(--sub)}
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surf);cursor:pointer;font-size:14px;white-space:nowrap}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--c,var(--sub));opacity:.35}
+.chip[aria-pressed=true]{border-color:var(--c,var(--ink));background:color-mix(in srgb,var(--c,var(--ink)) 12%,var(--surf))}
+.chip[aria-pressed=true] i{opacity:1}
+.btn{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surf);cursor:pointer;font-size:14px;white-space:nowrap}
+.btn:hover,.chip:hover,.seg button:hover{border-color:color-mix(in srgb,var(--ink) 35%,var(--line))}
+.panel{padding:14px max(2.5vw,16px) 28px max(1.6vw,14px)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surf)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:8px 14px;margin:0}
+.facts div{display:flex;flex-direction:column}
+.facts dt{font-size:13px;color:var(--sub)}
+.facts dd{margin:0;font-weight:600}
+.breathcard{margin-top:10px;font-size:14px}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin:14px 0 10px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:10px 10px;min-height:40px;cursor:pointer;font-size:14px;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.pane{display:none}
+.pane.on{display:block}
+.pane h3{font-size:19px;margin:14px 0 6px}
+ol.cues{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+ol.cues li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:9px 10px;border-radius:10px;border:1px solid transparent;transition:background .2s}
+ol.cues li b{font:700 15px "Barlow Semi Condensed",sans-serif;white-space:nowrap}
+ol.cues li.on{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 8%,transparent)}
+ol.cues li small{grid-column:2;color:var(--sub);font-size:13px}
+.mist{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.mist li{padding:9px 10px;border-radius:10px;background:var(--surf)}
+.mist b{display:block}
+.mist span{color:var(--sub);font-size:14px}
+.mus{list-style:none;padding:0;margin:0 0 6px;display:grid;gap:4px}
+.mus li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:2px 10px;padding:7px 9px;border-radius:9px;cursor:default}
+.mus li:hover,.mus li:focus{background:var(--chip);outline:none}
+.mus li i{width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--c)}
+.mus li small{grid-column:2;color:var(--sub);font-size:13px}
+.note{font-size:13px;color:var(--sub)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--sub);font-weight:500}
+td.live{font:600 15px "Barlow Semi Condensed",sans-serif;white-space:nowrap}
+pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10px;background:var(--surf);border:1px solid var(--line);font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.src{padding-left:18px;margin:0;display:grid;gap:6px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:8;padding:16px}
+.modal.on{display:grid}
+.modal div{background:var(--bg);border-radius:12px;padding:14px;max-width:min(92vw,900px)}
+.modal img{max-width:100%;max-height:70vh;display:block;border-radius:8px}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.stagecol{border-right:0;padding-right:max(2.5vw,16px)}.panel{padding-left:max(2.5vw,16px);border-top:1px solid var(--line)}}
+@media(max-width:600px){.stage{height:min(78vw,420px)}.transport{grid-template-columns:auto minmax(0,1fr) auto}.transport .seg{grid-column:1/-1;justify-self:start}.hint{display:none}.hud{grid-template-columns:auto auto;font-size:12px}.phasebar div{font-size:0}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0}.stack td::before{content:attr(data-l);color:var(--sub);flex:none;max-width:40%}}
+@media(prefers-reduced-motion:reduce){.breath i,.toast,ol.cues li{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Kneeling Back Rotation Stretch</h1>
+    <div class="meta" id="meta"></div>
+  </div>
+  <p class="ref" id="ref"></p>
+</header>
+<main class="wrap">
+  <section class="stagecol" aria-label="Animation">
+    <div class="stage" id="stage">
+      <canvas id="cv" aria-label="Animated figure performing the stretch"></canvas>
+      <div class="ov phase"><b id="phLabel">Rotate open</b><span class="breath" id="breath"><i></i><span id="breathTxt">Exhale</span></span></div>
+      <div class="ov side" id="sideTag">Right side</div>
+      <div class="ov hud" id="hud"></div>
+      <div class="ov hint">Drag to orbit · double-click to reset</div>
+      <div class="ov fps" id="fps"></div>
+    </div>
+    <div class="transport">
+      <button class="play" id="play" aria-label="Pause"><svg viewBox="0 0 20 20" id="playIcon"></svg></button>
+      <div class="scrub"><input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Timeline"><div class="phasebar" id="phasebar"></div></div>
+      <span class="time" id="time">0.0 / 8.0 s</span>
+      <div class="seg" id="speed" role="group" aria-label="Speed"></div>
+    </div>
+    <div class="viewbar">
+      <div class="group"><label for="sideSeg">Side</label><div class="seg" id="sideSeg" role="group" aria-label="Working side"></div></div>
+      <div class="group"><label>View</label><div class="seg" id="camSeg" role="group" aria-label="Camera"></div></div>
+      <div class="group" id="toggles" aria-label="Overlays"></div>
+      <div class="group"><label>Backdrop</label><div class="seg" id="bgSeg" role="group" aria-label="Backdrop"></div></div>
+      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exSvg">Frame SVG</button></div>
+    </div>
+  </section>
+  <aside class="panel" aria-label="Exercise card">
+    <div class="card"><dl class="facts" id="facts"></dl><p class="breathcard" id="breathing"></p></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section class="pane" id="p-form"><ol class="cues" id="cues"></ol><h3>Common mistakes</h3><ul class="mist" id="mist"></ul></section>
+    <section class="pane" id="p-anatomy"><div id="anat"></div><p class="note">Hover a muscle to light it on the figure. Glow strength follows an illustrative activation curve, not EMG data.</p></section>
+    <section class="pane" id="p-kin"><div class="scroll"><table class="stack" id="kin"></table></div><p class="note" id="kinNote"></p></section>
+    <section class="pane" id="p-json"><div class="row"><div class="seg" id="jsonSeg" role="group" aria-label="JSON file"></div><button class="btn" id="copyJson">Copy</button><button class="btn" id="dlJson">Download</button></div><p class="note" id="jsonNote"></p><pre id="jsonPre"></pre></section>
+    <section class="pane" id="p-src"><ol class="src" id="src"></ol></section>
+  </aside>
+</main>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div><p class="note">Right-click or long-press the frame to save it.</p><img id="modalImg" alt="Exported frame"><p class="row" style="margin:10px 0 0"><button class="btn" id="modalClose">Close</button></p></div></div>
+<script>/*__ENGINE__*/</script>
+<script>/*__DATA__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

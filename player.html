@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back Rotation Stretch Rig</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinical work tool: a physio's motion-review station, calm and exact
+   IDEA the exercise card a coach hands over: live demo on top, the card's facts beside it
+   PICTURE the live 2.5D rig on a stage, with muscle glow, hand path and a rotation protractor drawn on the body
+   COLOUR white / near-black ground, graphite or bone stage; signal red = target, amber = synergist, blue = stabilizer, violet = lengthened, teal = guides
+   TYPE Barlow Semi Condensed (gym signage) for titles and figures + Inter for text
+   LAYOUT laptop: stage with transport (left, ~62%), exercise card panel (right). Under 900px: title, stage, controls, card */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d0f12);--ink:light-dark(#121417,#e9ecef);--sub:light-dark(#5b6370,#9aa3ae);--line:light-dark(#e3e5e8,#252a31);--surf:light-dark(#f5f6f7,#151820);--chip:light-dark(#eef0f2,#1b1f27);--accent:#e5484d;--amber:#f2a91e;--blue:#3b8fe0;--violet:#9a63e8;--teal:#16b3a3}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Barlow Semi Condensed","Arial Narrow",sans-serif;font-weight:700;letter-spacing:-.01em;margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;padding:18px max(2.5vw,16px) 12px;border-bottom:1px solid var(--line)}
+.top h1{font-size:clamp(28px,3.4vw,40px);line-height:1.05;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.ref{font-size:13px;color:var(--sub);max-width:46ch}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:0;align-items:start}
+.stagecol{padding:14px max(1.6vw,12px) 18px max(2.5vw,16px);border-right:1px solid var(--line)}
+.stage{position:relative;height:clamp(360px,62vh,640px);border-radius:14px;overflow:hidden;background:#14171c;touch-action:none;cursor:grab;user-select:none}
+.stage.light{background:#ecebe6}
+.stage:active{cursor:grabbing}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.ov{position:absolute;pointer-events:none;font-size:13px}
+.stage .ov{color:#e8ecf1}
+.stage.light .ov{color:#1d2127}
+.phase{left:14px;top:12px;display:flex;align-items:center;gap:10px}
+.phase b{font:700 22px/1 "Barlow Semi Condensed",sans-serif}
+.breath{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;border-radius:999px;background:rgba(127,135,150,.18);font-weight:600}
+.breath i{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;transform:scale(var(--bs,1));transition:transform .25s linear}
+.hud{left:12px;bottom:12px;display:grid;grid-template-columns:auto auto;gap:2px 12px;padding:9px 11px;border-radius:10px;background:rgba(10,12,16,.55);color:#e8ecf1}
+.stage.light .hud{background:rgba(255,255,255,.72);color:#1d2127}
+.hud span{opacity:.75;white-space:nowrap}
+.hud em{font:600 14px/1.3 "Barlow Semi Condensed",sans-serif;font-style:normal;text-align:right;white-space:nowrap}
+.hud.off{display:none}
+.side{right:14px;top:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(127,135,150,.18)}
+.fps{right:12px;bottom:10px;opacity:.6;font-variant-numeric:tabular-nums}
+.hint{right:12px;bottom:28px;opacity:.55}
+.transport{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:12px;margin-top:12px}
+.play{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}
+.play:focus-visible,.seg button:focus-visible,.chip:focus-visible,.tabs button:focus-visible,.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.play svg{width:18px;height:18px}
+.scrub{position:relative;height:44px}
+.phasebar{position:absolute;left:0;right:0;top:26px;display:flex;gap:2px;height:16px}
+.phasebar div{flex:none;border-radius:3px;background:var(--chip);font-size:11px;line-height:16px;color:var(--sub);text-align:center;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.phasebar div.on{background:color-mix(in srgb,var(--accent) 22%,var(--chip));color:var(--ink)}
+.scrub input{position:absolute;left:0;right:0;top:4px;width:100%;margin:0;height:20px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+.scrub input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--line) var(--p,0%))}
+.scrub input::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--line) var(--p,0%))}
+.scrub input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+.scrub input::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--bg);border:3px solid var(--accent)}
+.time{font:600 16px "Barlow Semi Condensed",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:2px;background:var(--surf)}
+.seg button{border:0;background:transparent;min-height:36px;padding:0 11px;border-radius:8px;cursor:pointer;font-size:14px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:600}
+.viewbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:12px}
+.group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.group>label{font-size:13px;color:var(--sub)}
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surf);cursor:pointer;font-size:14px;white-space:nowrap}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--c,var(--sub));opacity:.35}
+.chip[aria-pressed=true]{border-color:var(--c,var(--ink));background:color-mix(in srgb,var(--c,var(--ink)) 12%,var(--surf))}
+.chip[aria-pressed=true] i{opacity:1}
+.btn{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surf);cursor:pointer;font-size:14px;white-space:nowrap}
+.btn:hover,.chip:hover,.seg button:hover{border-color:color-mix(in srgb,var(--ink) 35%,var(--line))}
+.panel{padding:14px max(2.5vw,16px) 28px max(1.6vw,14px)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surf)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:8px 14px;margin:0}
+.facts div{display:flex;flex-direction:column}
+.facts dt{font-size:13px;color:var(--sub)}
+.facts dd{margin:0;font-weight:600}
+.breathcard{margin-top:10px;font-size:14px}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin:14px 0 10px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:10px 10px;min-height:40px;cursor:pointer;font-size:14px;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.pane{display:none}
+.pane.on{display:block}
+.pane h3{font-size:19px;margin:14px 0 6px}
+ol.cues{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+ol.cues li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:9px 10px;border-radius:10px;border:1px solid transparent;transition:background .2s}
+ol.cues li b{font:700 15px "Barlow Semi Condensed",sans-serif;white-space:nowrap}
+ol.cues li.on{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 8%,transparent)}
+ol.cues li small{grid-column:2;color:var(--sub);font-size:13px}
+.mist{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.mist li{padding:9px 10px;border-radius:10px;background:var(--surf)}
+.mist b{display:block}
+.mist span{color:var(--sub);font-size:14px}
+.mus{list-style:none;padding:0;margin:0 0 6px;display:grid;gap:4px}
+.mus li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:2px 10px;padding:7px 9px;border-radius:9px;cursor:default}
+.mus li:hover,.mus li:focus{background:var(--chip);outline:none}
+.mus li i{width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--c)}
+.mus li small{grid-column:2;color:var(--sub);font-size:13px}
+.note{font-size:13px;color:var(--sub)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--sub);font-weight:500}
+td.live{font:600 15px "Barlow Semi Condensed",sans-serif;white-space:nowrap}
+pre{overflow:auto;max-height:420px;margin:8px 0 0;padding:12px;border-radius:10px;background:var(--surf);border:1px solid var(--line);font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.src{padding-left:18px;margin:0;display:grid;gap:6px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:8;padding:16px}
+.modal.on{display:grid}
+.modal div{background:var(--bg);border-radius:12px;padding:14px;max-width:min(92vw,900px)}
+.modal img{max-width:100%;max-height:70vh;display:block;border-radius:8px}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.stagecol{border-right:0;padding-right:max(2.5vw,16px)}.panel{padding-left:max(2.5vw,16px);border-top:1px solid var(--line)}}
+@media(max-width:600px){.stage{height:min(78vw,420px)}.transport{grid-template-columns:auto minmax(0,1fr) auto}.transport .seg{grid-column:1/-1;justify-self:start}.hint{display:none}.hud{grid-template-columns:auto auto;font-size:12px}.phasebar div{font-size:0}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0}.stack td::before{content:attr(data-l);color:var(--sub);flex:none;max-width:40%}}
+@media(prefers-reduced-motion:reduce){.breath i,.toast,ol.cues li{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Kneeling Back Rotation Stretch</h1>
+    <div class="meta" id="meta"></div>
+  </div>
+  <p class="ref" id="ref"></p>
+</header>
+<main class="wrap">
+  <section class="stagecol" aria-label="Animation">
+    <div class="stage" id="stage">
+      <canvas id="cv" aria-label="Animated figure performing the stretch"></canvas>
+      <div class="ov phase"><b id="phLabel">Rotate open</b><span class="breath" id="breath"><i></i><span id="breathTxt">Exhale</span></span></div>
+      <div class="ov side" id="sideTag">Right side</div>
+      <div class="ov hud" id="hud"></div>
+      <div class="ov hint">Drag to orbit · double-click to reset</div>
+      <div class="ov fps" id="fps"></div>
+    </div>
+    <div class="transport">
+      <button class="play" id="play" aria-label="Pause"><svg viewBox="0 0 20 20" id="playIcon"></svg></button>
+      <div class="scrub"><input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Timeline"><div class="phasebar" id="phasebar"></div></div>
+      <span class="time" id="time">0.0 / 8.0 s</span>
+      <div class="seg" id="speed" role="group" aria-label="Speed"></div>
+    </div>
+    <div class="viewbar">
+      <div class="group"><label for="sideSeg">Side</label><div class="seg" id="sideSeg" role="group" aria-label="Working side"></div></div>
+      <div class="group"><label>View</label><div class="seg" id="camSeg" role="group" aria-label="Camera"></div></div>
+      <div class="group" id="toggles" aria-label="Overlays"></div>
+      <div class="group"><label>Backdrop</label><div class="seg" id="bgSeg" role="group" aria-label="Backdrop"></div></div>
+      <div class="group"><button class="btn" id="exPng">Frame PNG</button><button class="btn" id="exSvg">Frame SVG</button></div>
+    </div>
+  </section>
+  <aside class="panel" aria-label="Exercise card">
+    <div class="card"><dl class="facts" id="facts"></dl><p class="breathcard" id="breathing"></p></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section class="pane" id="p-form"><ol class="cues" id="cues"></ol><h3>Common mistakes</h3><ul class="mist" id="mist"></ul></section>
+    <section class="pane" id="p-anatomy"><div id="anat"></div><p class="note">Hover a muscle to light it on the figure. Glow strength follows an illustrative activation curve, not EMG data.</p></section>
+    <section class="pane" id="p-kin"><div class="scroll"><table class="stack" id="kin"></table></div><p class="note" id="kinNote"></p></section>
+    <section class="pane" id="p-json"><div class="row"><div class="seg" id="jsonSeg" role="group" aria-label="JSON file"></div><button class="btn" id="copyJson">Copy</button><button class="btn" id="dlJson">Download</button></div><p class="note" id="jsonNote"></p><pre id="jsonPre"></pre></section>
+    <section class="pane" id="p-src"><ol class="src" id="src"></ol></section>
+  </aside>
+</main>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div><p class="note">Right-click or long-press the frame to save it.</p><img id="modalImg" alt="Exported frame"><p class="row" style="margin:10px 0 0"><button class="btn" id="modalClose">Close</button></p></div></div>
+<script>/* RepRig engine — data-driven 2.5D exercise rig.
+   Pure math: no DOM. Used by the browser renderer and by the Node authoring/verification scripts.
+   Units: centimetres, degrees. World: +X forward (figure's head direction in quadruped), +Y up, +Z figure's right. */
+(function (root) {
+  'use strict';
+  const DEG = Math.PI / 180;
+
+  const V = {
+    add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+    sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+    scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+    dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+    len: (a) => Math.hypot(a[0], a[1], a[2]),
+    norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+    lerp: (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t],
+    angle: (a, b) => Math.acos(Math.max(-1, Math.min(1, V.dot(V.norm(a), V.norm(b))))) / DEG,
+  };
+
+  const Q = {
+    id: () => [1, 0, 0, 0],
+    axis: (ax, deg) => { const h = (deg * DEG) / 2, s = Math.sin(h), n = V.norm(ax); return [Math.cos(h), n[0] * s, n[1] * s, n[2] * s]; },
+    mul: (a, b) => [
+      a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+      a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+      a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1],
+      a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0]],
+    conj: (q) => [q[0], -q[1], -q[2], -q[3]],
+    norm: (q) => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; },
+    rot: (q, v) => {
+      const w = q[0], x = q[1], y = q[2], z = q[3];
+      const tx = 2 * (y * v[2] - z * v[1]), ty = 2 * (z * v[0] - x * v[2]), tz = 2 * (x * v[1] - y * v[0]);
+      return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
+    },
+    mirrorZ: (q) => [q[0], -q[1], -q[2], q[3]],
+    fromBasis: (x, y, z) => {
+      const m00 = x[0], m10 = x[1], m20 = x[2], m01 = y[0], m11 = y[1], m21 = y[2], m02 = z[0], m12 = z[1], m22 = z[2];
+      const tr = m00 + m11 + m22; let q;
+      if (tr > 0) { const s = 0.5 / Math.sqrt(tr + 1); q = [0.25 / s, (m21 - m12) * s, (m02 - m20) * s, (m10 - m01) * s]; }
+      else if (m00 > m11 && m00 > m22) { const s = 2 * Math.sqrt(1 + m00 - m11 - m22); q = [(m21 - m12) / s, 0.25 * s, (m01 + m10) / s, (m02 + m20) / s]; }
+      else if (m11 > m22) { const s = 2 * Math.sqrt(1 + m11 - m00 - m22); q = [(m02 - m20) / s, (m01 + m10) / s, 0.25 * s, (m12 + m21) / s]; }
+      else { const s = 2 * Math.sqrt(1 + m22 - m00 - m11); q = [(m10 - m01) / s, (m02 + m20) / s, (m12 + m21) / s, 0.25 * s]; }
+      return Q.norm(q);
+    },
+  };
+  const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
+
+  /* ---------- Joint conventions (right side; left side is the Z-mirror) ----------
+     spine / neck : flex (+ forward), latFlex (+ toward right), rot (+ toward right)
+     clavicle     : protract (+ forward), elevate (+ up)
+     shoulder     : ISB globe Y-X-Y: plane (0 = abduction plane, 90 = flexion plane), elev, axial (+ internal)
+     elbow        : flex          knee: flex          ankle: dorsi (+ dorsiflexion, - plantarflexion)
+     wrist        : pron (+ pronation), flex (+ palmar flexion), dev (+ ulnar deviation)
+     hip          : flex, abd, rot (+ internal) */
+  const CHANNELS = {
+    spine: ['flex', 'latFlex', 'rot'], neck: ['flex', 'latFlex', 'rot'], clavicle: ['protract', 'elevate'],
+    shoulder: ['plane', 'elev', 'axial'], elbow: ['flex'], wrist: ['pron', 'flex', 'dev'],
+    hip: ['flex', 'abd', 'rot'], knee: ['flex'], ankle: ['dorsi'], root: [], end: [],
+  };
+  function localQuatRight(type, c) {
+    const g = (k) => (c && typeof c[k] === 'number' ? c[k] : 0);
+    switch (type) {
+      case 'spine': case 'neck':
+        return Q.mul(Q.mul(Q.axis(Y, -g('rot')), Q.axis(X, g('latFlex'))), Q.axis(Z, -g('flex')));
+      case 'clavicle': return Q.mul(Q.axis(Y, g('protract')), Q.axis(X, -g('elevate')));
+      case 'shoulder': return Q.mul(Q.mul(Q.axis(Y, g('plane')), Q.axis(X, -g('elev'))), Q.axis(Y, g('axial')));
+      case 'elbow': return Q.axis(Z, g('flex'));
+      case 'wrist': return Q.mul(Q.mul(Q.axis(Y, g('pron')), Q.axis(Z, g('flex'))), Q.axis(X, -g('dev')));
+      case 'hip': return Q.mul(Q.mul(Q.axis(Z, g('flex')), Q.axis(X, -g('abd'))), Q.axis(Y, g('rot')));
+      case 'knee': return Q.axis(Z, -g('flex'));
+      case 'ankle': return Q.axis(Z, g('dorsi'));
+      default: return Q.id();
+    }
+  }
+  function localQuat(joint, c) {
+    const q = localQuatRight(joint.type, c);
+    return joint.side === 'l' ? Q.mirrorZ(q) : q;
+  }
+  function rootQuat(r) {
+    r = r || {};
+    return Q.mul(Q.mul(Q.axis(Y, r.yaw || 0), Q.axis(Z, r.pitch || 0)), Q.axis(X, r.roll || 0));
+  }
+  const mz = (v) => [v[0], v[1], -v[2]];
+
+  /* ---------- Rig build: expands bilateral definitions into _r / _l ---------- */
+  function buildRig(def) {
+    const bil = new Set(def.joints.filter((j) => j.bilateral).map((j) => j.id));
+    const joints = [], byId = {};
+    const push = (o) => { joints.push(o); byId[o.id] = o; };
+    for (const j of def.joints) {
+      if (j.bilateral) {
+        for (const side of ['r', 'l']) {
+          const parent = j.parent && bil.has(j.parent) ? `${j.parent}_${side}` : j.parent;
+          push({ id: `${j.id}_${side}`, base: j.id, parent, side, type: j.type, offset: side === 'l' ? mz(j.offset) : j.offset.slice(), limits: j.limits || null });
+        }
+      } else push({ id: j.id, base: j.id, parent: j.parent || null, side: null, type: j.type, offset: (j.offset || [0, 0, 0]).slice(), limits: j.limits || null });
+    }
+    const resolveJoint = (name, side) => (bil.has(name) ? `${name}_${side}` : name);
+    const shapes = [];
+    for (const s of def.shapes) {
+      const sides = s.bilateral ? ['r', 'l'] : [null];
+      for (const side of sides) {
+        const sfx = side ? `_${side}` : '';
+        const o = { id: s.id + sfx, base: s.id, kind: s.kind, tone: s.tone || 'body', side, bias: s.depthBias || 0 };
+        if (s.kind === 'capsule') { o.from = resolveJoint(s.from, side || 'r'); o.to = resolveJoint(s.to, side || 'r'); o.r = s.r.slice(); }
+        else { o.joint = resolveJoint(s.joint, side || 'r'); o.c = side === 'l' ? mz(s.c) : s.c.slice(); o.r = s.r.slice(); }
+        shapes.push(o);
+      }
+    }
+    const muscles = [];
+    for (const m of def.muscles) {
+      const sides = m.bilateral ? ['r', 'l'] : [null];
+      for (const side of sides) {
+        const sfx = side ? `_${side}` : '';
+        muscles.push({
+          id: m.id + sfx, base: m.id, side, name: m.name,
+          parts: m.parts.map((p) => ({ joint: resolveJoint(p.joint, side || 'r'), c: side === 'l' ? mz(p.c) : p.c.slice(), r: p.r.slice() })),
+        });
+      }
+    }
+    return { def, joints, byId, shapes, muscles, bilateral: bil };
+  }
+
+  /* ---------- Forward kinematics + two-bone IK ---------- */
+  function evalPose(rig, pose, contacts) {
+    const W = {};
+    for (const j of rig.joints) {
+      if (!j.parent) { W[j.id] = { p: (pose.root && pose.root.pos ? pose.root.pos : [0, 0, 0]).slice(), q: rootQuat(pose.root && pose.root.rot) }; continue; }
+      const P = W[j.parent];
+      const lq = localQuat(j, (pose.ch && pose.ch[j.id]) || {});
+      W[j.id] = { p: V.add(P.p, Q.rot(P.q, j.offset)), q: Q.norm(Q.mul(P.q, lq)) };
+    }
+    if (contacts) for (const c of contacts) if (pose.ik && pose.ik[c.id] && (pose.ik[c.id].weight ?? 1) > 0.5) applyIK(rig, W, c, pose.ik[c.id]);
+    return W;
+  }
+  function applyIK(rig, W, c, k) {
+    const [a, b, e, tip] = c.chain; // e.g. shoulder_l, elbow_l, wrist_l, handtip_l
+    const S = W[a].p, T = k.target;
+    const la = V.len(rig.byId[b].offset), lb = V.len(rig.byId[e].offset);
+    let d = V.len(V.sub(T, S));
+    d = Math.max(Math.abs(la - lb) + 1e-3, Math.min(la + lb - 1e-3, d));
+    const n = V.norm(V.sub(T, S));
+    const x = (la * la - lb * lb + d * d) / (2 * d), h = Math.sqrt(Math.max(0, la * la - x * x));
+    const pole = V.norm(c.pole);
+    let pp = V.sub(pole, V.scale(n, V.dot(pole, n)));
+    if (V.len(pp) < 1e-6) pp = [0, 1, 0];
+    pp = V.norm(pp);
+    const E = V.add(V.add(S, V.scale(n, x)), V.scale(pp, h));
+    const Wt = V.add(S, V.scale(n, d));
+    const ant = V.scale(pp, -1);
+    const frame = (prox, dist) => {
+      const y = V.norm(V.sub(prox, dist));
+      let xa = V.sub(ant, V.scale(y, V.dot(ant, y))); xa = V.norm(xa);
+      return Q.fromBasis(xa, y, V.cross(xa, y));
+    };
+    W[a].q = frame(S, E);
+    W[b] = { p: E, q: frame(E, Wt) };
+    W[e] = { p: Wt, q: k.handRot || c.handRot || W[b].q };
+    if (tip && rig.byId[tip]) W[tip] = { p: V.add(Wt, Q.rot(W[e].q, rig.byId[tip].offset)), q: W[e].q };
+  }
+
+  /* ---------- Monotone cubic (Fritsch–Carlson) tracks ---------- */
+  function makeTrack(ts, vs) {
+    const n = ts.length, d = [], m = new Array(n).fill(0);
+    for (let i = 0; i < n - 1; i++) d.push((vs[i + 1] - vs[i]) / (ts[i + 1] - ts[i] || 1e-9));
+    for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const al = m[i] / d[i], be = m[i + 1] / d[i], hh = al * al + be * be;
+      if (hh > 9) { const tau = 3 / Math.sqrt(hh); m[i] = tau * al * d[i]; m[i + 1] = tau * be * d[i]; }
+    }
+    return (t) => {
+      if (t <= ts[0]) return vs[0];
+      if (t >= ts[n - 1]) return vs[n - 1];
+      let i = 0; while (i < n - 2 && t > ts[i + 1]) i++;
+      const h = ts[i + 1] - ts[i], s = (t - ts[i]) / h, s2 = s * s, s3 = s2 * s;
+      return (2 * s3 - 3 * s2 + 1) * vs[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * vs[i + 1] + (s3 - s2) * h * m[i + 1];
+    };
+  }
+
+  /* ---------- Timeline: named poses + keyframes -> continuous pose(t) ---------- */
+  function flatten(pose, out, prefix) {
+    for (const k in pose) {
+      const v = pose[k], p = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === 'number') out[p] = v;
+      else if (Array.isArray(v)) v.forEach((x, i) => { if (typeof x === 'number') out[`${p}.${i}`] = x; });
+      else if (v && typeof v === 'object') flatten(v, out, p);
+    }
+    return out;
+  }
+  function setPath(obj, path, val) {
+    const ks = path.split('.'); let o = obj;
+    for (let i = 0; i < ks.length - 1; i++) {
+      const k = ks[i], nk = ks[i + 1];
+      if (!(k in o)) o[k] = /^\d+$/.test(nk) ? [] : {};
+      o = o[k];
+    }
+    o[ks[ks.length - 1]] = val;
+  }
+  function buildTimeline(ex) {
+    const kfs = ex.keyframes.map((k) => {
+      const flat = flatten(ex.poses[k.pose] || {}, {}, '');
+      if (k.set) Object.assign(flat, k.set);
+      return { t: k.t, flat };
+    });
+    const paths = new Set(); kfs.forEach((k) => Object.keys(k.flat).forEach((p) => paths.add(p)));
+    const tracks = {};
+    for (const p of paths) {
+      let last = null;
+      const firstDefined = kfs.find((k) => p in k.flat);
+      const vals = kfs.map((k) => { if (p in k.flat) last = k.flat[p]; return last === null ? firstDefined.flat[p] : last; });
+      tracks[p] = makeTrack(kfs.map((k) => k.t), vals);
+    }
+    const act = {};
+    for (const id in ex.activation || {}) {
+      const pts = ex.activation[id];
+      act[id] = makeTrack(pts.map((p) => p[0]), pts.map((p) => p[1]));
+    }
+    const duration = ex.timeline.duration;
+    return {
+      duration,
+      pose(t) {
+        const out = {};
+        for (const p in tracks) setPath(out, p, tracks[p](t));
+        return out;
+      },
+      activation(id, t) { const f = act[id]; return f ? Math.max(0, Math.min(1, f(t))) : 0; },
+      phaseAt(t) { return ex.timeline.phases.find((ph) => t >= ph.start && t < ph.end) || ex.timeline.phases[ex.timeline.phases.length - 1]; },
+    };
+  }
+
+  /* ---------- Camera + projection (orthographic) ---------- */
+  function camera(yawDeg, pitchDeg) {
+    const ps = yawDeg * DEG, ph = pitchDeg * DEG;
+    const c = [Math.sin(ps) * Math.cos(ph), Math.sin(ph), Math.cos(ps) * Math.cos(ph)];
+    const d = V.scale(c, -1);
+    let r = V.cross(d, Y); if (V.len(r) < 1e-6) r = [1, 0, 0]; r = V.norm(r);
+    const u = V.cross(r, d);
+    return { c, r, u };
+  }
+  function project(cam, p, mirror) { const x = V.dot(p, cam.r); return [mirror ? -x : x, V.dot(p, cam.u), V.dot(p, cam.c)]; }
+
+  // Orthographic outline of an ellipsoid (axes = world semi-axis vectors) -> {cx, cy, rx, ry, rot, depth}
+  function ellipseOf(cam, center, axes, mirror) {
+    const pc = project(cam, center, mirror);
+    let a = 0, b = 0, d = 0; // S = P A A^T P^T
+    for (const ax of axes) {
+      let px = V.dot(ax, cam.r); if (mirror) px = -px;
+      const py = V.dot(ax, cam.u);
+      a += px * px; b += px * py; d += py * py;
+    }
+    const tr = a + d, det = a * d - b * b, disc = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+    const l1 = tr / 2 + disc, l2 = Math.max(1e-6, tr / 2 - disc);
+    const rot = Math.abs(b) < 1e-9 ? (a >= d ? 0 : Math.PI / 2) : Math.atan2(l1 - a, b);
+    return { cx: pc[0], cy: pc[1], rx: Math.sqrt(l1), ry: Math.sqrt(l2), rot, depth: pc[2] };
+  }
+  function shapeWorld(W, s) {
+    if (s.kind === 'capsule') return { kind: 'capsule', a: W[s.from].p, b: W[s.to].p, r: s.r };
+    const J = W[s.joint];
+    return { kind: 'ellipsoid', c: V.add(J.p, Q.rot(J.q, s.c)), axes: [Q.rot(J.q, [s.r[0], 0, 0]), Q.rot(J.q, [0, s.r[1], 0]), Q.rot(J.q, [0, 0, s.r[2]])] };
+  }
+
+  /* ---------- Measurements used by HUD + verification ---------- */
+  function measures(W, side) {
+    // side: authored working side 'r'. Shoulder-line inclination about the trunk axis (inclinometer analogue, T1-T2).
+    const axis = V.norm(V.sub(W.neck_c7.p, W.spine_t12.p));
+    const sl = V.sub(W.shoulder_r.p, W.shoulder_l.p);
+    const perp = (v) => V.sub(v, V.scale(axis, V.dot(v, axis)));
+    const slp = perp(sl);
+    let hz = perp([0, 0, 1]); hz = V.norm(hz);
+    let up = V.norm(V.cross(axis, hz)); if (up[1] < 0) up = V.scale(up, -1);
+    const incl = Math.atan2(V.dot(slp, up), V.dot(slp, hz)) / DEG;
+    const elbowFlex = (s, e, w) => 180 - V.angle(V.sub(W[s].p, W[e].p), V.sub(W[w].p, W[e].p));
+    return {
+      shoulderLineIncl: incl,
+      elbowL: elbowFlex('shoulder_l', 'elbow_l', 'wrist_l'),
+      elbowR: elbowFlex('shoulder_r', 'elbow_r', 'wrist_r'),
+      knee: 180 - V.angle(V.sub(W.hip_r.p, W.knee_r.p), V.sub(W.ankle_r.p, W.knee_r.p)),
+      hip: 180 - V.angle(V.sub(W.spine_t12.p, W.pelvis.p), V.sub(W.knee_r.p, W.hip_r.p)) ,
+      axis, hz, up,
+    };
+  }
+
+  /* ---------- Small Levenberg–Marquardt solver (used for authoring) ---------- */
+  function solveLM(x0, res, opt) {
+    opt = opt || {}; let x = x0.slice(), lam = 1e-2;
+    const cost = (r) => r.reduce((s, v) => s + v * v, 0);
+    let r = res(x), c = cost(r);
+    for (let it = 0; it < (opt.iters || 120); it++) {
+      const n = x.length, m = r.length, J = [];
+      for (let j = 0; j < n; j++) { const xp = x.slice(); xp[j] += 1e-3; const rp = res(xp); J.push(rp.map((v, i) => (v - r[i]) / 1e-3)); }
+      const A = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, k) => { let s = 0; for (let q = 0; q < m; q++) s += J[i][q] * J[k][q]; return s; }));
+      const g = Array.from({ length: n }, (_, i) => { let s = 0; for (let q = 0; q < m; q++) s += J[i][q] * r[q]; return -s; });
+      for (let i = 0; i < n; i++) A[i][i] *= 1 + lam;
+      const dx = gauss(A, g); if (!dx) break;
+      const xn = x.map((v, i) => v + dx[i]), rn = res(xn), cn = cost(rn);
+      if (cn < c) { x = xn; r = rn; const done = c - cn < 1e-10; c = cn; lam = Math.max(1e-7, lam * 0.4); if (done) break; } else lam *= 5;
+    }
+    return { x, cost: c };
+  }
+  function gauss(A, b) {
+    const n = b.length, M = A.map((row, i) => row.concat([b[i]]));
+    for (let i = 0; i < n; i++) {
+      let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(M[k][i]) > Math.abs(M[p][i])) p = k;
+      if (Math.abs(M[p][i]) < 1e-12) return null;
+      [M[i], M[p]] = [M[p], M[i]];
+      for (let k = i + 1; k < n; k++) { const f = M[k][i] / M[i][i]; for (let j = i; j <= n; j++) M[k][j] -= f * M[i][j]; }
+    }
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) { let s = M[i][n]; for (let j = i + 1; j < n; j++) s -= M[i][j] * x[j]; x[i] = s / M[i][i]; }
+    return x;
+  }
+
+  root.RepRig = { DEG, V, Q, CHANNELS, localQuat, rootQuat, buildRig, evalPose, applyIK, makeTrack, buildTimeline, camera, project, ellipseOf, shapeWorld, measures, solveLM };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+<script>const RR_DATA={"rig":{"rigId":"reprig-female-165-v1","schemaVersion":"1.0.0","description":"Shared parametric rig: adult female, 165 cm. Segment lengths from Winter/Drillis–Contini height ratios. Bilateral items are authored for the right side and mirrored across the sagittal plane.","units":{"length":"cm","angle":"deg"},"stature":165,"axes":{"x":"anterior (forward)","y":"superior (up)","z":"right lateral"},"joints":[{"id":"pelvis","type":"root"},{"id":"spine_l5","parent":"pelvis","type":"spine","offset":[-4,9,0],"limits":{"rot":[-6,6],"flex":[-25,45],"latFlex":[-20,20]}},{"id":"spine_t12","parent":"spine_l5","type":"spine","offset":[0,15,0],"limits":{"rot":[-22,22],"flex":[-20,30],"latFlex":[-15,15]}},{"id":"spine_t6","parent":"spine_t12","type":"spine","offset":[0,13,0],"limits":{"rot":[-22,22],"flex":[-15,25],"latFlex":[-12,12]}},{"id":"neck_c7","parent":"spine_t6","type":"neck","offset":[-1,13.5,0],"limits":{"rot":[-35,35],"flex":[-30,40]}},{"id":"head_c1","parent":"neck_c7","type":"neck","offset":[2,10,0],"limits":{"rot":[-45,45],"flex":[-30,30]}},{"id":"hip","parent":"pelvis","type":"hip","bilateral":true,"offset":[0,0,8.5],"limits":{"flex":[-20,125],"abd":[-25,45],"rot":[-40,40]}},{"id":"knee","parent":"hip","type":"knee","bilateral":true,"offset":[0,-40.5,0],"limits":{"flex":[0,150]}},{"id":"ankle","parent":"knee","type":"ankle","bilateral":true,"offset":[0,-40,0],"limits":{"dorsi":[-75,25]}},{"id":"toe","parent":"ankle","type":"end","bilateral":true,"offset":[15.5,-5,0]},{"id":"sc","parent":"spine_t6","type":"clavicle","bilateral":true,"offset":[11,10,2],"limits":{"protract":[-25,30],"elevate":[-10,40]}},{"id":"shoulder","parent":"sc","type":"shoulder","bilateral":true,"offset":[-5.5,1.5,15],"limits":{"elev":[0,180],"plane":[-60,140]}},{"id":"elbow","parent":"shoulder","type":"elbow","bilateral":true,"offset":[0,-29,0],"limits":{"flex":[0,150]}},{"id":"wrist","parent":"elbow","type":"wrist","bilateral":true,"offset":[0,-24,0],"limits":{"flex":[-90,80],"dev":[-20,35]}},{"id":"handtip","parent":"wrist","type":"end","bilateral":true,"offset":[0,-17.5,0]}],"shapes":[{"id":"pelvis","kind":"ellipsoid","joint":"pelvis","c":[-2.5,2,0],"r":[10.5,10,16.5]},{"id":"buttock","kind":"ellipsoid","joint":"pelvis","bilateral":true,"c":[-7.5,-2,7.2],"r":[7.5,9,7.8]},{"id":"abdomen","kind":"ellipsoid","joint":"spine_l5","c":[5.5,8,0],"r":[9.5,10.5,13.2]},{"id":"ribcage","kind":"ellipsoid","joint":"spine_t12","c":[6.5,7.5,0],"r":[10.8,10.5,14]},{"id":"chest","kind":"ellipsoid","joint":"spine_t6","c":[5.5,7,0],"r":[10.6,10.5,15.2]},{"id":"bust","kind":"ellipsoid","joint":"spine_t6","bilateral":true,"c":[13.4,1.5,6.8],"r":[4.4,5.2,5.6]},{"id":"thigh","kind":"capsule","from":"hip","to":"knee","bilateral":true,"r":[8.2,5.2]},{"id":"shank","kind":"capsule","from":"knee","to":"ankle","bilateral":true,"r":[5,3.1]},{"id":"calf","kind":"ellipsoid","joint":"knee","bilateral":true,"c":[-2.6,-13,0],"r":[4.4,10,4.3]},{"id":"foot","kind":"ellipsoid","joint":"ankle","bilateral":true,"c":[5.5,-3,0],"r":[12,3.6,4.4]},{"id":"deltoid","kind":"ellipsoid","joint":"shoulder","bilateral":true,"c":[0,-3.5,1],"r":[5.4,7,5.4]},{"id":"upperarm","kind":"capsule","from":"shoulder","to":"elbow","bilateral":true,"r":[4.5,3.4]},{"id":"forearm","kind":"capsule","from":"elbow","to":"wrist","bilateral":true,"r":[3.5,2.3]},{"id":"hand","kind":"ellipsoid","joint":"wrist","bilateral":true,"c":[1,-8,0],"r":[1.6,8.2,4]},{"id":"neck","kind":"capsule","from":"neck_c7","to":"head_c1","r":[5,4.4]},{"id":"head","kind":"ellipsoid","joint":"head_c1","c":[3,8.5,0],"r":[9.6,11,7.8]},{"id":"face","kind":"ellipsoid","joint":"head_c1","tone":"face","c":[10.6,6.2,0],"r":[2.6,6.4,5.2]},{"id":"nose","kind":"ellipsoid","joint":"head_c1","tone":"face","c":[12.8,6.6,0],"r":[1.4,2.2,1.1]},{"id":"hair","kind":"ellipsoid","joint":"head_c1","tone":"hair","c":[-1,11,0],"r":[9.4,9.2,8.3]},{"id":"bun","kind":"ellipsoid","joint":"head_c1","tone":"hair","c":[-8.5,14.5,0],"r":[4.6,4.6,4.6]}],"muscles":[{"id":"obliques","name":"Obliques (external + internal)","bilateral":true,"parts":[{"joint":"spine_l5","c":[5,9,11.2],"r":[7.5,9.5,3]},{"joint":"spine_t12","c":[6,2,12.2],"r":[7,6,2.8]}]},{"id":"spinal_extensors","name":"Thoracic erector spinae + multifidus/rotatores","bilateral":true,"parts":[{"joint":"spine_t12","c":[-3.4,7,3.2],"r":[2.4,9,2.6]},{"joint":"spine_t6","c":[-3.6,6,3.2],"r":[2.4,8,2.6]}]},{"id":"rhomboids_midtrap","name":"Rhomboids + middle trapezius","bilateral":true,"parts":[{"joint":"spine_t6","c":[-4.2,8.5,6.5],"r":[2.2,6,4.6]}]},{"id":"post_deltoid","name":"Posterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.2,-4,1],"r":[3.2,5.8,4.2]}]},{"id":"infraspinatus","name":"Infraspinatus / teres minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[-1.2,4,10.5],"r":[2.2,5,3.8]}]},{"id":"serratus","name":"Serratus anterior","bilateral":true,"parts":[{"joint":"spine_t12","c":[7,11,12.6],"r":[5.5,6,2.4]}]},{"id":"triceps","name":"Triceps brachii","bilateral":true,"parts":[{"joint":"shoulder","c":[-3.3,-15,0],"r":[2.6,9.5,3.2]}]},{"id":"core","name":"Transversus abdominis / rectus abdominis","parts":[{"joint":"spine_l5","c":[14.2,8,0],"r":[2.4,9,8.5]}]},{"id":"glute_med","name":"Gluteus medius","bilateral":true,"parts":[{"joint":"pelvis","c":[-3,4.5,14.2],"r":[6,5,2.6]}]},{"id":"pec","name":"Pectoralis major + minor","bilateral":true,"parts":[{"joint":"spine_t6","c":[12.5,5,7],"r":[2.4,5.5,6.5]}]},{"id":"ant_deltoid","name":"Anterior deltoid","bilateral":true,"parts":[{"joint":"shoulder","c":[3.4,-4,1],"r":[3,5.5,4]}]}]},"exercise":{"schemaVersion":"1.0.0","rig":{"ref":"reprig-female-165-v1"},"exercise":{"id":"kneeling-back-rotation-stretch","name":"Kneeling Back Rotation Stretch","aliases":["Quadruped thoracic rotation (reach)","Quadruped T-spine rotation","Open-book reach from all fours"],"reference":{"source":"GymVisual","productRef":"429713","title":"Kneeling Back Rotation Stretch (female)","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html","listing":"First item on https://gymvisual.com/13-media-content (sorted A to Z), viewed 2026-11-26","note":"Used only to identify the movement. This rig, artwork and animation are original."},"type":"Stretching / dynamic mobility","bodyPart":"Back (thoracic spine)","secondaryBodyParts":["Shoulders","Chest","Core"],"equipment":["Body weight","Exercise mat (optional)"],"difficulty":"Beginner","mechanics":"Isolation (spinal mobility)","plane":"Transverse","laterality":"Unilateral (alternate sides)","authoredSide":"right","muscles":{"target":["obliques_r","obliques_l","spinal_extensors_r","spinal_extensors_l"],"synergist":["rhomboids_midtrap_r","post_deltoid_r","infraspinatus_r"],"stabilizer":["serratus_l","triceps_l","core","glute_med_r","glute_med_l"],"lengthened":["pec_r","ant_deltoid_r"]},"muscleNotes":{"obliques_r":"Internal oblique on the turning side helps drive rotation toward it.","obliques_l":"External oblique on the opposite side pairs with it to turn the rib cage.","spinal_extensors_l":"Deep rotators (multifidus/rotatores) turn the spine toward the opposite side, so the left side works on a right turn.","spinal_extensors_r":"Keeps the upper back long so the turn is rotation, not rounding.","rhomboids_midtrap_r":"Draws the shoulder blade back as the arm opens.","post_deltoid_r":"Carries the arm up and back toward the ceiling.","infraspinatus_r":"Turns the upper arm outward so the palm can face forward at the top.","serratus_l":"Pushes the floor away and holds the shoulder blade flat on the rib cage.","triceps_l":"Keeps the support elbow long without locking it.","core":"Light brace keeps the lower back and pelvis quiet.","glute_med_r":"Holds the hips level over the knees.","glute_med_l":"Holds the hips level over the knees.","pec_r":"Lengthens across the front of the chest at end range.","ant_deltoid_r":"Lengthens at the front of the shoulder at end range."},"breathing":{"pattern":"Inhale as the hand lifts and winds under the chest; exhale slowly as you rotate open toward the ceiling; keep breathing slowly in the hold, letting each exhale add a little range; inhale on the way back down.","cadence":"About 2 s wind-up, 2 s rotate, 2–3 s hold, 2 s return"},"prescription":{"sets":"1–3","reps":"8–12 per side","endRangeHold":"2–3 s per rep","staticOption":"20–30 s hold, 2–3 times per side","frequency":"Daily or as a warm-up","tempo":"2–2–2 (rotate–hold–return)"},"cues":[{"id":"c1","phase":"setup","text":"Hands under shoulders, knees under hips, tops of the feet on the mat. Spine long, gaze at the floor."},{"id":"c2","phase":"windup","text":"Push the floor away with the left hand. Lift the right hand and let it drift a little under your chest as you breathe in."},{"id":"c3","phase":"rotate","text":"Lead with the chest: sweep the right arm up and open the rib cage toward the ceiling. Eyes follow the hand."},{"id":"c4","phase":"hold","text":"Pause at end range. Hips stay square over the knees; exhale and let the upper back turn a touch further."},{"id":"c5","phase":"return","text":"Rotate back down under control, chest first, arm following."},{"id":"c6","phase":"reset","text":"Place the hand back under the shoulder, reset a neutral spine, then repeat or switch sides."}],"mistakes":[{"id":"m1","mistake":"Hips sway or rotate with the chest","fix":"Keep hips stacked over knees; imagine a glass of water on your low back. Turn only as far as the pelvis can stay still."},{"id":"m2","mistake":"Sinking into the support shoulder","fix":"Press the floor away so the shoulder blade stays flat and the support arm stays long."},{"id":"m3","mistake":"Moving the arm without turning the spine","fix":"Lead with the sternum; keep the arm in line with the chest, so the hand only goes as high as the rib cage turns."},{"id":"m4","mistake":"Side-bending instead of rotating","fix":"Keep the spine long from tailbone to head and turn around that line."},{"id":"m5","mistake":"Holding the breath or rushing","fix":"Move on a slow exhale and pause at end range; bouncing reduces the range you get."},{"id":"m6","mistake":"Cranking the neck","fix":"Let the head follow the rib cage; the eyes track the hand without forcing the neck."},{"id":"m7","mistake":"Locking the support elbow","fix":"Keep a soft bend (about 5–15°) and weight spread through the whole palm."}],"kinematics":[{"measure":"Thoracic rotation (T12–T1)","setup":"0°","peak":"≈40°","norm":"30–35° per side estimated anatomically; lumbar-locked test mean ≈41° (SD ≈11°); ≥50° counted as unrestricted","sources":["nasm","johnson2012","whetstone2024"]},{"measure":"Lumbar rotation (L5–S1 to T12)","setup":"0°","peak":"≈5°","norm":"≈10° per side available; keep it small","sources":["nasm"]},{"measure":"Total trunk rotation","setup":"0°","peak":"≈45°","norm":"≈45° thoracolumbar per side","sources":["nasm"]},{"measure":"Cervical rotation toward reaching hand","setup":"0°","peak":"≈57° plus 21° extension","norm":"Head follows the rib cage; eyes track the hand","sources":["physitrack"]},{"measure":"Hips","setup":"≈76.1° flexion (thighs vertical)","peak":"Unchanged; pelvis still","norm":"Hips over knees","sources":["physitrack"]},{"measure":"Knees","setup":"90° flexion, shins on mat","peak":"Unchanged","norm":"Knees under hips","sources":["physitrack"]},{"measure":"Support elbow","setup":"≈10° (soft)","peak":"≈10–15°","norm":"Long arm, not locked","sources":[]},{"measure":"Reaching arm","setup":"Hand flat under shoulder","peak":"Abducted ≈90° to the chest, opened past the frontal plane until vertical","norm":"Arm stays in line with the chest","sources":["physitrack"]}],"sources":[{"id":"gymvisual","title":"GymVisual — Kneeling Back Rotation Stretch (female), ref. 429713","url":"https://gymvisual.com/animated-gifs/12089--kneeling-back-rotation-stretch-female.html"},{"id":"physitrack","title":"Physitrack — Quadruped Thoracic Rotation / Extension-Rotation","url":"https://ie.physitrack.com/home-exercise-video/quadruped-thoracic-rotation"},{"id":"johnson2012","title":"Johnson et al. 2012, Reliability of thoracic spine rotation ROM measurements in healthy adults (J Athl Train)","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC3418115"},{"id":"whetstone2024","title":"Whetstone & Matsel 2024, Visual estimation of thorax rotation in the quadruped lumbar-locked position (IJSPT)","url":"https://ijspt.scholasticahq.com/article/116154"},{"id":"nasm","title":"NASM — Optimizing thoracic spine mobility with corrective exercise (citing Neumann 2010)","url":"https://blog.nasm.org/ces/optimizing-thoracic-spine-mobility-with-corrective-exercise"},{"id":"motra","title":"Motra — Quadruped T-Spine Rotation (breathing, beginner rating)","url":"https://motra.com/exercises/quadrupedTSpineRotation"},{"id":"fitcraft","title":"FitCraft — Quadruped thread-the-needle (hip drop and breath-holding errors)","url":"https://getfitcraft.com/exercises/quadruped-thread-the-needle"},{"id":"prehab","title":"The Prehab Guys — Quadruped thoracic spine rotation (avoid side bending; opens the pecs)","url":"https://library.theprehabguys.com/vimeo-video/thoracic-spine-rotation/"},{"id":"ace","title":"ACE — Top exercises to gain thoracic mobility (10–12 reps or 20–30 s per side)","url":"https://www.acefitness.org/resources/pros/expert-articles/5203/top-exercises-to-gain-thoracic-mobility/"},{"id":"kenhub","title":"Kenhub — Rotatores muscles","url":"https://kenhub.com/en/library/anatomy/rotatores-muscles"}]},"camera":{"default":"threeQuarter","presets":{"threeQuarter":{"yaw":38,"pitch":20,"label":"3/4"},"side":{"yaw":0,"pitch":6,"label":"Side"},"front":{"yaw":88,"pitch":12,"label":"Front"},"back":{"yaw":-48,"pitch":34,"label":"Back"},"top":{"yaw":25,"pitch":72,"label":"Top"}}},"props":[{"id":"mat","kind":"mat","center":[8,0,0],"size":[180,0.6,62]}],"contacts":[{"id":"arm_l","label":"Support hand (left)","chain":["shoulder_l","elbow_l","wrist_l","handtip_l"],"pole":[-1,0.1,-0.35],"handRot":[0,-0.707107,0.707107,0]}],"timeline":{"duration":8,"fps":60,"loop":true,"interpolation":"monotoneCubic","phases":[{"id":"setup","label":"Set up","start":0,"end":0.6,"breath":"natural","cue":"c1"},{"id":"windup","label":"Wind up","start":0.6,"end":1.7,"breath":"inhale","cue":"c2"},{"id":"rotate","label":"Rotate open","start":1.7,"end":4,"breath":"exhale","cue":"c3"},{"id":"hold","label":"Hold","start":4,"end":5.6,"breath":"exhale","cue":"c4"},{"id":"return","label":"Return","start":5.6,"end":7.4,"breath":"inhale","cue":"c5"},{"id":"reset","label":"Reset","start":7.4,"end":8,"breath":"natural","cue":"c6"}]},"poses":{"tabletop":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0,"latFlex":0,"flex":0},"spine_t12":{"rot":0,"latFlex":0,"flex":0},"spine_t6":{"rot":0,"latFlex":0,"flex":0},"neck_c7":{"rot":0,"flex":0},"head_c1":{"rot":0,"flex":0},"sc_r":{"protract":5,"elevate":0},"sc_l":{"protract":5,"elevate":0},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"shoulder_r":{"plane":83.3,"elev":72,"axial":-67.7},"elbow_r":{"flex":9.9},"wrist_r":{"pron":172.4,"flex":-84.7,"dev":-14.3}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"unload":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-0.24,"latFlex":0.3,"flex":0.5},"spine_t12":{"rot":-0.88,"latFlex":0.2,"flex":0.3},"spine_t6":{"rot":-0.88,"latFlex":0.1,"flex":0.2},"neck_c7":{"rot":-1.2,"flex":1.2},"head_c1":{"rot":-1.8,"flex":1.8},"sc_r":{"protract":6,"elevate":8},"sc_l":{"protract":5.5,"elevate":-0.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":50},"wrist_r":{"pron":172.4,"flex":-69.7,"dev":-14.3},"shoulder_r":{"plane":77.4,"elev":51.6,"axial":-65}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"windup":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":-1.08,"latFlex":1.1,"flex":2.2},"spine_t12":{"rot":-3.96,"latFlex":0.9,"flex":1.3},"spine_t6":{"rot":-3.96,"latFlex":0.3,"flex":0.7},"neck_c7":{"rot":-3.2,"flex":3.2},"head_c1":{"rot":-4.8,"flex":4.8},"sc_r":{"protract":14,"elevate":2},"sc_l":{"protract":7,"elevate":-0.8},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":73.3},"wrist_r":{"pron":172.4,"flex":-72.7,"dev":-14.3},"shoulder_r":{"plane":66.6,"elev":47.6,"axial":-55}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"clear":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.4},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.2},"neck_c7":{"rot":5.4,"flex":2.9},"head_c1":{"rot":8,"flex":4.3},"sc_r":{"protract":8,"elevate":3},"sc_l":{"protract":4.3,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":30},"wrist_r":{"pron":160,"flex":-45,"dev":0},"shoulder_r":{"plane":28.4,"elev":67.4,"axial":-40}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"sweep":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":1.68,"latFlex":-2,"flex":-2.8},"spine_t12":{"rot":6.16,"latFlex":-1.3,"flex":-2.1},"spine_t6":{"rot":6.16,"latFlex":-0.3,"flex":-1.2},"neck_c7":{"rot":9.4,"flex":3.7},"head_c1":{"rot":14.1,"flex":5.5},"sc_r":{"protract":4,"elevate":2},"sc_l":{"protract":1.2,"elevate":1.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":12},"wrist_r":{"pron":120,"flex":-10,"dev":0},"shoulder_r":{"plane":37.7,"elev":73,"axial":-25}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"rise":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":3.84,"latFlex":-4.7,"flex":-5.2},"spine_t12":{"rot":14.08,"latFlex":-2.9,"flex":-4.8},"spine_t6":{"rot":14.08,"latFlex":-0.4,"flex":-2.9},"neck_c7":{"rot":19,"flex":0.4},"head_c1":{"rot":28.6,"flex":0.6},"sc_r":{"protract":-4,"elevate":3},"sc_l":{"protract":-4.4,"elevate":3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":80,"flex":0,"dev":0},"shoulder_r":{"plane":8.1,"elev":90.5,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"peak":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.3999999999999995,"latFlex":-6.5,"flex":-6.3},"spine_t12":{"rot":19.8,"latFlex":-3.8,"flex":-6.8},"spine_t6":{"rot":19.8,"latFlex":-0.2,"flex":-4.1},"neck_c7":{"rot":22.6,"flex":-8.2},"head_c1":{"rot":33.9,"flex":-12.3},"sc_r":{"protract":-10,"elevate":5},"sc_l":{"protract":-8.8,"elevate":4.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-26.5,"elev":113.9,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"peakBreath":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":5.7,"latFlex":-6.8,"flex":-6.4},"spine_t12":{"rot":20.9,"latFlex":-4,"flex":-7.1},"spine_t6":{"rot":20.9,"latFlex":-0.1,"flex":-4.4},"neck_c7":{"rot":22.6,"flex":-8.2},"head_c1":{"rot":33.8,"flex":-12.2},"sc_r":{"protract":-11,"elevate":5},"sc_l":{"protract":-9.6,"elevate":4.4},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":5},"wrist_r":{"pron":60,"flex":0,"dev":0},"shoulder_r":{"plane":-23.9,"elev":114.3,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"descend":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":2.88,"latFlex":-3.5,"flex":-4.3},"spine_t12":{"rot":10.56,"latFlex":-2.2,"flex":-3.6},"spine_t6":{"rot":10.56,"latFlex":-0.4,"flex":-2.2},"neck_c7":{"rot":19.1,"flex":2.8},"head_c1":{"rot":28.6,"flex":4.2},"sc_r":{"protract":-2,"elevate":2},"sc_l":{"protract":-1.8,"elevate":2.2},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":8},"wrist_r":{"pron":110,"flex":-5,"dev":0},"shoulder_r":{"plane":14.1,"elev":84.7,"axial":0}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}},"touchdown":{"root":{"pos":[0,46.5,0],"rot":{"pitch":-76.1}},"ch":{"hip_r":{"flex":76.1},"hip_l":{"flex":76.1},"knee_r":{"flex":90},"knee_l":{"flex":90},"ankle_r":{"dorsi":-72},"ankle_l":{"dorsi":-72},"spine_l5":{"rot":0.36,"latFlex":-0.4,"flex":-0.7},"spine_t12":{"rot":1.32,"latFlex":-0.3,"flex":-0.4},"spine_t6":{"rot":1.32,"latFlex":-0.1,"flex":-0.2},"neck_c7":{"rot":1.2,"flex":0.8},"head_c1":{"rot":1.8,"flex":1.2},"sc_r":{"protract":5,"elevate":6},"sc_l":{"protract":4.3,"elevate":0.3},"shoulder_l":{"plane":90,"elev":76,"axial":0},"elbow_l":{"flex":10},"wrist_l":{"pron":80,"flex":-80,"dev":0},"elbow_r":{"flex":28},"wrist_r":{"pron":172.4,"flex":-72.7,"dev":-14.3},"shoulder_r":{"plane":83.6,"elev":60.3,"axial":-65}},"ik":{"arm_l":{"target":[47.8,2.6,-17.4],"weight":1}}}},"keyframes":[{"t":0,"pose":"tabletop"},{"t":0.6,"pose":"tabletop"},{"t":1,"pose":"unload"},{"t":1.7,"pose":"windup"},{"t":2.15,"pose":"clear"},{"t":2.65,"pose":"sweep"},{"t":3.3,"pose":"rise"},{"t":4,"pose":"peak"},{"t":4.8,"pose":"peakBreath"},{"t":5.6,"pose":"peak"},{"t":6.3,"pose":"descend"},{"t":7,"pose":"touchdown"},{"t":7.4,"pose":"tabletop"},{"t":8,"pose":"tabletop"}],"activation":{"obliques_r":[[0,0.15],[1.7,0.3],[3.3,0.9],[4,0.85],[5.6,0.8],[6.6,0.5],[7.4,0.15],[8,0.15]],"obliques_l":[[0,0.15],[1.7,0.25],[3.3,0.8],[4,0.8],[5.6,0.75],[6.6,0.45],[7.4,0.15],[8,0.15]],"spinal_extensors_r":[[0,0.2],[1.7,0.25],[3.6,0.75],[5.6,0.7],[7.4,0.2],[8,0.2]],"spinal_extensors_l":[[0,0.2],[1.7,0.3],[3.6,0.8],[5.6,0.75],[7.4,0.2],[8,0.2]],"rhomboids_midtrap_r":[[0,0.1],[1.7,0.1],[3.6,0.9],[5.6,0.85],[7,0.2],[8,0.1]],"post_deltoid_r":[[0,0.1],[1.7,0.15],[3.6,0.85],[5.6,0.8],[7,0.2],[8,0.1]],"infraspinatus_r":[[0,0.1],[2.6,0.3],[3.8,0.65],[5.6,0.6],[7,0.2],[8,0.1]],"serratus_l":[[0,0.5],[1,0.7],[4,0.8],[7,0.7],[7.4,0.5],[8,0.5]],"triceps_l":[[0,0.45],[1,0.65],[4,0.7],[7,0.65],[7.4,0.45],[8,0.45]],"core":[[0,0.4],[2,0.55],[4,0.6],[7.4,0.45],[8,0.4]],"glute_med_r":[[0,0.3],[4,0.45],[8,0.3]],"glute_med_l":[[0,0.3],[4,0.5],[8,0.3]],"pec_r":[[0,0],[2.6,0.1],[3.6,0.7],[4.4,1],[5.6,0.95],[6.6,0.3],[7.4,0],[8,0]],"ant_deltoid_r":[[0,0],[2.6,0.1],[3.6,0.6],[4.4,0.85],[5.6,0.8],[6.6,0.25],[7.4,0],[8,0]]},"guides":[{"id":"handPath","kind":"path","joint":"handtip_r","from":0.6,"to":7.4,"label":"Hand path"},{"id":"rotationArc","kind":"rotationArc","joint":"spine_t6","radius":30,"normBand":[40,50],"label":"Thoracic rotation"},{"id":"gaze","kind":"gaze","joint":"head_c1","target":"handtip_r","label":"Eyes follow hand"}]},"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://reprig.app/schema/exercise-module/1.0.0","title":"RepRig exercise module","description":"One file per exercise: clinical metadata + keyframed pose data for a shared parametric rig. Angles in degrees, lengths in cm. World axes: +X forward, +Y up, +Z the figure's right. Author the right side; the player mirrors it for the left.","type":"object","required":["schemaVersion","rig","exercise","timeline","poses","keyframes"],"additionalProperties":false,"properties":{"schemaVersion":{"const":"1.0.0"},"rig":{"type":"object","required":["ref"],"properties":{"ref":{"type":"string","description":"rigId of a shared rig file, e.g. reprig-female-165-v1"}},"additionalProperties":false},"exercise":{"$ref":"#/$defs/metadata"},"camera":{"type":"object","properties":{"default":{"type":"string"},"presets":{"type":"object","additionalProperties":{"type":"object","required":["yaw","pitch"],"properties":{"yaw":{"type":"number"},"pitch":{"type":"number","minimum":-10,"maximum":89},"label":{"type":"string"}}}}}},"props":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["mat","bench","box","barbell","dumbbell","kettlebell","band","cable"]},"center":{"$ref":"#/$defs/vec3"},"size":{"$ref":"#/$defs/vec3"},"attach":{"type":"object","properties":{"joint":{"type":"string"},"offset":{"$ref":"#/$defs/vec3"}}}}}},"contacts":{"type":"array","description":"Limbs solved with two-bone IK so planted hands/feet never slide. Targets are keyed in poses under ik.\u003cid>.target.","items":{"type":"object","required":["id","chain","pole"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"chain":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":4},"pole":{"$ref":"#/$defs/vec3"},"handRot":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4,"description":"World-locked end-effector rotation, quaternion [w,x,y,z]"}}}},"timeline":{"type":"object","required":["duration","phases"],"properties":{"duration":{"type":"number","exclusiveMinimum":0},"fps":{"type":"integer","minimum":24},"loop":{"type":"boolean"},"interpolation":{"enum":["monotoneCubic","linear"]},"phases":{"type":"array","minItems":1,"items":{"type":"object","required":["id","label","start","end","breath"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"start":{"type":"number","minimum":0},"end":{"type":"number"},"breath":{"enum":["inhale","exhale","hold","natural"]},"cue":{"type":"string"}}}}}},"poses":{"type":"object","minProperties":1,"additionalProperties":{"$ref":"#/$defs/pose"}},"keyframes":{"type":"array","minItems":2,"items":{"type":"object","required":["t","pose"],"properties":{"t":{"type":"number","minimum":0},"pose":{"type":"string"},"set":{"type":"object","description":"Flat overrides, e.g. {\"ch.spine_t6.rot\": 22}","additionalProperties":{"type":"number"}}},"additionalProperties":false}},"activation":{"type":"object","description":"Per-muscle activation 0–1 over time: [[t, value], ...]. Keys are rig muscle ids with _r/_l suffix.","additionalProperties":{"type":"array","items":{"type":"array","prefixItems":[{"type":"number"},{"type":"number","minimum":0,"maximum":1}],"minItems":2,"maxItems":2}}},"guides":{"type":"array","items":{"type":"object","required":["id","kind"],"properties":{"id":{"type":"string"},"kind":{"enum":["path","rotationArc","gaze","jointAngle"]},"joint":{"type":"string"},"target":{"type":"string"},"from":{"type":"number"},"to":{"type":"number"},"radius":{"type":"number"},"normBand":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},"label":{"type":"string"}}}}},"$defs":{"vec3":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"pose":{"type":"object","properties":{"root":{"type":"object","properties":{"pos":{"$ref":"#/$defs/vec3"},"rot":{"type":"object","properties":{"yaw":{"type":"number"},"pitch":{"type":"number"},"roll":{"type":"number"}},"additionalProperties":false}}},"ch":{"type":"object","description":"Anatomical joint channels. spine/neck: flex,latFlex,rot · clavicle(sc): protract,elevate · shoulder: plane,elev,axial (ISB globe) · elbow/knee: flex · wrist: pron,flex,dev · hip: flex,abd,rot · ankle: dorsi","propertyNames":{"pattern":"^[a-z0-9]+(_[a-z0-9]+)*$"},"additionalProperties":{"type":"object","propertyNames":{"enum":["flex","latFlex","rot","protract","elevate","plane","elev","axial","pron","dev","abd","dorsi"]},"additionalProperties":{"type":"number","minimum":-360,"maximum":360}}},"ik":{"type":"object","additionalProperties":{"type":"object","required":["target"],"properties":{"target":{"$ref":"#/$defs/vec3"},"weight":{"type":"number","minimum":0,"maximum":1}}}}},"additionalProperties":false},"metadata":{"type":"object","required":["id","name","type","bodyPart","equipment","difficulty","muscles","breathing","cues","mistakes"],"properties":{"id":{"type":"string","pattern":"^[a-z0-9-]+$"},"name":{"type":"string"},"aliases":{"type":"array","items":{"type":"string"}},"reference":{"type":"object","properties":{"source":{"type":"string"},"productRef":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"},"listing":{"type":"string"},"note":{"type":"string"}}},"type":{"type":"string"},"bodyPart":{"type":"string"},"secondaryBodyParts":{"type":"array","items":{"type":"string"}},"equipment":{"type":"array","items":{"type":"string"},"minItems":1},"difficulty":{"enum":["Beginner","Intermediate","Advanced"]},"mechanics":{"type":"string"},"plane":{"enum":["Sagittal","Frontal","Transverse","Multiplanar"]},"laterality":{"type":"string"},"authoredSide":{"enum":["right","left","bilateral"]},"muscles":{"type":"object","required":["target","synergist"],"properties":{"target":{"$ref":"#/$defs/ids"},"synergist":{"$ref":"#/$defs/ids"},"stabilizer":{"$ref":"#/$defs/ids"},"lengthened":{"$ref":"#/$defs/ids"}},"additionalProperties":false},"muscleNotes":{"type":"object","additionalProperties":{"type":"string"}},"breathing":{"type":"object","required":["pattern"],"properties":{"pattern":{"type":"string"},"cadence":{"type":"string"}}},"prescription":{"type":"object","additionalProperties":{"type":"string"}},"cues":{"type":"array","minItems":1,"items":{"type":"object","required":["id","text"],"properties":{"id":{"type":"string"},"phase":{"type":"string"},"text":{"type":"string"}}}},"mistakes":{"type":"array","items":{"type":"object","required":["mistake","fix"],"properties":{"id":{"type":"string"},"mistake":{"type":"string"},"fix":{"type":"string"}}}},"kinematics":{"type":"array","items":{"type":"object","required":["measure","setup","peak"],"properties":{"measure":{"type":"string"},"setup":{"type":"string"},"peak":{"type":"string"},"norm":{"type":"string"},"sources":{"type":"array","items":{"type":"string"}}}}},"sources":{"type":"array","items":{"type":"object","required":["id","title","url"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"url":{"type":"string"}}}}}},"ids":{"type":"array","items":{"type":"string","pattern":"^[a-z0-9_]+$"},"uniqueItems":true}}}};</script>
+<script>{
+const R = RepRig, V = R.V, Q = R.Q;
+const RIG = RR_DATA.rig, EX = RR_DATA.exercise, SCHEMA = RR_DATA.schema;
+const META = EX.exercise;
+const rig = R.buildRig(RIG);
+const tl = R.buildTimeline(EX);
+const D = tl.duration;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------------- state ---------------- */
+const P0 = EX.camera.presets[EX.camera.default];
+const S = {
+  t: 3.2, playing: true, speed: 1, side: 'R', cam: EX.camera.default, yaw: P0.yaw, pitch: P0.pitch, bg: 'dark', hover: null,
+  show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true },
+};
+try { const saved = JSON.parse(localStorage.getItem('reprig-view') || '{}'); if (saved.bg) S.bg = saved.bg; if (saved.show) Object.assign(S.show, saved.show); } catch (e) {}
+const remember = () => { try { localStorage.setItem('reprig-view', JSON.stringify({ bg: S.bg, show: S.show })); } catch (e) {} };
+
+const ROLE = { target: [229, 62, 58], synergist: [242, 169, 30], stabilizer: [59, 143, 224], lengthened: [154, 99, 232] };
+const ROLE_LABEL = { target: 'Target', synergist: 'Synergists', stabilizer: 'Stabilizers', lengthened: 'Lengthened' };
+const roleOf = {};
+for (const role in META.muscles) for (const id of META.muscles[role]) roleOf[id] = role;
+const PAL = {
+  dark: { bg: ['#20252d', '#0e1115'], floor: [38, 43, 51], mat: [44, 58, 64], matEdge: [70, 92, 100], body: [182, 190, 202], hair: [52, 56, 66], face: [204, 210, 219], shadow: 0.5, ink: '#e8ecf1', guide: '#2fd1c0', arc: '#2fd1c0', band: 'rgba(47,209,192,.16)', grid: 'rgba(255,255,255,.035)' },
+  light: { bg: ['#f3f2ee', '#dedcd5'], floor: [214, 211, 203], mat: [93, 132, 136], matEdge: [70, 104, 108], body: [176, 183, 195], hair: [62, 66, 76], face: [196, 202, 211], shadow: 0.28, ink: '#1d2127', guide: '#0e8f83', arc: '#0e8f83', band: 'rgba(14,143,131,.14)', grid: 'rgba(0,0,0,.03)' },
+};
+const BIG = new Set(['pelvis', 'abdomen', 'ribcage', 'chest', 'buttock_r', 'buttock_l']);
+
+/* ---------------- canvas ---------------- */
+const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+const shadowCv = document.createElement('canvas'), sctx = shadowCv.getContext('2d');
+let CW = 0, CH = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  CW = stage.clientWidth; CH = stage.clientHeight;
+  cv.width = Math.round(CW * DPR); cv.height = Math.round(CH * DPR); shadowCv.width = Math.max(1, Math.round(CW / 4)); shadowCv.height = Math.max(1, Math.round(CH / 4));
+  fitCache = {}; draw();
+}
+const roStage = new ResizeObserver(resize);
+
+/* ---------------- framing ---------------- */
+let fitCache = {};
+const handPathWorld = (() => {
+  const g = EX.guides.find((x) => x.kind === 'path'); if (!g) return null;
+  const pts = [];
+  for (let i = 0; i <= 140; i++) { const t = g.from + ((g.to - g.from) * i) / 140; pts.push({ t, p: R.evalPose(rig, tl.pose(t), EX.contacts)[g.joint].p }); }
+  return { g, pts };
+})();
+const SAMPLES = Array.from({ length: 24 }, (_, i) => R.evalPose(rig, tl.pose((i / 24) * D), EX.contacts));
+function fit(cam, mirror) {
+  const key = `${S.yaw.toFixed(1)}|${S.pitch.toFixed(1)}|${mirror}|${CW}x${CH}`;
+  if (fitCache[key]) return fitCache[key];
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  const add = (p, m) => { const s = R.project(cam, p, mirror); x0 = Math.min(x0, s[0] - m); x1 = Math.max(x1, s[0] + m); y0 = Math.min(y0, s[1] - m); y1 = Math.max(y1, s[1] + m); };
+  for (const W of SAMPLES) for (const id in W) add(W[id].p, 9);
+  const padTop = 54, padBot = S.show.angles && CW > 520 ? 26 : 22, padX = 26;
+  const sc = Math.min((CW - padX * 2) / (x1 - x0), (CH - padTop - padBot) / (y1 - y0));
+  const f = { s: sc, ox: padX + ((CW - padX * 2) - (x1 - x0) * sc) / 2 - x0 * sc, oy: padTop + ((CH - padTop - padBot) - (y1 - y0) * sc) / 2 + y1 * sc };
+  fitCache = { [key]: f }; return f;
+}
+
+/* ---------------- colour helpers ---------------- */
+const rgb = (c, a) => (a == null ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})` : `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`);
+const mul = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const LIGHT = V.norm([-0.55, -0.83, 0]); // screen space, from upper left
+
+/* ---------------- geometry -> screen primitives ---------------- */
+function capsulePath(p, a, ra, b, rb) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
+  if (d + Math.min(ra, rb) <= Math.max(ra, rb) + 0.01) { const big = ra >= rb ? [a, ra] : [b, rb]; p.moveTo(big[0][0] + big[1], big[0][1]); p.arc(big[0][0], big[0][1], big[1], 0, Math.PI * 2, true); return; }
+  const th = Math.atan2(dy, dx), al = Math.acos((ra - rb) / d);
+  p.moveTo(a[0] + ra * Math.cos(th + al), a[1] + ra * Math.sin(th + al));
+  p.lineTo(b[0] + rb * Math.cos(th + al), b[1] + rb * Math.sin(th + al));
+  p.arc(b[0], b[1], rb, th + al, th - al, true);
+  p.lineTo(a[0] + ra * Math.cos(th - al), a[1] + ra * Math.sin(th - al));
+  p.arc(a[0], a[1], ra, th - al, th + al, true);
+  p.closePath();
+}
+function screenEllipse(cam, mirror, f, c, axes) {
+  const e = R.ellipseOf(cam, c, axes, mirror);
+  return { cx: f.ox + e.cx * f.s, cy: f.oy - e.cy * f.s, rx: Math.max(0.3, e.rx * f.s), ry: Math.max(0.3, e.ry * f.s), rot: -e.rot, depth: e.depth };
+}
+function buildScene(t, opt) {
+  const cam = R.camera(S.yaw, S.pitch), mirror = S.side === 'L', f = fit(cam, mirror);
+  const pose = tl.pose(t), W = R.evalPose(rig, pose, EX.contacts);
+  const P = (p) => { const s = R.project(cam, p, mirror); return [f.ox + s[0] * f.s, f.oy - s[1] * f.s, s[2]]; };
+  const items = [], shadows = [];
+  for (const s of rig.shapes) {
+    const g = R.shapeWorld(W, s);
+    if (g.kind === 'capsule') {
+      const a = P(g.a), b = P(g.b);
+      items.push({ type: 'cap', id: s.id, tone: s.tone, a, b, ra: g.r[0] * f.s, rb: g.r[1] * f.s, depth: (a[2] + b[2]) / 2 + s.bias, big: false });
+      shadows.push({ type: 'cap', a: P([g.a[0], 0, g.a[2]]), b: P([g.b[0], 0, g.b[2]]), ra: g.r[0] * f.s, rb: g.r[1] * f.s, h: (g.a[1] + g.b[1]) / 2 });
+    } else {
+      const e = screenEllipse(cam, mirror, f, g.c, g.axes);
+      items.push(Object.assign({ type: 'ell', id: s.id, tone: s.tone, big: BIG.has(s.id) }, e, { depth: e.depth + s.bias }));
+      const fl = g.axes.map((x) => [x[0], 0, x[2]]);
+      shadows.push(Object.assign({ type: 'ell', h: g.c[1] }, screenEllipse(cam, mirror, f, [g.c[0], 0, g.c[2]], fl)));
+    }
+  }
+  const muscles = [];
+  for (const m of rig.muscles) {
+    const role = roleOf[m.id]; if (!role) continue;
+    const on = S.show[role] || S.hover === m.id || (opt && opt.allMuscles);
+    if (!on) continue;
+    const act = tl.activation(m.id, t), boost = S.hover === m.id ? 1 : 0;
+    for (const part of m.parts) {
+      const J = W[part.joint];
+      const c = V.add(J.p, Q.rot(J.q, part.c));
+      const axes = [Q.rot(J.q, [part.r[0], 0, 0]), Q.rot(J.q, [0, part.r[1], 0]), Q.rot(J.q, [0, 0, part.r[2]])];
+      const e = screenEllipse(cam, mirror, f, c, axes);
+      const it = Object.assign({ type: 'mus', id: m.id, role, act: Math.max(act, boost), hover: !!boost }, e);
+      items.push(it); muscles.push(it);
+    }
+  }
+  items.sort((a, b) => a.depth - b.depth);
+  return { cam, mirror, f, pose, W, P, items, shadows, muscles };
+}
+
+/* ---------------- drawing ---------------- */
+function shapePath(it, p) {
+  if (it.type === 'cap') capsulePath(p, it.a, it.ra, it.b, it.rb);
+  else { p.moveTo(it.cx + it.rx * Math.cos(it.rot), it.cy + it.rx * Math.sin(it.rot)); p.ellipse(it.cx, it.cy, it.rx, it.ry, it.rot, 0, Math.PI * 2, true); }
+}
+function toneColor(pal, tone) { return tone === 'hair' ? pal.hair : tone === 'face' ? pal.face : pal.body; }
+function fillShape(c, it, base, dmin, dmax, pal) {
+  const k = 0.8 + 0.2 * ((it.depth - dmin) / (dmax - dmin || 1));
+  const mid = mul(base, k), hi = mix(mid, [255, 255, 255], it.tone === 'hair' ? 0.18 : it.big ? 0.26 : 0.4), lo = mul(mid, it.tone === 'hair' ? 0.7 : it.big ? 0.8 : 0.68);
+  const p = new Path2D(); shapePath(it, p);
+  if (it.type === 'cap') {
+    const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1;
+    let nx = -dy / L, ny = dx / L; if (nx * LIGHT[0] + ny * LIGHT[1] > 0) { nx = -nx; ny = -ny; }
+    const mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2, r = (it.ra + it.rb) / 2;
+    const g = c.createLinearGradient(mx - nx * r, my - ny * r, mx + nx * r, my + ny * r);
+    g.addColorStop(0, rgb(lo)); g.addColorStop(0.55, rgb(mid)); g.addColorStop(0.9, rgb(hi)); g.addColorStop(1, rgb(mix(hi, mid, 0.4)));
+    c.fillStyle = g; c.fill(p);
+  } else {
+    c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry);
+    const cr = Math.cos(-it.rot), sr = Math.sin(-it.rot);
+    let lx = (LIGHT[0] * cr - LIGHT[1] * sr) / it.rx, ly = (LIGHT[0] * sr + LIGHT[1] * cr) / it.ry; const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
+    const g = c.createRadialGradient(lx * 0.42, ly * 0.42, 0.05, 0, 0, 1.08);
+    g.addColorStop(0, rgb(hi)); g.addColorStop(0.55, rgb(mid)); g.addColorStop(1, rgb(lo));
+    c.restore(); c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill(); c.restore();
+  }
+  if (!it.big) { c.lineWidth = 0.8; c.strokeStyle = rgb(mul(mid, 0.55), 0.55); c.stroke(p); }
+}
+function fillMuscle(c, it, clip) {
+  const col = ROLE[it.role], a = 0.3 + 0.7 * it.act;
+  c.save(); c.clip(clip);
+  c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+  g.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.15), Math.min(1, a))); g.addColorStop(0.7, rgb(col, a * 0.85)); g.addColorStop(1, rgb(col, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.fill();
+  c.restore();
+  if (it.hover) { c.save(); c.translate(it.cx, it.cy); c.rotate(it.rot); c.scale(it.rx, it.ry); c.lineWidth = 1.6 / Math.max(it.rx, it.ry); c.strokeStyle = rgb(col, 0.95); c.beginPath(); c.arc(0, 0, 1, 0, Math.PI * 2); c.stroke(); c.restore(); }
+}
+function floorQuad(c, P, x0, x1, z0, z1) { const q = [P([x0, 0, z0]), P([x1, 0, z0]), P([x1, 0, z1]), P([x0, 0, z1])]; c.beginPath(); q.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); return q; }
+
+function render(c, sc, t, w, h, opts) {
+  const pal = PAL[S.bg];
+  const bg = c.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, pal.bg[0]); bg.addColorStop(1, pal.bg[1]);
+  c.fillStyle = bg; c.fillRect(0, 0, w, h);
+  // floor grid + mat
+  c.save(); c.strokeStyle = pal.grid; c.lineWidth = 1;
+  for (let x = -150; x <= 150; x += 25) { const a = sc.P([x, 0, -110]), b = sc.P([x, 0, 110]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+  for (let z = -110; z <= 110; z += 25) { const a = sc.P([-150, 0, z]), b = sc.P([150, 0, z]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+  c.restore();
+  const mat = EX.props.find((p) => p.kind === 'mat');
+  if (mat) {
+    const [mx, , mz] = mat.center, [sx, , sz] = mat.size;
+    floorQuad(c, sc.P, mx - sx / 2, mx + sx / 2, mz - sz / 2, mz + sz / 2);
+    c.fillStyle = rgb(pal.mat); c.fill(); c.lineWidth = 1.2; c.strokeStyle = rgb(pal.matEdge); c.stroke();
+  }
+  // soft shadow
+  if (!opts || !opts.noShadow) {
+    const k = shadowCv.width / w;
+    sctx.setTransform(k, 0, 0, k, 0, 0); sctx.clearRect(0, 0, w, h);
+    sctx.filter = `blur(${Math.max(1.2, sc.f.s * 1.1)}px)`;
+    for (const s of sc.shadows) { const p = new Path2D(); shapePath(s, p); sctx.globalAlpha = Math.max(0.15, 1 - s.h / 90); sctx.fillStyle = '#000'; sctx.fill(p); }
+    sctx.filter = 'none';
+    c.save(); c.globalAlpha = pal.shadow; c.imageSmoothingQuality = 'high'; c.drawImage(shadowCv, 0, 0, w, h); c.restore();
+  }
+  // body + muscles, depth sorted
+  const body = sc.items.filter((i) => i.type !== 'mus');
+  let dmin = 1e9, dmax = -1e9; for (const b of body) { dmin = Math.min(dmin, b.depth); dmax = Math.max(dmax, b.depth); }
+  const clip = new Path2D(); for (const b of body) shapePath(b, clip);
+  for (const it of sc.items) { if (it.type === 'mus') fillMuscle(c, it, clip); else fillShape(c, it, toneColor(pal, it.tone), dmin, dmax, pal); }
+  if (S.show.paths && (!opts || !opts.noGuides)) drawGuides(c, sc, t, pal);
+}
+
+function arrowHead(c, a, b, size, col) {
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  c.save(); c.fillStyle = col; c.translate(b[0], b[1]); c.rotate(ang);
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(-size, -size * 0.55); c.lineTo(-size, size * 0.55); c.closePath(); c.fill(); c.restore();
+}
+function label(c, x, y, txt, pal, align) {
+  c.save(); c.font = '600 13px Inter, system-ui, sans-serif'; c.textAlign = align || 'left'; c.textBaseline = 'middle';
+  c.lineWidth = 4; c.strokeStyle = S.bg === 'dark' ? 'rgba(14,17,21,.85)' : 'rgba(243,242,238,.9)'; c.strokeText(txt, x, y); c.fillStyle = pal.ink; c.fillText(txt, x, y); c.restore();
+}
+function drawGuides(c, sc, t, pal) {
+  // 1. hand path
+  if (handPathWorld) {
+    const pts = handPathWorld.pts.map((q) => sc.P(q.p));
+    c.save(); c.setLineDash([5, 5]); c.lineWidth = 2; c.strokeStyle = pal.guide; c.globalAlpha = 0.85;
+    c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.stroke(); c.restore();
+    for (const k of [0.28, 0.42, 0.72, 0.86]) { const i = Math.floor(k * (pts.length - 1)); arrowHead(c, pts[i - 2], pts[i], 9, pal.guide); }
+    const g = handPathWorld.g;
+    if (t >= g.from && t <= g.to) { const hp = sc.P(sc.W[g.joint].p); c.save(); c.fillStyle = pal.guide; c.beginPath(); c.arc(hp[0], hp[1], 5, 0, Math.PI * 2); c.fill(); c.globalAlpha = 0.25; c.beginPath(); c.arc(hp[0], hp[1], 11, 0, Math.PI * 2); c.fill(); c.restore(); }
+    const top = pts.reduce((a, b) => (b[1] < a[1] ? b : a));
+    label(c, top[0] + 12, top[1] - 4, 'Hand path', pal);
+  }
+  // 2. thoracic rotation protractor around the trunk axis
+  const arcG = EX.guides.find((g) => g.kind === 'rotationArc');
+  if (arcG) {
+    const m = R.measures(sc.W), Rr = arcG.radius;
+    const ctr = V.scale(V.add(sc.W.shoulder_r.p, sc.W.shoulder_l.p), 0.5);
+    const at = (deg, rr) => { const a = deg * R.DEG; return sc.P(V.add(ctr, V.add(V.scale(m.hz, Math.cos(a) * rr), V.scale(m.up, Math.sin(a) * rr)))); };
+    const cP = sc.P(ctr);
+    c.save();
+    // norm band
+    const [b0, b1] = arcG.normBand; c.fillStyle = pal.band; c.beginPath(); c.moveTo(cP[0], cP[1]);
+    for (let d = b0; d <= b1; d += 2) { const p = at(d, Rr + 6); c.lineTo(p[0], p[1]); } c.closePath(); c.fill();
+    // ticks + reference
+    c.strokeStyle = pal.arc; c.globalAlpha = 0.5; c.lineWidth = 1;
+    for (const d of [0, 15, 30, 45, 60]) { const a = at(d, Rr - 3), b = at(d, Rr + 3); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+    const r0 = at(0, Rr + 8); c.setLineDash([3, 4]); c.beginPath(); c.moveTo(cP[0], cP[1]); c.lineTo(r0[0], r0[1]); c.stroke(); c.setLineDash([]);
+    // live arc
+    const cur = m.shoulderLineIncl; c.globalAlpha = 1; c.lineWidth = 3; c.beginPath();
+    const n = Math.max(2, Math.ceil(Math.abs(cur) / 2));
+    for (let i = 0; i <= n; i++) { const p = at((cur * i) / n, Rr); i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); } c.stroke();
+    const e1 = at(cur, Rr), e0 = at(cur - Math.sign(cur || 1) * 3, Rr); if (Math.abs(cur) > 4) arrowHead(c, e0, e1, 9, pal.arc);
+    const sl = at(cur, 0), sr = at(cur, Rr + 2); c.globalAlpha = 0.9; c.lineWidth = 1.5; c.beginPath(); c.moveTo(sl[0], sl[1]); c.lineTo(sr[0], sr[1]); c.stroke();
+    c.restore();
+    const lp = at(cur, Rr + 16);
+    label(c, lp[0], lp[1], `${Math.round(Math.abs(cur))}° rotation`, pal, lp[0] < cP[0] ? 'right' : 'left');
+  }
+  // 3. gaze ray during rotate/hold
+  const ph = tl.phaseAt(t);
+  if (ph.id === 'rotate' || ph.id === 'hold') {
+    const H = sc.W.head_c1, eye = V.add(H.p, Q.rot(H.q, [11, 8, 0])), dir = Q.rot(H.q, [1, 0, 0]);
+    const a = sc.P(eye), b = sc.P(V.add(eye, V.scale(dir, 40)));
+    const fade = ph.id === 'rotate' ? Math.min(1, (t - ph.start) / 0.8) : 1;
+    c.save(); c.globalAlpha = 0.55 * fade; c.strokeStyle = pal.ink; c.setLineDash([2, 5]); c.lineWidth = 1.5; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.restore();
+  }
+}
+
+let lastScene = null;
+function draw() {
+  if (!CW) return;
+  const sc = buildScene(S.t);
+  lastScene = sc;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  render(ctx, sc, S.t, CW, CH);
+}
+
+/* ---------------- SVG export of the current frame ---------------- */
+function frameSVG() {
+  const sc = buildScene(S.t), pal = PAL[S.bg];
+  const body = sc.items.filter((i) => i.type !== 'mus');
+  let dmin = 1e9, dmax = -1e9; for (const b of body) { dmin = Math.min(dmin, b.depth); dmax = Math.max(dmax, b.depth); }
+  const pathD = (it) => {
+    if (it.type === 'cap') { const p = []; const P2 = { moveTo: (x, y) => p.push(`M${x.toFixed(2)} ${y.toFixed(2)}`), lineTo: (x, y) => p.push(`L${x.toFixed(2)} ${y.toFixed(2)}`), arc: (cx, cy, r, s, e, ccw) => { const ex = cx + r * Math.cos(e), ey = cy + r * Math.sin(e); let sw = ccw ? s - e : e - s; while (sw < 0) sw += Math.PI * 2; p.push(`A${r.toFixed(2)} ${r.toFixed(2)} 0 ${sw > Math.PI ? 1 : 0} ${ccw ? 0 : 1} ${ex.toFixed(2)} ${ey.toFixed(2)}`); }, closePath: () => p.push('Z') }; capsulePath(P2, it.a, it.ra, it.b, it.rb); return p.join(''); }
+    return null;
+  };
+  let defs = '', out = '', clip = '', gi = 0;
+  for (const b of body) { const d = pathD(b); clip += d ? `<path d="${d}"/>` : `<ellipse cx="${b.cx.toFixed(2)}" cy="${b.cy.toFixed(2)}" rx="${b.rx.toFixed(2)}" ry="${b.ry.toFixed(2)}" transform="rotate(${(b.rot / R.DEG).toFixed(2)} ${b.cx.toFixed(2)} ${b.cy.toFixed(2)})"/>`; }
+  defs += `<clipPath id="body">${clip}</clipPath>`;
+  for (const it of sc.items) {
+    if (it.type === 'mus') {
+      const col = ROLE[it.role], a = (0.3 + 0.7 * it.act).toFixed(2), id = `g${gi++}`;
+      defs += `<radialGradient id="${id}"><stop offset="0" stop-color="${rgb(col)}" stop-opacity="${a}"/><stop offset="0.7" stop-color="${rgb(col)}" stop-opacity="${(a * 0.85).toFixed(2)}"/><stop offset="1" stop-color="${rgb(col)}" stop-opacity="0"/></radialGradient>`;
+      out += `<ellipse clip-path="url(#body)" fill="url(#${id})" cx="${it.cx.toFixed(2)}" cy="${it.cy.toFixed(2)}" rx="${it.rx.toFixed(2)}" ry="${it.ry.toFixed(2)}" transform="rotate(${(it.rot / R.DEG).toFixed(2)} ${it.cx.toFixed(2)} ${it.cy.toFixed(2)})"/>`;
+      continue;
+    }
+    const k = 0.8 + 0.2 * ((it.depth - dmin) / (dmax - dmin || 1)), base = toneColor(pal, it.tone), mid = mul(base, k), hi = mix(mid, [255, 255, 255], 0.42), lo = mul(mid, 0.66), id = `g${gi++}`;
+    const stroke = it.big ? '' : ` stroke="${rgb(mul(mid, 0.55))}" stroke-opacity=".55" stroke-width=".8"`;
+    if (it.type === 'cap') {
+      const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = -dy / L, ny = dx / L; if (nx * LIGHT[0] + ny * LIGHT[1] > 0) { nx = -nx; ny = -ny; }
+      const mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2, r = (it.ra + it.rb) / 2;
+      defs += `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${(mx - nx * r).toFixed(2)}" y1="${(my - ny * r).toFixed(2)}" x2="${(mx + nx * r).toFixed(2)}" y2="${(my + ny * r).toFixed(2)}"><stop offset="0" stop-color="${rgb(lo)}"/><stop offset=".55" stop-color="${rgb(mid)}"/><stop offset=".9" stop-color="${rgb(hi)}"/></linearGradient>`;
+      out += `<path d="${pathD(it)}" fill="url(#${id})"${stroke}/>`;
+    } else {
+      defs += `<radialGradient id="${id}" fx=".32" fy=".3"><stop offset="0" stop-color="${rgb(hi)}"/><stop offset=".55" stop-color="${rgb(mid)}"/><stop offset="1" stop-color="${rgb(lo)}"/></radialGradient>`;
+      out += `<ellipse cx="${it.cx.toFixed(2)}" cy="${it.cy.toFixed(2)}" rx="${it.rx.toFixed(2)}" ry="${it.ry.toFixed(2)}" transform="rotate(${(it.rot / R.DEG).toFixed(2)} ${it.cx.toFixed(2)} ${it.cy.toFixed(2)})" fill="url(#${id})"${stroke}/>`;
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CW} ${CH}" width="${CW}" height="${CH}"><defs>${defs}</defs>${out}</svg>`;
+}
+
+/* ---------------- UI ---------------- */
+const fmt = (v) => `${v >= 0 ? '' : '−'}${Math.abs(v).toFixed(0)}°`;
+const sideWord = (id) => { const s = id.endsWith('_r') ? 'right' : id.endsWith('_l') ? 'left' : ''; if (!s) return ''; return S.side === 'L' ? (s === 'right' ? 'left' : 'right') : s; };
+const muscleName = (id) => { const m = rig.muscles.find((x) => x.id === id); const w = sideWord(id); return m ? m.name + (w ? ` (${w})` : '') : id; };
+
+function seg(el, items, cur, onPick) {
+  el.innerHTML = items.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${String(v) === String(cur)}">${esc(l)}</button>`).join('');
+  el.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; onPick(b.dataset.v); el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); };
+}
+function buildUI() {
+  $('meta').innerHTML = [META.type, META.bodyPart, META.equipment[0], META.difficulty, `${META.plane} plane`].map((x) => `<span class="tag">${esc(x)}</span>`).join('');
+  $('ref').innerHTML = `Movement reference: <a href="${esc(META.reference.url)}" target="_blank" rel="noopener">GymVisual #${esc(META.reference.productRef)}</a>, first item on its media page. Rig, artwork and motion here are original.`;
+  const pr = META.prescription;
+  $('facts').innerHTML = [['Sets × reps', `${pr.sets} × ${pr.reps}`], ['End-range hold', pr.endRangeHold], ['Static option', pr.staticOption], ['Tempo', pr.tempo], ['Equipment', META.equipment.join(', ')], ['Laterality', META.laterality]]
+    .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  $('breathing').innerHTML = `<b>Breathing.</b> ${esc(META.breathing.pattern)}`;
+  // phases
+  $('phasebar').innerHTML = EX.timeline.phases.map((p) => `<div data-ph="${esc(p.id)}" style="width:calc(${((p.end - p.start) / D) * 100}% - 2px)" title="${esc(p.label)}">${esc(p.label)}</div>`).join('');
+  // transport
+  seg($('speed'), [['0.5', '0.5×'], ['1', '1.0×'], ['1.5', '1.5×']], S.speed, (v) => { S.speed = +v; });
+  seg($('sideSeg'), [['L', 'Left'], ['R', 'Right']], S.side, (v) => { S.side = v; fitCache = {}; refreshSide(); draw(); });
+  seg($('camSeg'), Object.entries(EX.camera.presets).map(([k, p]) => [k, p.label]), S.cam, (v) => { S.cam = v; S.yaw = EX.camera.presets[v].yaw; S.pitch = EX.camera.presets[v].pitch; draw(); });
+  seg($('bgSeg'), [['dark', 'Dark'], ['light', 'Light']], S.bg, (v) => { S.bg = v; stage.classList.toggle('light', v === 'light'); remember(); draw(); });
+  stage.classList.toggle('light', S.bg === 'light');
+  const tg = [['target', ROLE_LABEL.target, ROLE.target], ['synergist', ROLE_LABEL.synergist, ROLE.synergist], ['stabilizer', ROLE_LABEL.stabilizer, ROLE.stabilizer], ['lengthened', ROLE_LABEL.lengthened, ROLE.lengthened], ['paths', 'Path guides', [22, 179, 163]], ['angles', 'Angles', [120, 128, 140]]];
+  $('toggles').innerHTML = tg.map(([k, l, c]) => `<button type="button" class="chip" data-k="${k}" style="--c:${rgb(c)}" aria-pressed="${S.show[k]}"><i></i>${esc(l)}</button>`).join('');
+  $('toggles').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; const k = b.dataset.k; S.show[k] = !S.show[k]; b.setAttribute('aria-pressed', String(S.show[k])); if (k === 'angles') $('hud').classList.toggle('off', !S.show.angles); remember(); draw(); };
+  $('hud').classList.toggle('off', !S.show.angles);
+  // tabs
+  const tabs = [['form', 'Form'], ['anatomy', 'Anatomy'], ['kin', 'Kinematics'], ['json', 'Rig JSON'], ['src', 'Sources']];
+  $('tabs').innerHTML = tabs.map(([k, l], i) => `<button role="tab" type="button" id="tab-${k}" aria-controls="p-${k}" aria-selected="${i === 0}">${esc(l)}</button>`).join('');
+  const pick = (k) => { tabs.forEach(([x]) => { $(`tab-${x}`).setAttribute('aria-selected', String(x === k)); $(`p-${x}`).classList.toggle('on', x === k); }); };
+  $('tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) pick(b.id.slice(4)); };
+  pick('form');
+  // form
+  $('cues').innerHTML = META.cues.map((c, i) => { const ph = EX.timeline.phases.find((p) => p.id === c.phase); return `<li data-ph="${esc(c.phase)}"><b>${i + 1}. ${esc(ph ? ph.label : c.phase)}</b><span>${esc(c.text)}</span>${ph ? `<small>${esc(ph.breath === 'natural' ? 'Breathe normally' : ph.breath[0].toUpperCase() + ph.breath.slice(1))} · ${(ph.end - ph.start).toFixed(1)} s at 1.0×</small>` : ''}</li>`; }).join('');
+  $('mist').innerHTML = META.mistakes.map((m) => `<li><b>${esc(m.mistake)}</b><span>${esc(m.fix)}</span></li>`).join('');
+  $('cues').onclick = (e) => { const li = e.target.closest('li'); if (!li) return; const ph = EX.timeline.phases.find((p) => p.id === li.dataset.ph); if (ph) { S.t = ph.start + 0.01; draw(); } };
+  renderAnatomy(); renderKin(); renderJSON('module');
+  $('src').innerHTML = META.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></li>`).join('');
+  seg($('jsonSeg'), [['module', 'Exercise module'], ['rig', 'Shared rig'], ['schema', 'JSON Schema']], 'module', (v) => renderJSON(v));
+}
+function renderAnatomy() {
+  $('anat').innerHTML = Object.keys(ROLE_LABEL).map((role) => `<h3>${ROLE_LABEL[role]}</h3><ul class="mus">${(META.muscles[role] || []).map((id) => `<li tabindex="0" data-id="${esc(id)}" style="--c:${rgb(ROLE[role])}"><i></i><span>${esc(muscleName(id))}</span>${META.muscleNotes[id] ? `<small>${esc(META.muscleNotes[id])}</small>` : ''}</li>`).join('')}</ul>`).join('');
+  const set = (id) => { S.hover = id; draw(); };
+  $('anat').onmouseover = (e) => { const li = e.target.closest('li'); if (li) set(li.dataset.id); };
+  $('anat').onmouseleave = () => set(null);
+  $('anat').onfocusin = (e) => { const li = e.target.closest('li'); if (li) set(li.dataset.id); };
+  $('anat').onfocusout = () => set(null);
+}
+function liveKin() {
+  const sc = lastScene; if (!sc) return {};
+  const ch = sc.pose.ch, m = R.measures(sc.W);
+  return {
+    'Thoracic rotation (T12–T1)': ch.spine_t12.rot + ch.spine_t6.rot, 'Lumbar rotation (L5–S1 to T12)': ch.spine_l5.rot,
+    'Total trunk rotation': ch.spine_l5.rot + ch.spine_t12.rot + ch.spine_t6.rot, 'Cervical rotation toward reaching hand': ch.neck_c7.rot + ch.head_c1.rot,
+    Hips: ch.hip_r.flex, Knees: m.knee, 'Support elbow': m.elbowL,
+  };
+}
+function renderKin() {
+  $('kin').innerHTML = `<thead><tr><th>Measure</th><th>Setup</th><th>Peak</th><th>Live</th><th>Reference range</th></tr></thead><tbody>${META.kinematics.map((k) => `<tr><td>${esc(k.measure)}</td><td>${esc(k.setup)}</td><td>${esc(k.peak)}</td><td class="live" data-m="${esc(k.measure)}">–</td><td>${esc(k.norm || '')}</td></tr>`).join('')}</tbody>`;
+  $('kinNote').textContent = 'Live values come from the rig at the current frame. Rotation is positive toward the working side. Norms: thoracic ≈3° per vertebra and lumbar ≈2° per segment (Neumann via NASM); lumbar-locked test mean ≈41° (Johnson 2012); ≥50° counted as unrestricted (Whetstone & Matsel 2024).';
+}
+const JSON_FILES = { module: () => JSON.stringify(EX, null, 2), rig: () => JSON.stringify(RIG, null, 2), schema: () => JSON.stringify(SCHEMA, null, 2) };
+const JSON_NAMES = { module: `${META.id}.json`, rig: `${RIG.rigId}.json`, schema: 'exercise-module.schema.json' };
+const JSON_NOTES = {
+  module: 'One file per exercise: metadata, phases, named poses (anatomical joint angles), keyframes, IK contacts, muscle activation and guides. This file validates against the schema tab.',
+  rig: 'Shared by every exercise: joint hierarchy, segment lengths, body shapes and muscle regions. Bilateral items are authored once and mirrored.',
+  schema: 'JSON Schema (draft 2020-12) for exercise modules. Hand it to the batch prompt so each new exercise comes back in this exact shape.',
+};
+let jsonCur = 'module';
+function renderJSON(k) { jsonCur = k; $('jsonPre').textContent = JSON_FILES[k](); $('jsonNote').textContent = JSON_NOTES[k]; }
+
+let dl = null;
+try { const u = window.claude && window.claude.use && window.claude.use('downloads'); if (u && u.then) u.then((d) => { dl = d; }).catch(() => {}); } catch (e) {}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); }
+async function copy(text, what) { try { await navigator.clipboard.writeText(text); toast(`Copied ${what}`); } catch (e) { toast('Copy was blocked by the browser'); } }
+async function save(name, data, fallback) {
+  if (dl) { try { await dl.save({ filename: name, data }); toast(`Saved ${name}`); return; } catch (e) { if (e && /declin|cancel|abort/i.test(String(e.message || e))) { toast('Download cancelled'); return; } } }
+  fallback();
+}
+$('copyJson').onclick = () => copy(JSON_FILES[jsonCur](), JSON_NAMES[jsonCur]);
+$('dlJson').onclick = () => save(JSON_NAMES[jsonCur], JSON_FILES[jsonCur](), () => copy(JSON_FILES[jsonCur](), `${JSON_NAMES[jsonCur]} (download unavailable here)`));
+$('exSvg').onclick = () => { const svg = frameSVG(); save(`${META.id}-${S.side}-${S.t.toFixed(2)}s.svg`, svg, () => copy(svg, 'SVG frame markup')); };
+$('exPng').onclick = () => { draw(); cv.toBlob((b) => { const name = `${META.id}-${S.side}-${S.t.toFixed(2)}s.png`; save(name, b, () => { $('modalImg').src = URL.createObjectURL(b); $('modal').classList.add('on'); }); }, 'image/png'); };
+$('modalClose').onclick = () => $('modal').classList.remove('on');
+
+function refreshSide() {
+  $('sideTag').textContent = `${S.side === 'R' ? 'Right' : 'Left'} side`;
+  renderAnatomy();
+}
+const ICON = { play: '<path d="M6 3.5v13l11-6.5z" fill="currentColor"/>', pause: '<rect x="4.5" y="3.5" width="4" height="13" rx="1" fill="currentColor"/><rect x="11.5" y="3.5" width="4" height="13" rx="1" fill="currentColor"/>' };
+function setPlaying(p) { S.playing = p; $('playIcon').innerHTML = p ? ICON.pause : ICON.play; $('play').setAttribute('aria-label', p ? 'Pause' : 'Play'); }
+$('play').onclick = () => setPlaying(!S.playing);
+let wasPlaying = false;
+$('scrub').addEventListener('pointerdown', () => { wasPlaying = S.playing; setPlaying(false); });
+$('scrub').addEventListener('input', (e) => { S.t = (e.target.value / 1000) * D; draw(); syncUI(true); });
+$('scrub').addEventListener('change', () => { if (wasPlaying) setPlaying(true); });
+
+// orbit
+let drag = null;
+stage.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, yaw: S.yaw, pitch: S.pitch }; stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) < 2) return;
+  S.yaw = drag.yaw + dx * 0.45 * (S.side === 'L' ? -1 : 1); S.pitch = Math.max(-5, Math.min(85, drag.pitch + dy * 0.35));
+  $('camSeg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  draw();
+});
+stage.addEventListener('pointerup', () => { drag = null; });
+stage.addEventListener('dblclick', () => { const p = EX.camera.presets[S.cam]; S.yaw = p.yaw; S.pitch = p.pitch; $('camSeg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S.cam))); draw(); });
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest('input,textarea,[contenteditable]') && e.target.id !== 'scrub') return;
+  if (e.code === 'Space') { e.preventDefault(); setPlaying(!S.playing); }
+  else if (e.key === 'ArrowRight' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t + 1 / 60) % D; draw(); syncUI(true); }
+  else if (e.key === 'ArrowLeft' && e.target.id !== 'scrub') { setPlaying(false); S.t = (S.t - 1 / 60 + D) % D; draw(); syncUI(true); }
+});
+
+let curPhase = null, hudT = 0;
+function syncUI(force) {
+  const p = (S.t / D) * 100;
+  const sc = $('scrub'); if (document.activeElement !== sc || force) sc.value = Math.round((S.t / D) * 1000); sc.style.setProperty('--p', `${p}%`);
+  $('time').textContent = `${S.t.toFixed(1)} / ${D.toFixed(1)} s`;
+  const ph = tl.phaseAt(S.t);
+  if (ph !== curPhase) {
+    curPhase = ph; $('phLabel').textContent = ph.label;
+    $('breathTxt').textContent = ph.breath === 'natural' ? 'Breathe' : ph.breath[0].toUpperCase() + ph.breath.slice(1);
+    document.querySelectorAll('#phasebar div').forEach((d) => d.classList.toggle('on', d.dataset.ph === ph.id));
+    document.querySelectorAll('#cues li').forEach((li) => li.classList.toggle('on', li.dataset.ph === ph.id));
+  }
+  const k = (S.t - ph.start) / (ph.end - ph.start);
+  const bs = ph.breath === 'inhale' ? 0.75 + 0.5 * k : ph.breath === 'exhale' ? 1.25 - 0.5 * k : 1;
+  $('breath').style.setProperty('--bs', bs.toFixed(3));
+  const now = performance.now();
+  if (force || now - hudT > 90) { hudT = now; updateHUD(); }
+}
+function updateHUD() {
+  const sc = lastScene; if (!sc) return;
+  const ch = sc.pose.ch, m = R.measures(sc.W);
+  const sideL = S.side === 'R' ? 'L' : 'R';
+  const rows = [['Thoracic rotation', ch.spine_t12.rot + ch.spine_t6.rot], ['Lumbar rotation', ch.spine_l5.rot], ['Shoulder-line tilt', m.shoulderLineIncl], ['Neck rotation', ch.neck_c7.rot + ch.head_c1.rot], [`Support elbow (${sideL})`, m.elbowL], ['Hips / knees', null]];
+  $('hud').innerHTML = rows.map(([l, v]) => `<span>${esc(l)}</span><em>${v == null ? `${Math.round(ch.hip_r.flex)}° / ${Math.round(m.knee)}°` : fmt(v)}</em>`).join('');
+  const live = liveKin();
+  document.querySelectorAll('#kin td.live').forEach((td) => { const v = live[td.dataset.m]; td.textContent = v == null ? '–' : fmt(v); });
+}
+
+// loop
+let last = performance.now(), fpsE = 60, fpsT = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (dt > 0) fpsE = fpsE * 0.92 + (1 / dt) * 0.08;
+  if (S.playing) S.t = (S.t + dt * S.speed) % D;
+  draw(); syncUI(false);
+  if (now - fpsT > 500) { fpsT = now; $('fps').textContent = `${Math.round(fpsE)} fps`; }
+  requestAnimationFrame(frame);
+}
+const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (stage.clientWidth < 600) S.show.angles = false;
+buildUI(); refreshSide(); setPlaying(!reduce);
+roStage.observe(stage); resize(); syncUI(true);
+requestAnimationFrame(frame);
+window.__rr = { S, rig, tl, R, frameSVG, scene: () => lastScene, setT: (t) => { S.t = t; draw(); syncUI(true); }, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), pose: (t) => tl.pose(t) };
+}
+</script>
+</body>
+</html>
