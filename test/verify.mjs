@@ -61,8 +61,9 @@ for (const f of fs.readdirSync('src/exercises')) {
   check(fs.existsSync(`exports/${id}.glb`), `${id}: exports/${id}.glb present`);
 }
 const { browser, page, errors } = await openPlayer();
-const res = await page.evaluate(() => { __rr.S.playing = false; const out = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); out.push(document.getElementById('title').textContent); } return out; });
+const res = await page.evaluate(() => { __rr.S.playing = false; const out = [], bad = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); const title = document.getElementById('title').textContent; out.push(title); if (/\bundefined\b|\bNaN\b/.test(document.body.innerText)) bad.push(title); } out.bad = bad; return { out, bad }; }).then((r) => Object.assign(r.out, { bad: r.bad }));
 check(res.length === fs.readdirSync('src/exercises').length, `player loads all exercises: ${res.join(' | ')}`);
+check(!res.bad.length, `player text has no 'undefined' or 'NaN'${res.bad.length ? ': ' + res.bad.join(', ') : ''}`);
 // Speed: compare animation time against the player's own frame clock (S.clock), so a slow
 // machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
 await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });
