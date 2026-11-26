@@ -129,7 +129,7 @@ function blendPose(a, b, s) {
 }
 const U_OFF = 0.6 / 1.8; // lift-off key 0.6 s into the 1.8 s lift
 const liftOff = blendPose(dog, lift, smooth(U_OFF));
-const landing = blendPose(dog, lift, smooth(1 - 0.6 / 1.6));
+const landing = blendPose(dog, lift, smooth(0.6 / 1.6)); // 0.6 s before dog over the 1.6 s lower (mirrors liftOff)
 
 // ---- Assemble poses and keyframes.
 const poses = { plank: setIK(plank, 0, 0), dog: setIK(clone(dog), 1, 1), dogFree: setIK(clone(dog), 0, 0), liftOff: setIK(liftOff, 0, 1), lift: setIK(lift, 0, 1), liftBreath: setIK(liftBreath, 0, 1), landing: setIK(landing, 0, 1) };
