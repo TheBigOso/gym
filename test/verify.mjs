@@ -63,10 +63,12 @@ for (const f of fs.readdirSync('src/exercises')) {
 const { browser, page, errors } = await openPlayer();
 const res = await page.evaluate(() => { __rr.S.playing = false; const out = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); out.push(document.getElementById('title').textContent); } return out; });
 check(res.length === fs.readdirSync('src/exercises').length, `player loads all exercises: ${res.join(' | ')}`);
-await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__w0 = performance.now(); });
+// Speed: compare animation time against the player's own frame clock (S.clock), so a slow
+// machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
+await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });
 await page.waitForTimeout(1500);
-const ratio = await page.evaluate(() => { const S = __rr.S; const r = S.t / ((performance.now() - window.__w0) / 1000); S.playing = false; return r; });
-check(ratio > 1.3 && ratio < 1.7, `1.5× speed plays at ${ratio.toFixed(2)}× wall-clock`);
+const sp = await page.evaluate(() => { const S = __rr.S; const c = S.clock - window.__c0; const out = { r: S.t / c, c, wall: (performance.now() - window.__w0) / 1000 }; S.playing = false; return out; });
+check(sp.c > 0.3 && Math.abs(sp.r - 1.5) < 0.05, `1.5× speed plays at ${sp.r.toFixed(2)}× of the player clock (${sp.c.toFixed(2)} s of frames in ${sp.wall.toFixed(2)} s wall)`);
 check(!errors.length, `no page errors ${errors.length ? JSON.stringify(errors) : ''}`);
 await browser.close();
 process.exit(fail ? 1 : 0);

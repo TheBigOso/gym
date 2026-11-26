@@ -15,7 +15,7 @@ const ROLE_LABEL = { target: 'Target', synergist: 'Synergists', stabilizer: 'Sta
 const BG = { dark: { clear: 0x15181d, floor: 0x252a31, mat: 0x2f4d55, ink: '#e8ecf1', guide: 0x2fd1c0 }, light: { clear: 0xecebe6, floor: 0xd9d6cf, mat: 0x5d8488, ink: '#1d2127', guide: 0x0e8f83 } };
 
 /* ---------------- state ---------------- */
-const S = { ex: 0, t: 3.4, playing: true, speed: 1, side: 'R', cam: 'threeQuarter', bg: 'dark', hover: null, show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true } };
+const S = { ex: 0, t: 3.4, clock: 0, playing: true, speed: 1, side: 'R', cam: 'threeQuarter', bg: 'dark', hover: null, show: { target: true, synergist: true, stabilizer: false, lengthened: false, paths: true, angles: true } };
 try { const v = JSON.parse(localStorage.getItem('reprig3d') || '{}'); if (v.bg) S.bg = v.bg; if (v.show) Object.assign(S.show, v.show); if (Number.isInteger(v.ex) && EXS[v.ex]) S.ex = v.ex; } catch (e) {}
 const remember = () => { try { localStorage.setItem('reprig3d', JSON.stringify({ bg: S.bg, show: S.show, ex: S.ex })); } catch (e) {} };
 let EX, META, tl, D, roleOf;
@@ -391,6 +391,7 @@ const roStage = new ResizeObserver(() => { resize(); setCamera(S.cam); });
 let last = performance.now(), fpsE = 60, fpsT = 0;
 function frame(now) {
   const dt = Math.min(0.25, (now - last) / 1000); last = now; if (dt > 0) fpsE = fpsE * 0.92 + (1 / dt) * 0.08;
+  S.clock += dt;
   if (S.playing) S.t = (S.t + dt * S.speed) % D;
   update(); controls.update(); renderer.render(scene, camera); syncUI(false);
   if (now - fpsT > 500) { fpsT = now; $('fps').textContent = `${Math.round(fpsE)} fps`; }
