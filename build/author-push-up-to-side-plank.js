@@ -13,11 +13,12 @@ const H = require('./families/hips');
 const meta = require('./meta/push-up-to-side-plank.json');
 
 const HAND_X = 46, HAND_Z = 20, ANKLE_Z = 9, BOT_CHEST = 12;
+// top elbow 14 deg (soft): the support shoulder protracts a little in the side plank, so the planted arm keeps some reach in hand
 const F = B.makePushG({ handY: 0, handZ: HAND_Z, ankleZ: ANKLE_Z, footTilt: -8, flarePole: [-1, 0.4, 0.45] });
 const ph = Object.fromEntries(meta.timeline.phases.map((p) => [p.id, p]));
 const T0 = ph.setup.end, T1 = ph.lower.end, T2 = ph.press.end, T3 = ph.rotateR.end, T4 = ph.holdR.end, T5 = ph.returnR.end, D = meta.timeline.duration;
 const HALF = T5 - T0; // the second half (left side) repeats the first half's keys mirrored, shifted by HALF
-const rp = F.rep(HAND_X, { meshSlack: 0.5, botChest: BOT_CHEST, T: { hold: T0, down: T1 - T0 - 0.1, pause: 0.1, up: T2 - T1, D }, nDown: 5, nUp: 4 });
+const rp = F.rep(HAND_X, { topElbow: 14, botChest: BOT_CHEST, T: { hold: T0, down: T1 - T0 - 0.1, pause: 0.1, up: T2 - T1, D }, nDown: 5, nUp: 4 });
 const top = rp.poses.top;
 const legs = F.contacts.filter((c) => /^leg_/.test(c.id));
 // FK legs matching the planted legs of the top pose (hand-over pose for the turn)
@@ -105,13 +106,13 @@ for (const [t, n] of half) { const m = n === 'top' ? 'top' : `${n}M`; if (!poses
 keyframes[keyframes.length - 1].t = D;
 
 const ex = H.module_(meta, F.contacts, poses, keyframes);
-// Whole-loop report: planted hands (weight-1 frames), floor, support foot contact drift, mesh reach of the support arm
+// Whole-loop report: planted hands (weight-1 frames), floor, support foot contact drift, reach (shoulder to planted wrist) of the support arm
 let footDrift = 0, reachMax = 0, footMinY = 1e9, stackGap = [1e9, -1e9];
 const tl = R.buildTimeline(ex);
 let slide = 0, floor = 1e9, floorAt = null;
 for (let i = 0; i <= 2000; i++) {
   const t = (i / 2000) * D, pz = tl.pose(t), W = R.evalPose(rig, pz, F.contacts);
-  for (const s of ['r', 'l']) { const k = pz.ik[`arm_${s}`]; if ((k.weight ?? 1) >= 0.999) { slide = Math.max(slide, B.dist(W[`wrist_${s}`].p, k.target)); reachMax = Math.max(reachMax, B.meshReach(W, s, k.target)); } }
+  for (const s of ['r', 'l']) { const k = pz.ik[`arm_${s}`]; if ((k.weight ?? 1) >= 0.999) { slide = Math.max(slide, B.dist(W[`wrist_${s}`].p, k.target)); reachMax = Math.max(reachMax, B.dist(W[`shoulder_${s}`].p, k.target)); } }
   const f = L.shapeMinY(W); if (f.y < floor) { floor = f.y; floorAt = [f.id, +t.toFixed(2)]; }
   if (t > T2 && t < T5) { const lp = B.lowPoint(R.shapeWorld(W, B.shapeOf('foot_r'))); footMinY = Math.min(footMinY, lp[1]); footDrift = Math.max(footDrift, Math.hypot(lp[0] - ballR[0], lp[2] - ballR[2])); }
   if (t > T3 && t < T4) { const gl = B.lowPoint(R.shapeWorld(W, B.shapeOf('foot_l'))), gr = R.shapeWorld(W, B.shapeOf('foot_r')); stackGap = [Math.min(stackGap[0], gl[1] - (gr.c[1] + Math.hypot(gr.axes[0][1], gr.axes[1][1], gr.axes[2][1]))), Math.max(stackGap[1], gl[1])]; }
@@ -121,7 +122,7 @@ const shoulderLine = (W) => Math.asin(V.norm(V.sub(W.shoulder_l.p, W.shoulder_r.
 const armVert = V.angle(V.sub(Ws.shoulder_r.p, Ws.wrist_r.p), [0, 1, 0]), armUp = V.angle(V.sub(Ws.wrist_l.p, Ws.shoulder_l.p), [0, 1, 0]);
 const hipLine = (W) => { const a = V.scale(V.add(W.shoulder_r.p, W.shoulder_l.p), 0.5), h = V.scale(V.add(W.hip_r.p, W.hip_l.p), 0.5), k = V.scale(V.add(W.ankle_r.p, W.ankle_l.p), 0.5); return 180 - V.angle(V.sub(a, h), V.sub(k, h)); };
 const set = H.setKin(ex), d = (v) => `≈${Math.round(v)}°`;
-set('Elbow flexion', 'setup', `${d(st.drawnElbow)} at the top on the drawn arm`); set('Elbow flexion', 'peak', `${d(sb.elbow)} at the bottom (chest ${BOT_CHEST} cm above the floor)`);
+set('Elbow flexion', 'setup', `${d(st.elbow)} at the top (arms straight, not locked)`); set('Elbow flexion', 'peak', `${d(sb.elbow)} at the bottom (chest ${BOT_CHEST} cm above the floor)`);
 set('Trunk rotation', 'setup', 'Facing the floor'); set('Trunk rotation', 'peak', `Shoulder line ${d(shoulderLine(Ws))} from horizontal in the side plank (shoulders and hips turn together)`);
 set('Support arm', 'setup', `Wrists ${2 * HAND_Z} cm apart under the shoulders`); set('Support arm', 'peak', `Support arm ${d(armVert)} from vertical, hand planted throughout`);
 set('Free arm', 'setup', 'Planted'); set('Free arm', 'peak', `${d(armUp)} from vertical, reaching to the ceiling`);
@@ -130,6 +131,6 @@ set('Tempo', 'setup', `Top ${T0} s`); set('Tempo', 'peak', `Push-up ${r1(T1 - T0
 ex.checks.measure = { name: 'trunkFlexion', min: 0, max: 120 };
 const tfs = Object.values(poses).map((p) => { const W = L.fk(p, F.contacts); return V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]); });
 ex.checks.measure = { name: 'trunkFlexion', min: Math.floor(Math.min(...tfs) - 2), max: Math.ceil(Math.max(...tfs) + 2) };
-console.log(`Push-up to Side Plank: wrote ${L.write(ex)} PHI ${PHI}\n  top elbow ${st.elbow.toFixed(0)} drawn ${st.drawnElbow.toFixed(0)}; bottom elbow ${sb.elbow.toFixed(0)}\n  side plank: shoulder line ${shoulderLine(Ws).toFixed(0)} support arm ${armVert.toFixed(0)} free arm ${armUp.toFixed(0)} body bend ${hipLine(Ws).toFixed(1)} root ${JSON.stringify(poses[`turn${fs.length}`].root)}\n  loop: slide ${slide.toFixed(3)} floor ${floor.toFixed(2)} ${floorAt} supportFoot drift ${footDrift.toFixed(2)} minY ${footMinY.toFixed(2)} stack gap ${stackGap.map((v) => v.toFixed(1))} meshReach max ${reachMax.toFixed(1)}`);
+console.log(`Push-up to Side Plank: wrote ${L.write(ex)} PHI ${PHI}\n  top elbow ${st.elbow.toFixed(0)}; bottom elbow ${sb.elbow.toFixed(0)}\n  side plank: shoulder line ${shoulderLine(Ws).toFixed(0)} support arm ${armVert.toFixed(0)} free arm ${armUp.toFixed(0)} body bend ${hipLine(Ws).toFixed(1)} root ${JSON.stringify(poses[`turn${fs.length}`].root)}\n  loop: slide ${slide.toFixed(3)} floor ${floor.toFixed(2)} ${floorAt} supportFoot drift ${footDrift.toFixed(2)} minY ${footMinY.toFixed(2)} stack gap ${stackGap.map((v) => v.toFixed(1))} reach max ${reachMax.toFixed(1)} (arm ${(L.UA + L.FA).toFixed(1)})`);
 if (slide > 0.05) { console.error('FAIL: planted hand slides'); process.exitCode = 1; }
 if (floor < -0.5) { console.error('FAIL: below the floor'); process.exitCode = 1; }
