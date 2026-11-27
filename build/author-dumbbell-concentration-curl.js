@@ -10,7 +10,7 @@ const meta = require('./meta/dumbbell-concentration-curl.json');
 
 const SEAT_H = 45, BENCH = { id: 'bench', kind: 'bench', center: [-40, 0, 0], size: [110, SEAT_H, 30] }; // flat bench, the athlete on its +X end
 const SEAT_END = BENCH.center[0] + BENCH.size[0] / 2;
-const SEAT_OFF = +(process.env.SEAT_OFF ?? 0.3); // rig buttock shapes vs the seat top; in this forward lean the skinned mesh sits about where the rig shapes do (measured)
+const SEAT_OFF = +(process.env.SEAT_OFF ?? 0); // rig buttock shapes vs the seat top (rig v2: rig = drawn body, so they rest on it)
 const ENV = (k, d) => +(process.env[k] ?? d);
 const LEAN = { l5: ENV('L5', 10), t12: ENV('T12', 10), t6: ENV('T6', 6) };
 const STANCE = ENV('STANCE', 38), FOOT_DX = ENV('FOOTDX', 30), HIP_ABD = ENV('HABD', 24);

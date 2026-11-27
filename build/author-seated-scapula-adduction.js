@@ -9,8 +9,7 @@ const F = require('./families/b3-shoulders');
 const K = require('./families/b4-shoulders3');
 const meta = require('./meta/seated-scapula-adduction.json');
 
-const SEAT_DROP = 4.0; // skinned buttocks sit this much lower than the rig shapes on the seat
-const base = K.seatedFlat({ seatH: 45, stance: 16, hipFlex: 88, footAhead: 3, seatDrop: SEAT_DROP });
+const base = K.seatedFlat({ seatH: 45, stance: 16, hipFlex: 88, footAhead: 3 }); // rig v2: rig buttocks (= drawn body) rest on the seat
 const P0 = clone(base.pose);
 P0.ch.neck_c7 = { rot: 0, flex: 2 }; P0.ch.head_c1 = { rot: 0, flex: 0 };
 const D2R = Math.PI / 180, ELEV = 35;

@@ -188,7 +188,7 @@ function hinge({ stance = 13, toe = 8, knee = 25, trunk = 15, footX = 0 } = {}) 
 
 // Seated on the adjustable bench: back pad at `angle` (from the floor), pelvis back on the seat against the pad, thighs on
 // the seat, feet flat on the floor a little wider than the hips. The bench is placed so the back rests on the pad
-// (`gap` cm, measured on the rig shapes; the author refines it on the skinned mesh). Returns { pose, contacts, bench }.
+// (`gap` cm, measured on the rig shapes). Returns { pose, contacts, bench }.
 function seated({ angle = 85, stance = 22, toe = 10, footAhead = 4, gap = 0, padOffset = 0, seatH = 45, pitchAdj = 0, seatDrop = 0 } = {}) {
   const contacts = legContacts(toe + 4, toe);
   const st = L.POSES.standing({ stance, toeOut: toe }), lean = 90 - angle;
@@ -208,7 +208,7 @@ function seated({ angle = 85, stance = 22, toe = 10, footAhead = 4, gap = 0, pad
     p.root.rot.pitch = r1(bis(-20, 40, (m) => { const q = clone(p); q.root.rot.pitch = m; return diff(q) > 0; }));
     p.root.pos[1] = r1(p.root.pos[1] - (bot(L.fk(p)) - seatH));
   }
-  // corrections measured on the skinned mesh (its buttocks and back differ from the rig shapes)
+  // optional corrections (rig v2: the rig shapes match the drawn body, so the defaults are 0)
   if (pitchAdj) { p.root.rot.pitch = r1(p.root.rot.pitch + pitchAdj); p.root.pos[1] = r1(p.root.pos[1] - (bot(L.fk(p)) - seatH)); }
   p.root.pos[1] = r1(p.root.pos[1] - seatDrop);
   // eyes level: the neck brings the head forward by about the trunk lean

@@ -11,8 +11,7 @@ const DBF = require('./families/dumbbell');
 const meta = require('./meta/dumbbell-skull-crusher.json');
 
 const BENCH_H = 42, TOP_FLEX = 6, BOT_FLEX = +(process.env.BOT_FLEX || 112);
-const SINK = JSON.parse(process.env.SINK || '{"butt":7.2,"back":1.6,"head":11}'); // rig shapes below the pad so the mesh touches it (b2/tri_mesh.mjs)
-const base = T.lieOnBench(BENCH_H, 0, SINK);
+const base = T.lieOnBench(BENCH_H, 0); // rig v2: rig shapes = drawn body, buttocks and upper back rest on the pad
 // Bench: flat adjustable bench (seat + flat back pad, 120 cm), the +X end just past the buttocks so the thighs leave it.
 const W0 = L.fk(base);
 const BENCH_END = r1(W0.pelvis.p[0] + 13);
@@ -50,7 +49,7 @@ const rep = H.loopReport(ex, { planted: ['leg_r', 'leg_l'], probe: (W) => {
   const ob = T.bodyOverBox(W, benchBox); if (ob.d < pr.onBench) { pr.onBench = ob.d; pr.onBenchAt = ob.id; }
 } });
 const Wt = L.fk(poses.top, contacts), Wb = L.fk(poses.bottom, contacts);
-const rest = ['buttock_r', 'chest', 'hair'].map((id) => `${id} ${r1(H.bottomOf(Wt, id) - BENCH_H)}`).join(', ') + ` neck ${poses.top.ch.neck_c7.flex}+${poses.top.ch.head_c1.flex} pitch ${poses.top.root.rot.pitch}`;
+const rest = ['buttock_r', 'chest', 'traps_r', 'neck', 'hair'].map((id) => `${id} ${r1(H.bottomOf(Wt, id) - BENCH_H)}`).join(', ') + ` neck ${poses.top.ch.neck_c7.flex}+${poses.top.ch.head_c1.flex} pitch ${poses.top.root.rot.pitch}`;
 const set = H.setKin(ex), d = (v) => `≈${Math.round(v)}°`;
 set('Elbow flexion', 'setup', `${d(T.elbowOf(Wt, 'r'))} (straight, not locked)`); set('Elbow flexion', 'peak', `${d(T.elbowOf(Wb, 'r'))} at the bottom`);
 set('Upper arm angle', 'setup', `${d(V.angle(V.sub(Wt.elbow_r.p, Wt.shoulder_r.p), [0, 1, 0]))} from vertical`); set('Upper arm angle', 'peak', `Unchanged: shoulder channels constant (max ${pr.uaDev.toFixed(1)}° from vertical over the loop)`);

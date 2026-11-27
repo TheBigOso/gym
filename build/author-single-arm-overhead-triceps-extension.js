@@ -11,7 +11,7 @@ const C = require('./families/b3-curls');
 const F = require('./families/b4-forearms');
 const meta = require('./meta/single-arm-overhead-triceps-extension.json');
 const ENV = (k, d) => +(process.env[k] ?? d);
-const SEAT_H = 45, SEAT_OFF = ENV('SEAT_OFF', -3.0);              // rig buttock shapes below the seat top so the skinned mesh rests on it (measured)
+const SEAT_H = 45, SEAT_OFF = ENV('SEAT_OFF', 0);                 // rig buttock shapes vs the seat top (rig v2: rig = drawn body, so they rest on it)
 const TOP_FLEX = 6, BOT_FLEX = ENV('BOT_FLEX', 112), ZW = ENV('ZW', 9), UA_FWD = ENV('UA_FWD', -0.1);
 const STANCE = 18, FOOT_DX = 42;
 const st = L.POSES.standing({ stance: STANCE, toeOut: 10 });
