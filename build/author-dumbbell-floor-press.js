@@ -2,7 +2,7 @@
 // each hand (handle grip, palms toward the feet). From straight arms over the chest the dumbbells lower with the elbows about
 // 45 degrees from the trunk and the forearms vertical until the backs of the upper arms rest on the floor, pause, then press
 // up and slightly in. Bilateral (single: right arm only, the free left arm resting on the floor out to the side, planted).
-// The bottom depth is solved so the arm shapes touch the floor (0.3 cm into it, inside the 0.5 cm tolerance: the skinned upper arm sits about 4 cm above the rig shape, measured with b2/b4fp/mesh.mjs). Families b4-floorpush.js (floor lying, sweep) and
+// The bottom depth is solved so the arm shapes rest on the floor (rig v2 shapes match the drawn arm). Families b4-floorpush.js (floor lying, sweep) and
 // b3-chest.js (press path with the forearm stacked under the dumbbell).
 const L = require('./lib');
 const { V, r1, clone } = L;
@@ -22,7 +22,7 @@ module.exports = function floorPress(meta, { single = false, flare = 45, label }
   const W0 = L.fk(base, contacts), F = C.trunkFrame(W0), ax = V.scale(F.w, -1);
   const topTilt = single ? [0.02, 1, 0.02] : [0.03, 1, 0.12];
   const bottomAt = (dip) => C.pressPath(base, { flare, dip, topDir: topTilt, ax, n: 1 })[0].pose;
-  const DIP = r1(B.bisect((dip) => B.armMinY(L.fk(bottomAt(dip), contacts)) + 0.3, 0, 35));
+  const DIP = r1(B.bisect((dip) => B.armMinY(L.fk(bottomAt(dip), contacts)) - 0.05, 0, 35));
   const fin = (p) => { const q = C.strip(p); if (!single) C.mirrorArm(q); else { for (const j of ['shoulder_l', 'elbow_l', 'wrist_l', 'sc_l']) q.ch[j] = clone(base.ch[j]); } return q; };
   const path = C.pressPath(base, { flare, dip: DIP, topDir: topTilt, ax, n: 6 }).map((k) => ({ f: k.f, pose: fin(k.pose) }));
   const settle = fin(C.pressPath(base, { flare, dip: DIP - 1.2, topDir: topTilt, ax, n: 1 })[0].pose);

@@ -10,7 +10,7 @@ const H = require('./families/hips');
 const P = require('./families/b4-benchpress');
 const meta = require('./meta/incline-dumbbell-triceps-extension.json');
 
-const ANGLE = 30, BACK = +(process.env.BACK ?? -5), FLEX_TOP = 6, FLEX_BOT = +(process.env.FLEXB ?? 98), N = 4;
+const ANGLE = 30, BACK = +(process.env.BACK ?? -15), FLEX_TOP = 6, FLEX_BOT = +(process.env.FLEXB ?? 98), N = 4;
 const T = C.phaseT(meta), { B, base, contacts, foot } = C.benchBase(ANGLE);
 const W0 = L.fk(base, contacts), F = C.trunkFrame(W0);
 // upper arm: vertical, tilted BACK degrees toward the head; forearm folds toward the head in the sagittal plane
@@ -26,7 +26,7 @@ let uaDev = 0;
 const sw = C.sweep(ex, B, { grips: [{ side: 'r', grip: 'handle' }, { side: 'l', grip: 'handle' }], probe: (W) => { uaDev = Math.max(uaDev, V.angle(V.sub(W.elbow_r.p, W.shoulder_r.p), ua)); } });
 const Wt = L.fk(poses.top, contacts), Wb = L.fk(poses.bottom, contacts), set = H.setKin(ex), d = P.d0;
 const shFlex = V.angle(V.sub(Wt.elbow_r.p, Wt.shoulder_r.p), V.scale(C.trunkFrame(Wt).u, -1));
-set('Bench angle', 'setup', `${ANGLE}° back pad, flat seat`); set('Bench angle', 'peak', 'Glutes in the crease, upper back and head on the pad (skinned-mesh offsets from b2/chest_mesh.mjs)');
+set('Bench angle', 'setup', `${ANGLE}° back pad, flat seat`); set('Bench angle', 'peak', 'Glutes in the crease and upper back on the pad (rig shapes), back of the head just off it with a neutral neck');
 set('Elbow flexion', 'setup', `${d(C.elbowFlexOf(Wt))} (straight, not locked)`); set('Elbow flexion', 'peak', `${d(C.elbowFlexOf(Wb))} at the bottom`);
 set('Upper arm angle', 'setup', `${BACK ? `${Math.abs(BACK)}° ${BACK < 0 ? 'forward of' : 'behind'} vertical (dumbbells clear the pad)` : 'Vertical'}: ${d(shFlex)} of shoulder flexion relative to the trunk`); set('Upper arm angle', 'peak', `Unchanged: shoulder channels constant (max ${uaDev.toFixed(1)}° drift)`);
 set('Dumbbell clearance', 'setup', 'Over the shoulders'); set('Dumbbell clearance', 'peak', `Closest approach to the body ${r1(-sw.dbBody)} cm (rig shapes), to the pad ${r1(-sw.dbBench)} cm`);

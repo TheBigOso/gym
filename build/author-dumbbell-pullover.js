@@ -16,15 +16,16 @@ const ELBOW = 10, DIP = -14, HIP_X = 2, N = 7; // DIP < 0: the bottom stops a li
 const T = C.phaseT(meta), { B, base, contacts, foot } = C.benchBase(0, { hipX: HIP_X });
 const W0 = L.fk(base, contacts), F = C.trunkFrame(W0), mid = F.mid;
 const dTop = [0, 1, 0], dBot = V.norm(V.sub(F.u, V.scale(F.v, Math.tan(DIP * R.DEG)))); // overhead, a little below the back plane
+const HEAD_RE = [/^(?!(head|hair|ear|jaw|nose|brow|eye))/]; // the dumbbell keeps 1.5 cm off the head shapes as it passes behind the head
 function key(f, prev) {
   const d = C.slerpV(dTop, dBot, f);
-  const p = clone(base); const e = r1(4 + 26 * f); p.ch.sc_r = { protract: r1(SC0.protract + 6 * (1 - f)), elevate: e }; // blades glide up as the arms go overhead
+  const p = clone(base); const e = r1(4 + 32 * f); p.ch.sc_r = { protract: r1(SC0.protract + 6 * (1 - f)), elevate: e }; // blades glide up as the arms go overhead
   const prevCh = prev && clone(prev.ch);
   const extra = (W, q) => {
     const db = C.dbAt(W, 'r', GRIP, OFF), rel = V.sub(db.c, mid), off = V.sub(rel, V.scale(d, V.dot(rel, d)));
     const palm = V.norm(Q.rot(W.wrist_r.q, [1, 0, 0]));
     const a2 = V.norm([db.ax[0], db.ax[1], 0]); // dumbbell along the arc direction in side view (it may lean in a little)
-    return [db.c[2] * 3, ...off.map((v) => v * 2), ...V.sub(a2, d).map((v) => v * 15), db.ax[2] * 10, (V.dot(palm, V.scale(F.w, -1)) - 1) * 4].concat(prev ? [(q.ch.wrist_r.pron - prevCh.wrist_r.pron) * 0.01, (q.ch.shoulder_r.axial - prevCh.shoulder_r.axial) * 0.01] : []);
+    return [db.c[2] * 3, ...off.map((v) => v * 2), ...V.sub(a2, d).map((v) => v * 15), db.ax[2] * 10, (V.dot(palm, V.scale(F.w, -1)) - 1) * 4, Math.max(0, C.dbBodyPen(W, db, HEAD_RE).depth + 1.5) * 4].concat(prev ? [(q.ch.wrist_r.pron - prevCh.wrist_r.pron) * 0.01, (q.ch.shoulder_r.axial - prevCh.shoulder_r.axial) * 0.01] : []);
   };
   const seeds = prev ? [{ shoulder_r: prevCh.shoulder_r, elbow_r: prevCh.elbow_r, wrist_r: prevCh.wrist_r }] : [{ shoulder_r: { plane: 90, elev: 90, axial: 0 }, elbow_r: { flex: ELBOW }, wrist_r: { pron: 0, flex: 0, dev: 0 } }, { shoulder_r: { plane: 80, elev: 90, axial: 30 }, elbow_r: { flex: ELBOW }, wrist_r: { pron: -30, flex: 0, dev: 0 } }, { shoulder_r: { plane: 100, elev: 90, axial: -30 }, elbow_r: { flex: ELBOW }, wrist_r: { pron: 30, flex: 0, dev: 0 } }];
   const q = C.solveArmDB(p, { c: null, ax: null, grip: GRIP, off: OFF, elbowFlex: ELBOW, seeds, extra: (W, q) => [...extra(W, q), (q.ch.shoulder_r.axial || 0) * 0.02, (q.ch.wrist_r.pron || 0) * 0.02], wristW: 0.03 });
@@ -47,7 +48,7 @@ const sw = C.sweep(ex, B, { grips: [{ side: 'r', grip: GRIP, off: OFF, skip: bot
 const Wt = L.fk(poses.top, contacts), Wb = L.fk(poses.bottom, contacts), set = H.setKin(ex), dd = (v) => `≈${Math.round(v)}°`;
 const fit = C.benchFit(B, W0), dbT = C.dbAt(Wt, 'r', GRIP, OFF), dbB = C.dbAt(Wb, 'r', GRIP, OFF);
 const headTop = Math.min(...L.rig.shapes.filter((s) => /^(hair|head)$/.test(s.id)).map((s) => { const g = L.R.shapeWorld(W0, s); return g.c[0] - Math.hypot(g.axes[0][0], g.axes[1][0], g.axes[2][0]); }));
-set('Bench position', 'setup', `Along the bench, top of the head at the end of the pad (${r1(B.tip[0] - headTop)} cm past it)`); set('Bench position', 'peak', 'Glutes, upper back and head on the bench (skinned mesh within about 1 cm, measured with b2/chest_mesh.mjs)');
+set('Bench position', 'setup', `Along the bench, top of the head at the end of the pad (${r1(B.tip[0] - headTop)} cm past it)`); set('Bench position', 'peak', 'Glutes and upper back on the bench (rig shapes), back of the head just off the pad with a neutral neck');
 set('Shoulder flexion', 'setup', `${dd(flexOf(Wt))} (arms over the chest)`); set('Shoulder flexion', 'peak', `${dd(flexOf(Wb))} at the bottom (arms aimed ${Math.abs(DIP)}° ${DIP < 0 ? 'above' : 'below'} the line of the back so the dumbbell clears the head and the bench end)`);
 set('Elbow flexion', 'setup', `${dd(C.elbowFlexOf(Wt))} (elbow angle ${dd(180 - C.elbowFlexOf(Wt))})`); set('Elbow flexion', 'peak', `${dd(C.elbowFlexOf(Wb))}, unchanged through the arc`);
 set('Grip', 'setup', `Both palms on the top plate, dumbbell hanging ${r1(dbT.c[1] - W0.shoulder_r.p[1])} cm above the shoulder line at its centre`); set('Grip', 'peak', `Dumbbell behind the head, lowest point ${r1(Math.min(...dbB.ends.map((e) => e[1])) - dbB.r)} cm above the floor, beyond the bench end`);

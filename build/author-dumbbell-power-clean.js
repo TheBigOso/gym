@@ -17,10 +17,12 @@ const POLE = +(process.env.POLE ?? 0.6);
 for (const c of F.contacts) c.pole = [1, 0, (c.id.endsWith('_r') ? 1 : -1) * POLE];
 const Bd = P.cleanBodies(F), A = Object.assign({}, P.CLEAN_ARMS);
 Object.assign(A, { stand: P.hangKey(1, 8, 5) });
-const OUT = +(process.env.OUT ?? 12), FLOOR = +(process.env.DBF ?? 3.1), KNEE_F = +(process.env.KF ?? 110);
+const OUT = +(process.env.OUT ?? 12), FLOOR = +(process.env.DBF ?? 4.3), KNEE_F = +(process.env.KF ?? 110);
 const flat = Bd.stand.feet;
 A.floor = P.hangKey(0, OUT, 4); A.knee = P.hangKey(0, OUT, 4);
-// start: the trunk pitch that sets the dumbbell plates FLOOR cm above the floor (rig) with the knees at KNEE_F
+// start: the trunk pitch that sets the dumbbell plates FLOOR cm above the floor with the knees at KNEE_F (the rig hand
+// shape is an open hand reaching about 4 cm past the plates of a gripped dumbbell, so the plates sit that high for the
+// hand shape to stay on the floor)
 const floorCfg = (pitch) => ({ feet: flat, knee: KNEE_F, pitch, shX: 9, spine: { l5: -2, t12: +(process.env.T12 ?? 4), t6: +(process.env.T6 ?? 5) }, sc: { protract: 10, elevate: -9 }, neck: [-14, -12] });
 let pa = -20, pb = -85;
 for (let i = 0; i < 20; i++) { const pm = (pa + pb) / 2, q = P.handArm(P.body(F, floorCfg(pm)), A.floor, {}); if (P.B.dbFloor(L.fk(q, F.contacts), 'r') > FLOOR) pa = pm; else pb = pm; }
@@ -44,5 +46,5 @@ set('Catch', 'setup', `Knees ≈${Math.round(P.kneeOf(Wc, 'r'))}°, trunk ≈${M
 set('Tempo', 'setup', '0.5 s set, 0.55 s first pull to the knees'); set('Tempo', 'peak', '0.5 s second pull and turnover, 0.2 s absorb, 0.9 s stand, 0.35 s hold, 1.7 s back to the floor, 0.7 s reset');
 console.log(`Dumbbell Power Clean: wrote ${L.write(ex)}\n  start pitch ${Bd.floor.pitch}; err ${JSON.stringify(err)}\n  ${JSON.stringify(rep)} jump ${JSON.stringify(jump)}`);
 if (rep.slide > 0.05) { console.error('FAIL: planted feet slide'); process.exitCode = 1; }
-// rig shapes: racked dumbbells rest on the deltoids (checked on the skinned mesh with b2/b4p/mesh.mjs)
+// rig shapes: racked dumbbells rest on the deltoids (rig v2 shapes match the drawn body)
 if (rep.dbFloor < 0 || rep.dbBody < -3) { console.error('FAIL: dumbbell through the floor or the body'); process.exitCode = 1; }

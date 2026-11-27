@@ -1,5 +1,5 @@
 // Bench press family (batch 4): dumbbell chest and triceps presses lying on a flat or inclined bench. Builds on the batch 3
-// chest helpers (b3-chest.js: lying on the bench pad with the skinned-mesh sinks, planted feet, press / fly paths, the
+// chest helpers (b3-chest.js: lying on the bench pad (rig shapes on the pad), planted feet, press / fly paths, the
 // whole-loop sweep) and the triceps helpers (b3-triceps.js: upper-arm and wrist solves for lying extensions).
 //  - pressModule: the flat / incline dumbbell press with a pronated (palms toward the feet) or neutral (palms facing) grip,
 //    optionally on a custom lying base (the Larsen press with the legs held off the floor).
@@ -13,14 +13,14 @@ const C = require('./b3-chest');
 const H = require('./hips');
 const T3 = require('./b3-triceps');
 
-const HEAD_LIFT = -9; // same aim of the rig hair shape into the pad as the batch 3 chest family (mesh head rests on the pad)
+const HEAD_LIFT = C.HEAD_LIFT; // same head rest as the batch 3 chest family (rig v2: head just off the pad with a neutral neck)
 const d0 = (v) => `≈${Math.round(v)}°`;
 
 // Lying flat with the legs straight out and the feet off the floor (no contacts). The glutes sit near the +X end of the seat
 // so the thighs clear its edge; hip extension `hipExt` (negative = legs below the line of the pelvis), knees nearly straight.
-function larsenBase({ hipX = 26, hipExt = -12, knee = 4, abd = 7, ankle = -25 } = {}) {
+function larsenBase({ hipX = 34, hipExt = -12, knee = 4, abd = 7, ankle = -25 } = {}) {
   const B = C.makeBench(0);
-  let p = C.layOnBench(B, { headLift: HEAD_LIFT, neckMin: HEAD_LIFT / 2, hipX, pitch: 89, pitchW: 0.8, l5: -8 });
+  let p = C.layOnBench(B, { headLift: HEAD_LIFT, hipX, pitch: 89, pitchW: 0.8, l5: -8 });
   p.ch.sc_r = clone(C.SC); p.ch.sc_l = clone(C.SC);
   for (const s of ['r', 'l']) { p.ch[`hip_${s}`] = { flex: hipExt, abd, rot: 0 }; p.ch[`knee_${s}`] = { flex: knee }; p.ch[`ankle_${s}`] = { dorsi: ankle }; }
   delete p.ik;
@@ -93,11 +93,15 @@ module.exports = { HEAD_LIFT, d0, larsenBase, pressModule, finish, extArm, restH
 // palms cupping the top plate ('end' grip on the right hand with the batch 3 pullover offset; the left hand mirrors it).
 // mode 'straight': the dumbbell stays in line with the (nearly straight) arms along an arc from over the chest to behind
 // the head, aimed `dip` deg below (+) / above (-) the line of the back at the bottom (same objectives as the batch 3
-// pullover). mode 'bent': the upper arms swing from `topFlex` to `botFlex` degrees of shoulder flexion (sagittal plane, in
+// pullover; the shoulder blades glide up `scUp` deg and the dumbbell keeps HEAD_CL cm off the head). mode 'bent': the upper arms swing from `topFlex` to `botFlex` degrees of shoulder flexion (sagittal plane, in
 // the trunk frame: 90 = vertical, 180 = in line with the trunk overhead) with the elbows held at `elbow` deg of flexion,
 // hands together at the midline. Returns { ex, path, base, B, contacts, foot, W0, F, sw, extra }.
 const PULL_GRIP = 'end', PULL_OFF = [-7, 6.5, 0];
-function pulloverModule(meta, { mode = 'straight', grip = 'end', elbow = 4, elbowBot = null, dip = -10, topFlex = 90, botFlex = 170, hipX = 2, n = 7, scUp = 26 }) {
+// Keep the dumbbell HEAD_CL cm clear of the head shapes as it passes behind the head (the arc of the shorter rig v2 arms
+// passes close to the crown); a one-sided penalty, zero when clear.
+const HEAD_RE = [/^(?!(head|hair|ear|jaw|nose|brow|eye))/], HEAD_CL = +(process.env.HEAD_CL ?? 1.5);
+const headClear = (W, db) => Math.max(0, C.dbBodyPen(W, db, HEAD_RE).depth + HEAD_CL) * 4;
+function pulloverModule(meta, { mode = 'straight', grip = 'end', elbow = 4, elbowBot = null, dip = -10, topFlex = 90, botFlex = 170, hipX = 2, n = 7, scUp = 32 }) {
   // grip 'end': both palms cup the top plate; 'handle2': both fists side by side on the handle (overhand), the dumbbell
   // centred between them (player offset shifted 4.5 cm toward the right thumb) with its axis across the body (Z)
   const GR = grip === 'handle2' ? 'handle' : PULL_GRIP, OFF = grip === 'handle2' ? [7.2, 2.2, -4.5] : PULL_OFF;
@@ -115,7 +119,7 @@ function pulloverModule(meta, { mode = 'straight', grip = 'end', elbow = 4, elbo
       extra = (W, q) => {
         const db = C.dbAt(W, 'r', GR, OFF), rel = V.sub(db.c, mid), off = V.sub(rel, V.scale(d, V.dot(rel, d)));
         const palm = V.norm(Q.rot(W.wrist_r.q, [1, 0, 0])), a2 = V.norm([db.ax[0], db.ax[1], 0]);
-        return [db.c[2] * 3, ...off.map((v) => v * 2), ...V.sub(a2, d).map((v) => v * 15), db.ax[2] * 10, (V.dot(palm, V.scale(F.w, -1)) - 1) * 4];
+        return [db.c[2] * 3, ...off.map((v) => v * 2), ...V.sub(a2, d).map((v) => v * 15), db.ax[2] * 10, (V.dot(palm, V.scale(F.w, -1)) - 1) * 4, headClear(W, db)];
       };
     } else {
       const a = topFlex + (botFlex - topFlex) * f, d = sag(a), fa = sag(a + eb); // forearm folds toward the head
