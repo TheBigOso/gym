@@ -449,11 +449,12 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
     return col;
   }
   // Where a held object sits in the hand: offsets in the rest hand frame (f = toward the fingers, n = out of the palm,
-  // t = thumb side), as metres in the hand bone's space (its rest orientation is the identity).
+  // t = little-finger side, mirrored per hand), as metres in the hand bone's space (its rest orientation is the identity).
   // kind 'handle': dumbbell handle across the closed fist; 'goblet': dumbbell upright, cupped in front of the palms;
   // 'end': hands cupping one end (overhead extensions), the bar hanging along the fingers.
   function gripFrame(s, kind = 'handle', off) {
-    const f = FR[s].f, n = FR[s].n, t = V.norm(V.cross(n, f));
+    // t is the little-finger side of the right hand; flipped for the left so offsets mirror exactly between hands
+    const f = FR[s].f, n = FR[s].n, t0 = V.norm(V.cross(n, f)), t = s === 'l' ? V.scale(t0, -1) : t0;
     const o = off || { handle: [7.2, 2.2, 0], goblet: [6.5, 7.5, 2], end: [8, 4, 0] }[kind] || [7.2, 2.2, 0];
     const p = [f[0] * o[0] + n[0] * o[1] + t[0] * o[2], f[1] * o[0] + n[1] * o[1] + t[1] * o[2], f[2] * o[0] + n[2] * o[1] + t[2] * o[2]];
     const axis = kind === 'goblet' || kind === 'end' ? f : t;

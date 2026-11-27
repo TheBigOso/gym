@@ -2,6 +2,7 @@
 // gripFrame in src/athlete.js); these helpers estimate the same dumbbell on the RepRig skeleton so author scripts can
 // keep it clear of the floor, the bench and the body.
 // RepRig rest hand: fingers -Y, palm +X (anatomical position), so grip offsets are [palm, -fingers, thumb axis].
+// Note: the player's attach.offset third axis is the little-finger side of each hand (mirrored between hands).
 const L = require('../lib');
 const { R, V, Q, rig } = L;
 
