@@ -154,6 +154,9 @@ set('Knee line', 'peak', `Knee ${line[1].toFixed(1)} cm outside the foot's long 
 set('Tempo', 'setup', 'Stand 1.0 s');
 set('Tempo', 'peak', '3.0 s down, 0.5 s pause, 1.1 s up, 2.4 s reset');
 ex.exercise.reference.note = 'Reference used only to identify the movement. No GymVisual media is stored here; this rig, model and animation are original.';
+// rig v2: keep leg angles in (-180, 180] (the IK can land a full turn away)
+for (const q of Object.values(ex.poses)) for (const j of ['hip_r', 'hip_l', 'knee_r', 'knee_l', 'ankle_r', 'ankle_l']) for (const c in (q.ch[j] || {})) if (Math.abs(q.ch[j][c]) > 180) q.ch[j][c] = Math.round(L.wrap(q.ch[j][c]) * 1e6) / 1e6;
+L.write(ex);
 console.log(`3 Sec Sumo Squat: pole ${POLE}° rootY ${Y_TOP} -> ${Y_BOTTOM}  wrote ${L.write(ex)}`);
 console.log(`  bottom: knee ${kneeOf(Wb, 'r').toFixed(1)} hipMeasure ${hipM(Wb).toFixed(1)} hipCh ${JSON.stringify(hb)} trunk ${trunkLean(Wb).toFixed(1)} thighIncl ${thighIncl.toFixed(1)} knee ${Wb.knee_r.p.map(r1)} toe ${Wb.toe_r.p.map(r1)}`);
 console.log(`  arms R ${JSON.stringify({ sh: armCh.shoulder_r, el: armCh.elbow_r, wr: armCh.wrist_r })}`);
