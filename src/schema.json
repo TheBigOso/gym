@@ -107,6 +107,14 @@
               },
               "offset": {
                 "$ref": "#/$defs/vec3"
+              },
+              "grip": {
+                "enum": [
+                  "handle",
+                  "goblet",
+                  "end"
+                ],
+                "description": "How a held prop sits in the hand (attach.joint wrist_r / wrist_l)."
               }
             }
           },
@@ -117,6 +125,21 @@
           "color": {
             "type": "string",
             "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "backAngle": {
+            "type": "number",
+            "description": "bench: incline of the back pad in degrees (0 = flat); the pad hinges at the seat end on the backSide side."
+          },
+          "backLength": {
+            "type": "number",
+            "description": "bench: back pad length in cm (default 80)"
+          },
+          "backSide": {
+            "enum": [
+              -1,
+              1
+            ],
+            "description": "bench: which end of the seat the back pad hinges at (-1 = -X end, the default)"
           }
         }
       },

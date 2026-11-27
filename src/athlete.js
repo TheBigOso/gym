@@ -144,6 +144,7 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
     const thigh = segFrame(H('thigh_' + s), H('calf_' + s)), calf = segFrame(H('calf_' + s), H('foot_' + s)), arm = segFrame(H('upperarm_' + s), H('lowerarm_' + s));
     const up = (() => { let u = V.sub([0, 1, 0], V.scale(arm.ax, arm.ax[1])); return V.norm(u); })();
     const thSet = setOf('thigh_' + s), cfSet = setOf('calf_' + s), uaSet = setOf('upperarm_' + s, 'clavicle_' + s), ua1 = setOf('upperarm_' + s);
+    const fore = segFrame(H('lowerarm_' + s), H('hand_' + s)), faSet = setOf('lowerarm_' + s, 'lowerarm_twist_' + s), palmN = FR[s].n;
     for (let v = 0; v < nv; v++) {
       if (sh.vgroup[v] !== 0) continue;
       const x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2] * sg, nx = N[v * 3], nz = N[v * 3 + 2] * sg;
@@ -164,6 +165,10 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
         add('spinal_extensors_' + s, v, torso * back * zin * band(0.03, 0.09, 0.58, 0.66, u) * (1 - sm(4.6, 6.6, z)));
         add('rhomboids_midtrap_' + s, v, torso * back * zin * band(0.6, 0.66, 0.9, 0.97, u) * (1 - sm(7.5, 10, z)));
         add('infraspinatus_' + s, v, torso * back * band(0.58, 0.64, 0.82, 0.88, u) * sm(8, 10.5, z) * (1 - sm(shZ - 3, shZ + 1, z)));
+      }
+      { // upper trapezius: the slope from the neck to the shoulder, top and back (the head weight fades it at the neck)
+        const nyv = N[v * 3 + 1], ut = (1 - sm(0.3, 0.6, wArm)) * (1 - sm(0.5, 0.85, wOf(v, headSet)));
+        if (ut > 0.05) add('upper_traps_' + s, v, ut * band(0.86, 0.92, 1.04, 1.1, u) * sm(2.2, 4.2, z) * (1 - sm(shZ - 5, shZ - 2, z)) * sm(-0.35, 0.1, -nx * 0.5 + nyv) * (1 - sm(0.35, 0.7, nx)));
       }
       // hip girdle (pelvis + top of thigh)
       const girdle = (1 - sm(0.25, 0.6, wArm)) * sm(0.3, 0.7, wOf(v, setOf('pelvis', 'thigh_' + s, 'spine_01')));
@@ -188,6 +193,16 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
         add('ant_deltoid_' + s, v, cap * sm(-0.05, 0.3, a.cf));
         add('post_deltoid_' + s, v, cap * sm(0.05, -0.3, a.cf));
         add('triceps_' + s, v, sm(0.5, 0.85, wOf(v, ua1)) * band(0.28, 0.4, 0.9, 1.0, a.t) * sm(0.0, -0.4, a.cf));
+        add('lat_deltoid_' + s, v, cap * sm(0.25, 0.7, a.cl * sg));
+        add('biceps_' + s, v, sm(0.5, 0.85, wOf(v, ua1)) * band(0.3, 0.42, 0.88, 0.98, a.t) * sm(0.05, 0.45, a.cf));
+      }
+      const wFa = wOf(v, faSet);
+      if (wFa > 0.3) { // forearm: flexors on the palm side, extensors (with brachioradialis) on the back of the forearm
+        const a = segAt(fore, v), d = [x - fore.a[0], y - fore.a[1], P[v * 3 + 2] - fore.a[2]];
+        const per = V.sub(d, V.scale(fore.ax, V.dot(d, fore.ax))), ps = V.dot(V.norm(per), palmN);
+        const along = sm(0.4, 0.8, wFa) * band(-0.04, 0.06, 0.62, 0.8, a.t);
+        add('forearm_flexors_' + s, v, along * sm(0.0, 0.45, ps));
+        add('forearm_extensors_' + s, v, along * sm(0.0, 0.45, -ps));
       }
     }
   }
@@ -362,7 +377,8 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
     clearPos();
   }
 
-  function pose(W, mirror, ik) {
+  function pose(W, mirror, ik, grip) {
+    grip = grip || {};
     ik = ik || {};
     const g = (j) => { const s = W[mirror ? PARTNER(j) : j]; return mirror ? { p: [s.p[0], s.p[1], -s.p[2]], q: Q.mirrorZ(s.q) } : s; };
     for (let i = 0; i < B.length; i++) { Wq[i] = null; Wp[i] = null; }
@@ -401,7 +417,7 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
       for (const fn in FINGERS) for (let k = 1; k <= 3; k++) {
         const i = bi(`${fn}_0${k}_${s}`); if (i < 0) continue;
         const dir = V.norm(V.sub(tail[i], head[i])), axr = V.norm(V.cross(dir, FR[s].n));
-        const ang = (FINGERS[fn][k - 1] * (1 - fist) + FIST[fn][k - 1] * fist) * (1 - 0.88 * wA);
+        const fz = Math.max(fist, grip[s] || 0), ang = (FINGERS[fn][k - 1] * (1 - fz) + FIST[fn][k - 1] * fz) * (1 - 0.88 * wA);
         Wq[i] = Q.norm(Q.mul(worldOf(bi(par[i])), axisQ(axr, ang)));
       }
       // toes: when the foot is up on its toes near the floor, let the toes lie flat instead of spearing the ground
@@ -432,5 +448,17 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
     for (let v = 0; v < nv; v++) { let c = cs; if (cl[v * 3 + 2] > 0.1 || (ms[v * 3 + 1] < 0.5 && ms[v * 3 + 2] > 0.1)) c = ch2; if (look.braOn && rs[v * 4 + 3] - cl[v * 3 + 1] > 0.09) c = cb; if (cl[v * 3] > 0.09) c = cc; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
     return col;
   }
-  return { mesh, bones, B, pose, setGlow, exportColors, muscles: M, uni, sLeg, height: ch.height };
+  // Where a held object sits in the hand: offsets in the rest hand frame (f = toward the fingers, n = out of the palm,
+  // t = thumb side), as metres in the hand bone's space (its rest orientation is the identity).
+  // kind 'handle': dumbbell handle across the closed fist; 'goblet': dumbbell upright, cupped in front of the palms;
+  // 'end': hands cupping one end (overhead extensions), the bar hanging along the fingers.
+  function gripFrame(s, kind = 'handle', off) {
+    const f = FR[s].f, n = FR[s].n, t = V.norm(V.cross(n, f));
+    const o = off || { handle: [7.2, 2.2, 0], goblet: [6.5, 7.5, 2], end: [8, 4, 0] }[kind] || [7.2, 2.2, 0];
+    const p = [f[0] * o[0] + n[0] * o[1] + t[0] * o[2], f[1] * o[0] + n[1] * o[1] + t[1] * o[2], f[2] * o[0] + n[2] * o[1] + t[2] * o[2]];
+    const axis = kind === 'goblet' || kind === 'end' ? f : t;
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(...axis).normalize());
+    return { bone: bones[bi('hand_' + s)], pos: new THREE.Vector3(p[0] * U, p[1] * U, p[2] * U), quat: q };
+  }
+  return { mesh, bones, B, pose, setGlow, exportColors, gripFrame, muscles: M, uni, sLeg, height: ch.height };
 }
