@@ -80,7 +80,7 @@ function halfKneel({ down = 'r', kneeY = 5.4, toePitch = 72, frontKnee = 90, wid
 }
 
 // Seated tall on the end of a flat bench (pad continues behind, toward -X), thighs on the seat, feet flat in front.
-// seatDrop lowers the pelvis (measured on the skinned mesh: the buttocks of the athlete sink a little into the seat).
+// Rig v2: the rig buttocks / thighs rest on the seat; seatDrop (default 0) is an optional extra drop, not mesh compensation.
 function seatedFlat({ seatH = 45, stance = 16, toe = 8, hipFlex = 88, footAhead = 4, seatDrop = 0, lean = 0, benchX = null } = {}) {
   const contacts = F.legContacts(toe + 4, toe);
   const st = L.POSES.standing({ stance, toeOut: toe });

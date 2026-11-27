@@ -77,19 +77,21 @@ function dumbbellPad(W, side, grip, pad, off, size) {
   return best;
 }
 // Lying face up on a flat bench (top at `top` cm), head toward -X: buttocks, upper back and the back of the head rest on
-// the pad. Same objectives as the hips family lieBase, measured from the bench top instead of the floor. The Studio clay
-// mesh sits inside the rig shapes on the back of the body, so `sink` gives how far (cm) the rig buttock / chest / hair
-// shapes must sink below the pad for the skinned mesh to touch it (measured with b2/tri_mesh.mjs).
-function lieOnBench(top, x = 0, sink = { butt: 0, back: 0, head: 0 }) {
+// the pad. Same objectives as the hips family lieBase, measured from the bench top instead of the floor. The rig shapes
+// match the drawn body, so the buttocks (or the top of the thigh at the gluteal fold, whichever is lower) and the
+// lowest of chest / traps rest on the pad. The head then rests on the pad
+// with the neck within comfortable limits, or stays slightly off it (neutral neck), never pushed through it.
+function lieOnBench(top, x = 0) {
   const sup = L.POSES.supine({ kneeFlex: 90 });
   const p0 = clone(sup.pose); p0.root.pos = [x, p0.root.pos[1] + top, 0];
   const b = (W, id) => H.bottomOf(W, id) - top;
   const s1 = L.solvePose(p0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [(b(W, 'buttock_r') + sink.butt) * 4, (b(W, 'chest') + sink.back) * 3, Math.min(0, b(W, 'ribcage') + sink.back) * 2, Math.min(0, b(W, 'abdomen') + sink.back - 1.5) * 2],
+    (W) => [Math.min(b(W, 'buttock_r'), b(W, 'thigh_r')) * 4, Math.min(b(W, 'chest'), b(W, 'traps_r'), b(W, 'traps_l')) * 3, Math.min(0, b(W, 'neck') - 0.5) * 4, Math.min(0, b(W, 'ribcage')) * 2, Math.min(0, b(W, 'abdomen') - 1.5) * 2],
     L.obj.reg('ch.spine_l5.flex', -6, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', 92, 0.2),
   ]).pose;
-  const s2 = L.solvePose(s1, ['ch.neck_c7.flex'], [(W) => [(b(W, 'hair') + sink.head) * 3], L.obj.reg('ch.neck_c7.flex', 0, 0.05)]).pose;
-  const f = s2.ch.neck_c7.flex; s2.ch.neck_c7 = { rot: 0, flex: r1(f * 0.5) }; s2.ch.head_c1 = { rot: 0, flex: r1(f * 0.5) };
+  const s2 = L.solvePose(s1, ['ch.neck_c7.flex'], [(W) => [b(W, 'hair') * 3], L.obj.reg('ch.neck_c7.flex', 0, 0.05)]).pose;
+  // at most 12 deg at each neck joint toward the pad (head_c1 flex limit -30); otherwise the head stays slightly off it
+  const f = Math.max(-24, s2.ch.neck_c7.flex); s2.ch.neck_c7 = { rot: 0, flex: r1(f * 0.5) }; s2.ch.head_c1 = { rot: 0, flex: r1(f * 0.5) };
   return s2;
 }
 

@@ -10,8 +10,8 @@ const F = require('./families/b3-shoulders');
 const meta = require('./meta/dumbbell-arnold-press.json');
 
 const ANGLE = 85;
-// same bench set-up as the seated shoulder press (back and buttocks measured on the skinned mesh with b2/b3sh_mesh.mjs)
-const base = F.seated({ angle: ANGLE, pitchAdj: -6, padOffset: 7.6, seatDrop: 3.6 });
+// same bench set-up as the seated shoulder press (rig v2: rig shapes = drawn body, buttocks on the seat, back on the pad)
+const base = F.seated({ angle: ANGLE });
 const D2R = Math.PI / 180, ss = (x) => { const k = Math.max(0, Math.min(1, x)); return k * k * (3 - 2 * k); };
 
 // f: 0 = start (palms toward the face, chin height) -> 1 = top (palms forward, arms nearly straight overhead)

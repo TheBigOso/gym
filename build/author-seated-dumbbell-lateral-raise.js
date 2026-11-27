@@ -2,7 +2,7 @@
 // seat, feet flat and a little wider than the hips (planted leg contacts). Dumbbells hang beside the bench, palms in, elbows
 // soft; the arms rise out to the sides in the scapular plane (30 degrees in front of the frontal plane) to about shoulder
 // height with the thumbs forward: 1.8 s up, 0.4 s pause, 2 s down (Coratella 2020 used 2-0.5-2). Bilateral, handle grip.
-// The rig is lowered SEAT_DROP cm so the skinned buttocks and thighs rest on the seat (measured with b2/b3sh_mesh.mjs).
+// Rig v2: the rig buttocks and thighs (= the drawn body) rest on the seat, no mesh offsets.
 const L = require('./lib');
 const { V, r1, clone } = L;
 const H = require('./families/hips');
@@ -10,7 +10,7 @@ const F = require('./families/b3-shoulders');
 const S = require('./families/b4-shoulders2');
 const meta = require('./meta/seated-dumbbell-lateral-raise.json');
 
-const base = S.benchEnd({ pitchAdj: -6, footAhead: -8, seatDrop: Number(process.env.SEAT_DROP ?? 3.0) });
+const base = S.benchEnd({ footAhead: -8 });
 const PLANE = 30, E0 = Number(process.env.E0 ?? 22);
 const key = (name, f) => { const elev = E0 + (86 - E0) * f, plane = PLANE - 14 * (1 - f); return { name, plane, elev, axial: -20, flex: 14 + 4 * f, pron: 90, palm: S.palmDown(elev, plane), sc: { protract: r1(2 + 2 * f), elevate: r1(6 * f * f) } }; };
 const { poses, err } = F.armKeys(base.pose, [key('bottom', 0), key('r25', 0.25), key('r50', 0.5), key('r75', 0.75), key('top', 1)], base.contacts);
