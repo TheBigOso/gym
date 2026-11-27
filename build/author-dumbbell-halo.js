@@ -16,7 +16,7 @@ const OFF = meta.props[0].attach.offset;
 const GK = K.gripKey('handle', OFF);
 const base = F.standing({ stance: 12, knee: 6 });
 const P0 = clone(base.pose);
-const W0 = L.fk(P0, base.contacts), HC = V.add(W0.head_c1.p, [3, 8.6, 0]); // head centre (rig head shape)
+const W0 = L.fk(P0, base.contacts), HC = L.R.shapeWorld(W0, L.rig.shapes.find((s) => s.id === 'head')).c.map(r1); // head centre (rig head shape)
 const D2R = Math.PI / 180, UPV = [0, 1, 0];
 // dumbbell centre on the circle at angle th (deg; 0 = in front, 90 = right side, clockwise seen from above)
 const RAD = (th) => { const c = Math.cos(th * D2R); return 18.5 + -1.5 * (1 - c * c) + 1.5 * Math.max(0, -c); };
@@ -135,7 +135,9 @@ for (let i = 0; i < NS; i++) {
     const fr = frs[sd];
     const A = poses[`c${i}`].ch[`shoulder_${sd}`], B = poses[`c${i + 1}`].ch[`shoulder_${sd}`];
     const th = (i + fr) * STEP, r = ring(th), other = sd === 'r' ? 'l' : 'r';
-    const pole = [(W, q) => [(q.ch.shoulder_r.elev - 180) * 0.6]];
+    // at the pole plane and axial trade off freely: keep the plane where both representations fit the rig plane limits
+    // (-60..140), i.e. within -60..-40 (other representation 120..140), nearest to the plane of the neighbouring keys
+    const pole = [(W, q) => { const pl = q.ch.shoulder_r.plane, w = ((pl % 360) + 540) % 360 - 180, tgt = Math.abs(w - 130) < Math.abs(w + 50) ? 130 : -50; return [(q.ch.shoulder_r.elev - 180) * 0.6, (w - tgt) * 0.05]; }];
     const gpR = V.sub(r.c, [0, STACK, 0]), gpL = V.add(r.c, [0, STACK, 0]);
     const a1 = fist(pre, gpR, F.elbowFor(Wp.shoulder_r.p, V.sub(gpR, [3, 7, 0]), hint(th, 'r')), gOf(poses[`c${i}`], 'r'), 'r', sd === 'r' ? pole : []);
     const b1 = fist(a1.q, gpL, F.elbowFor(Wp.shoulder_l.p, V.sub(gpL, [3, 7, 0]), hint(th, 'l')), gOf(poses[`c${i}`], 'l'), 'l', sd === 'l' ? pole : []);

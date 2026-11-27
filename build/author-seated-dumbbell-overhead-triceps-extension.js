@@ -14,8 +14,9 @@ const DBF = require('./families/dumbbell');
 const meta = require('./meta/seated-dumbbell-overhead-triceps-extension.json');
 
 const SEAT_H = 42, PAD_ANGLE = 82, XS = 0;                     // seat centre at x = 0, pad hinged at the -X end of the seat
-const SINK = JSON.parse(process.env.SINK || '{"butt":5.2,"back":2.4}');  // rig shapes into the seat / pad so the skinned mesh touches them (b2/tri_mesh.mjs)
-const TOP_FLEX = 6, BOT_FLEX = +(process.env.BOT_FLEX || 110);
+const SINK = JSON.parse(process.env.SINK || '{"butt":0,"back":0}');  // rig v2 shapes match the body: buttocks and back rest on the seat / pad surfaces
+// bottom elbow 105 (was 110): rig v2's neck shape sits further back, so the dumbbell behind the head bottoms out a little higher
+const TOP_FLEX = 6, BOT_FLEX = +(process.env.BOT_FLEX || 105);
 const ZW = +(process.env.ZW || 5.5);                                // wrist |z|: the hands either side of the top plate
 const OFF = JSON.parse(process.env.OFF || '[8, 7.5, 0]');          // attach.offset [toward fingers, out of palm, thumb] cm: both hands on the handle, plates either side (tuned on the skinned mesh)
 const UA_FWD = +(process.env.UA_FWD || -0.3);                     // upper arm tilt forward (x per unit up)

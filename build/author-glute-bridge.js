@@ -12,8 +12,9 @@ const W0 = L.fk(lie), SX = W0.shoulder_r.p[0], P0 = lie.root.rot.pitch, L5 = lie
 function trunk(dP, l5) {
   const p = clone(lie); p.root.rot.pitch = r1(P0 + dP); p.ch.spine_l5.flex = r1(l5);
   return L.solvePose(p, ['root.pos.0', 'root.pos.1', 'ch.neck_c7.flex', 'ch.head_c1.flex'], [
-    (W) => [(H.bottomOf(W, 'chest') - 0.2) * 2, Math.min(0, H.bottomOf(W, 'neck') - 0.3) * 6, Math.min(0, H.bottomOf(W, 'chest')) * 6, H.bottomOf(W, 'hair') * 3, (W.shoulder_r.p[0] - SX) * 2],
-    (W, q) => [(q.ch.head_c1.flex - q.ch.neck_c7.flex * 0.7) * 0.3, Math.max(0, q.ch.neck_c7.flex - 39) * 3, Math.max(0, q.ch.head_c1.flex - 29) * 3]], { iters: 400 }).pose;
+    (W) => [(H.bottomOf(W, 'chest') - 0.2) * 2, Math.min(0, H.bottomOf(W, 'neck') - 0.5) * 6, Math.min(0, H.bottomOf(W, 'chest')) * 6, Math.min(0, H.bottomOf(W, 'buttock_r') - 0.1) * 4, Math.min(0, H.bottomOf(W, 'hair') - 0.3) * 6, Math.min(0, H.bottomOf(W, 'thigh_r') - 0.05) * 8, (W.shoulder_r.p[0] - SX) * 2],
+    // rig v2: the head sits forward of the upper back, so with a neutral neck it rests just off the mat (no forcing it down)
+    (W, q) => [(q.ch.head_c1.flex - q.ch.neck_c7.flex * 0.5) * 0.3, (q.ch.neck_c7.flex - (-22 + dP * 0.6)) * 0.1, Math.max(0, q.ch.neck_c7.flex - 39) * 3, Math.max(0, q.ch.head_c1.flex - 29) * 3, Math.max(0, -27 - q.ch.neck_c7.flex) * 3, Math.max(0, -27 - q.ch.head_c1.flex) * 3]], { iters: 400 }).pose;
 }
 // Low back: the slight resting lordosis flattens as the hips rise (pelvis tucks a little, no arching at the top)
 const l5At = (f) => L5 + (0 - L5) * f;

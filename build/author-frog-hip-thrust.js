@@ -12,12 +12,14 @@ const meta = require('./meta/frog-hip-thrust.json');
 
 const BENCH_H = 45, BENCH_D = 36;
 const EDGE = [0, BENCH_H, 0];
-const BACK_PT = [+(process.env.BACK_X || -3.6), +(process.env.BACK_Y || 4), 0]; // spine_t6 local point on the bench edge (as the hip thrusts)
-const HAND = { r: [-12, BENCH_H + +(process.env.HY ?? 4.5), 52], l: [-12, BENCH_H + +(process.env.HY ?? 4.5), -52] }; // raised so the athlete's thumbs and little fingers rest on the pad (mesh check)
+// spine_t6 local point on the bench edge: the back surface of the rig chest shape at the level of the lower shoulder blades
+const CHEST = L.rig.shapes.find((x) => x.id === 'chest'), BACK_Y = +(process.env.BACK_Y || 4);
+const BACK_PT = [+(process.env.BACK_X || r1(CHEST.c[0] - CHEST.r[0] * Math.sqrt(1 - ((BACK_Y - CHEST.c[1]) / CHEST.r[1]) ** 2))), BACK_Y, 0];
+const HAND = { r: [-12, BENCH_H + +(process.env.HY ?? 2.7), 52], l: [-12, BENCH_H + +(process.env.HY ?? 2.7), -52] }; // palm resting on the pad (rig hand shape)
 const ARM_POLE = { r: [-0.6, -0.1, 1], l: [-0.6, -0.1, -1] };
-const HTILT = +(process.env.HTILT ?? 8); // hands rolled thumb side up so the athlete's thumb rests on the pad instead of drooping into it
+const HTILT = +(process.env.HTILT ?? 0); // optional roll of the hands, thumb side up (deg)
 const handOutR = Q.mul(Q.axis([0, 0, 1], HTILT), Q.mirrorZ(Q.fromBasis([0, -1, 0], [0, 0, 1], [-1, 0, 0]))), handOutL = Q.mirrorZ(handOutR);
-const ROLL = +(process.env.ROLL ?? 60), YAW = +(process.env.YAW ?? 30), FOOT_DX = +(process.env.FDX ?? 40), KPOLE = JSON.parse(process.env.KPOLE || '[0.6,0.6,1]');
+const ROLL = +(process.env.ROLL ?? 60), YAW = +(process.env.YAW ?? 30), FOOT_DX = +(process.env.FDX ?? 40), KPOLE = JSON.parse(process.env.KPOLE || '[0.6,0.8,1]'); // knee pole: wide knees inside the hip rotation limit with rig v2's wider hips
 // right foot: toes turned out YAW, rolled ROLL onto the outer edge (sole facing the left foot); left mirrored
 const footR = Q.mul(L.footRot(-YAW), Q.axis([1, 0, 0], ROLL)), footL = Q.mirrorZ(footR);
 const contacts = [Object.assign(H.legC('r', { pole: KPOLE }), { handRot: H.qArr(footR) }), Object.assign(H.legC('l', { pole: [KPOLE[0], KPOLE[1], -KPOLE[2]] }), { handRot: H.qArr(footL) }),
@@ -86,6 +88,7 @@ set('Trunk inclination', 'setup', `≈${Math.round(-trunkTilt(Wb))}° (hips belo
 set('Tempo', 'setup', 'Hips down 0.8 s'); set('Tempo', 'peak', '1.2 s up, 0.8 s squeeze, 2.0 s down, 1.2 s reset');
 const travel = V.len(V.sub(Wt.pelvis.p, Wb.pelvis.p));
 ex.checks.measure = { name: 'rootTravel', min: Math.floor(travel - 2), max: Math.ceil(travel + 2) };
-console.log(`Frog Hip Thrust: pitch ${P_BOT}..${P_TOP}, feet ${JSON.stringify(FOOT)}, wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} pivotErr ${pivot.toFixed(2)} travel ${r1(travel)}`);
+const handBot = Math.min(...Object.values(poses).map((p) => H.bottomOf(L.fk(p, contacts), 'hand_r'))) - BENCH_H;
+console.log(`Frog Hip Thrust: handBottom ${handBot.toFixed(2)} backPt ${BACK_PT} pitch ${P_BOT}..${P_TOP}, feet ${JSON.stringify(FOOT)}, wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} pivotErr ${pivot.toFixed(2)} travel ${r1(travel)}`);
 for (const n of ['bottom', 'u50', 'top']) console.log(`  ${n} hip ${JSON.stringify(poses[n].ch.hip_r)} knee ${r1(H.kneeOf(L.fk(poses[n], contacts), 'r'))} abd ${r1(abdOf(L.fk(poses[n], contacts)))} kneeY ${r1(L.fk(poses[n], contacts).knee_r.p[1])}`);
 if (rep.slide > 0.05) { console.error('FAIL: planted foot or hand slides'); process.exitCode = 1; }

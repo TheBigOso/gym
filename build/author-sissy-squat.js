@@ -60,10 +60,10 @@ let g = [0, 0];
 const keys = {};
 for (const [n, f] of [['top', 0], ['d25', 0.25], ['d50', 0.5], ['d75', 0.75], ['bottom', 1]]) { keys[n] = solveKey(KNEE_TOP + (KNEE_BOT - KNEE_TOP) * f, g); g = [keys[n].root[0], keys[n].pitch]; }
 keys.settle = solveKey(KNEE_BOT + 1.5, g);
-// wall hand target: about 25 cm out from the left shoulder, between its top and bottom heights
+// wall hand target: about 25 cm out from the left shoulder, between its top and bottom heights (rig v2's shorter arm: high
+// enough that the top of the rep is reached with the elbow still bent)
 const Wt0 = L.fk(base(keys.top.root, keys.top.pitch), contacts), Wb0 = L.fk(base(keys.bottom.root, keys.bottom.pitch), contacts);
-const HAND = [r1((Wt0.shoulder_l.p[0] + Wb0.shoulder_l.p[0]) / 2 + 10), r1((Wt0.shoulder_l.p[1] + Wb0.shoulder_l.p[1]) / 2 - 28), r1(Wt0.shoulder_l.p[2] - 24)];
-const PALM = +(process.env.PALM ?? 7.5);           // skinned hand (palm and curled thumb) reaches this far past the wrist target toward the wall (b2/scratch/sq2/mesh.mjs)
+const HAND = [r1((Wt0.shoulder_l.p[0] + Wb0.shoulder_l.p[0]) / 2 + 10), r1((Wt0.shoulder_l.p[1] + Wb0.shoulder_l.p[1]) / 2 - 20), r1(Wt0.shoulder_l.p[2] - 24)];
 const ARM_GUESS = [{ shoulder_l: { plane: 20, elev: 50, axial: 0 }, elbow_l: { flex: 40 }, wrist_l: { pron: 90, flex: 0, dev: 0 } }, { shoulder_l: { plane: 40, elev: 40, axial: 60 }, elbow_l: { flex: 30 }, wrist_l: { pron: 0, flex: 0, dev: 0 } }];
 let armErr = 0;
 function pose(k) {
@@ -83,7 +83,9 @@ poses.r50 = clone(poses.d50); poses.r75 = clone(poses.d75); poses.r25 = clone(po
 const keyframes = [{ t: 0, pose: 'top' }, { t: 0.8, pose: 'top' }, { t: 1.4, pose: 'd25' }, { t: 1.95, pose: 'd50' }, { t: 2.5, pose: 'd75' }, { t: 3.0, pose: 'bottom' },
   { t: 3.2, pose: 'settle' }, { t: 3.4, pose: 'bottom' }, { t: 3.8, pose: 'r75' }, { t: 4.15, pose: 'r50' }, { t: 4.5, pose: 'r25' }, { t: 4.8, pose: 'top' }, { t: 6.0, pose: 'top' }];
 const ex = H.module_(meta, contacts, poses, keyframes);
-ex.props = [{ id: 'wall', kind: 'wall', center: [r1(HAND[0]), 0, r1(HAND[2] - PALM - 5)], size: [120, 200, 10] }];
+// wall face where the palm of the rig hand shape meets it (rig v2 shapes match the body)
+const palmZ = (() => { const g = R.shapeWorld(L.fk(poses.top, contacts), L.rig.shapes.find((x) => x.id === 'hand_l')); return g.c[2] - Math.hypot(g.axes[0][2], g.axes[1][2], g.axes[2][2]); })();
+ex.props = [{ id: 'wall', kind: 'wall', center: [r1(HAND[0]), 0, r1(palmZ - 5)], size: [120, 200, 10] }];
 const rep = K.scan(ex, { planted: ['tip_r', 'tip_l', 'wall_l'] });
 const Wt = L.fk(poses.top, contacts), Wb = L.fk(poses.bottom, contacts);
 const line = (W) => sag(V.sub(W.neck_c7.p, W.pelvis.p)) - sag(V.sub(W.hip_r.p, W.knee_r.p));

@@ -10,7 +10,9 @@ const BENCH_H = 42, BENCH_D = 36;
 // Bench edge (front top corner) at x = 0. The upper back pivots on it: a point on the back of the chest at the level of the
 // lower shoulder blades (spine_t6 frame) stays on the edge. The skinned mesh is checked against the edge separately.
 const EDGE = [0, BENCH_H, 0];
-let BACK_PT = [-3.6, 4, 0]; // spine_t6 local: 1.1 cm inside the rig chest surface so the skinned mesh back meets the edge (hips_bench.mjs)
+// spine_t6 local: the back surface of the rig chest shape at the level of the lower shoulder blades (rig v2 shapes match the body)
+const CHEST = rig.shapes.find((x) => x.id === 'chest');
+let BACK_PT = [r1(CHEST.c[0] - CHEST.r[0] * Math.sqrt(1 - ((4 - CHEST.c[1]) / CHEST.r[1]) ** 2)), 4, 0];
 // Arms spread along the bench top, palms down, fingers pointing out, elbows soft and above the bench (constant hand targets)
 const HAND = { r: [-10, BENCH_H + 2.7, 62], l: [-10, BENCH_H + 2.7, -62] };
 const ARM_POLE = { r: [-0.6, -0.1, 1], l: [-0.6, -0.1, -1] };
@@ -48,6 +50,16 @@ const FREE = { hip_l: { flex: 88, abd: 4, rot: 0 }, knee_l: { flex: 100 }, ankle
 function poseAt(f) { // f: 0 = bottom, 1 = top
   let p = trunk(P_BOT + (P_TOP - P_BOT) * f);
   Object.assign(p.ch, clone(FREE));
+  // lower in the rep the knee folds a little more so the lifted foot stays clear of the floor
+  if (H.bottomOf(L.fk(p), 'foot_l') < 4) {
+    let best = null;
+    for (let hf = 88; hf <= 120; hf += 2) for (let kf = 50; kf <= 130; kf += 2) {
+      const q = clone(p); q.ch.hip_l.flex = hf; q.ch.knee_l.flex = kf;
+      const c = (hf - 88) ** 2 + (kf - 100) ** 2 * 0.5;
+      if (H.bottomOf(L.fk(q), 'foot_l') >= 4 && (!best || c < best.c)) best = { c, hf, kf };
+    }
+    if (best) { p.ch.hip_l.flex = best.hf; p.ch.knee_l.flex = best.kf; }
+  }
   p.ik = { leg_r: { target: FOOT.slice(), weight: 1 } };
   p.ch.sc_r = { protract: 0, elevate: 4 }; p.ch.sc_l = { protract: 0, elevate: 4 };
   p = H.fitLeg(p, 'r', contacts[0], FOOT);
