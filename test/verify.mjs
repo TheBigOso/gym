@@ -64,6 +64,11 @@ const { browser, page, errors } = await openPlayer();
 const res = await page.evaluate(() => { __rr.S.playing = false; const out = [], bad = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); const title = document.getElementById('title').textContent; out.push(title); if (/\bundefined\b|\bNaN\b/.test(document.body.innerText)) bad.push(title); } out.bad = bad; return { out, bad }; }).then((r) => Object.assign(r.out, { bad: r.bad }));
 check(res.length === fs.readdirSync('src/exercises').length, `player loads all exercises: ${res.join(' | ')}`);
 check(!res.bad.length, `player text has no 'undefined' or 'NaN'${res.bad.length ? ': ' + res.bad.join(', ') : ''}`);
+// Athlete: the Studio clay body is on stage, the target muscles light up, and the female variant is ready.
+const ath = await page.evaluate(() => { __rr.load(0); __rr.setT(4.4); const A = __rr.athlete, g = A.mesh.geometry.attributes.aGlow.array; let lit = 0; for (let i = 3; i < g.length; i += 4) if (g[i] > 0.05) lit++; return { name: A.mesh.name, skinned: A.mesh.isSkinnedMesh, verts: A.mesh.geometry.attributes.position.count, lit, key: A.key, variants: Object.keys(RR_DATA.character.variants) }; });
+check(ath.name === 'Body' && ath.skinned && ath.verts > 10000, `Studio clay athlete on stage (${ath.verts} vertices, ${ath.key === 'm' ? 'male' : ath.key})`);
+check(ath.lit > 200, `target and synergist muscles glow on the athlete (${ath.lit} vertices lit)`);
+check(ath.variants.includes('f'), 'female variant ships in the character data for a later switch');
 // Speed: compare animation time against the player's own frame clock (S.clock), so a slow
 // machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
 await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });

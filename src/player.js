@@ -20,90 +20,11 @@ try { const v = JSON.parse(localStorage.getItem('reprig3d') || '{}'); if (v.bg) 
 const remember = () => { try { localStorage.setItem('reprig3d', JSON.stringify({ bg: S.bg, show: S.show, ex: S.ex })); } catch (e) {} };
 let EX, META, tl, D, roleOf;
 
-/* ---------------- figure: skinned mesh built from the rig's shapes ---------------- */
-function smooth(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
-function buildFigure(withMuscles) {
-  const bones = {}, list = [];
-  for (const j of rig.joints) {
-    const b = new THREE.Bone(); b.name = j.id;
-    if (j.parent) { b.position.set(j.offset[0] * U, j.offset[1] * U, j.offset[2] * U); bones[j.parent].add(b); }
-    bones[j.id] = b; list.push(b);
-  }
-  const rest = R.evalPose(rig, { root: { pos: [0, 0, 0] }, ch: {} });
-  const bi = Object.fromEntries(list.map((b, i) => [b.name, i]));
-  const pal = Object.fromEntries(Object.entries(RIG.palette).map(([k, v]) => [k, new THREE.Color(v)]));
-  pal.body = pal.skin;
-  const P = [], N = [], C = [], SI = [], SW = [], I = [];
-  const push = (p, n, col, idx, w) => { P.push(p[0] * U, p[1] * U, p[2] * U); N.push(...n); C.push(col.r, col.g, col.b); SI.push(idx[0], idx[1] ?? 0, idx[2] ?? 0, 0); SW.push(w[0], w[1] ?? 0, w[2] ?? 0, 0); };
-  const sphere = new THREE.SphereGeometry(1, 28, 18);
-  for (const s of rig.shapes) {
-    const base = P.length / 3;
-    if (s.kind === 'ellipsoid') {
-      const o = rest[s.joint].p, pa = sphere.attributes.position, col = pal[s.tone] || pal.skin;
-      for (let i = 0; i < pa.count; i++) {
-        const u = [pa.getX(i), pa.getY(i), pa.getZ(i)];
-        const p = [o[0] + s.c[0] + u[0] * s.r[0], o[1] + s.c[1] + u[1] * s.r[1], o[2] + s.c[2] + u[2] * s.r[2]];
-        push(p, V.norm([u[0] / s.r[0], u[1] / s.r[1], u[2] / s.r[2]]), col, [bi[s.joint]], [1]);
-      }
-      const ix = sphere.index.array; for (let i = 0; i < ix.length; i++) I.push(base + ix[i]);
-    } else {
-      const F = rest[s.from].p, T = rest[s.to].p, ax = V.sub(T, F), Lc = V.len(ax), [r0, r1] = s.r;
-      const prof = [];
-      for (let k = 0; k <= 6; k++) { const a = -Math.PI / 2 + (k / 6) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.max(1e-3, r0 * Math.cos(a)), r0 * Math.sin(a))); }
-      for (let k = 1; k < 8; k++) { const t = k / 8; prof.push(new THREE.Vector2(r0 + (r1 - r0) * t, Lc * t)); }
-      for (let k = 0; k <= 6; k++) { const a = (k / 6) * (Math.PI / 2); prof.push(new THREE.Vector2(Math.max(1e-3, r1 * Math.cos(a)), Lc + r1 * Math.sin(a))); }
-      const g = new THREE.LatheGeometry(prof, 24); g.computeVertexNormals();
-      const qa = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...V.norm(ax)));
-      const pa = g.attributes.position, na = g.attributes.normal, v = new THREE.Vector3(), nv = new THREE.Vector3();
-      const parent = rig.byId[s.from].parent, fi = bi[s.from], ti = bi[s.to], pi = parent ? bi[parent] : fi;
-      for (let i = 0; i < pa.count; i++) {
-        v.set(pa.getX(i), pa.getY(i), pa.getZ(i)); const t = v.y / Lc; v.applyQuaternion(qa);
-        nv.set(na.getX(i), na.getY(i), na.getZ(i)).applyQuaternion(qa);
-        const wT = smooth(0.6, 1.05, t) * 0.5, wP = (1 - smooth(-0.05, 0.28, t)) * 0.3;
-        const col = s.split && t < s.split.until ? pal[s.split.tone] : pal[s.tone] || pal.skin;
-        push([F[0] + v.x, F[1] + v.y, F[2] + v.z], [nv.x, nv.y, nv.z], col, [fi, ti, pi], [1 - wT - wP, wT, wP]);
-      }
-      const ix = g.index.array; for (let i = 0; i < ix.length; i++) I.push(base + ix[i]);
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
-  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
-  geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
-  geo.setIndex(I);
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0 });
-  mat.name = 'reprig_body';
-  const mesh = new THREE.SkinnedMesh(geo, mat); mesh.name = 'Body'; mesh.castShadow = true; mesh.receiveShadow = true;
-  const skeleton = new THREE.Skeleton(list);
-  mesh.add(bones.pelvis); mesh.bind(skeleton);
-  const muscles = [];
-  if (withMuscles) {
-    for (const m of rig.muscles) for (const part of m.parts) {
-      const mm = new THREE.Mesh(sphere, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, roughness: 0.5 }));
-      mm.position.set(part.c[0] * U, part.c[1] * U, part.c[2] * U); mm.scale.set(part.r[0] * U * 1.03, part.r[1] * U * 1.03, part.r[2] * U * 1.03);
-      mm.renderOrder = 2; mm.visible = false; mm.userData.muscle = m.id;
-      bones[part.joint].add(mm); muscles.push(mm);
-    }
-  }
-  return { mesh, bones, list, skeleton, muscles };
-}
-function localQuats(W, mirror) {
-  const out = {};
-  for (const j of rig.joints) {
-    const src = mirror ? PARTNER(j.id) : j.id;
-    let lq = j.parent ? Q.mul(Q.conj(W[mirror ? PARTNER(j.parent) : j.parent].q), W[src].q) : W[src].q;
-    if (mirror) lq = Q.mirrorZ(lq);
-    out[j.id] = lq;
-  }
-  const p = W.pelvis.p; out.__root = [p[0] * U, p[1] * U, (mirror ? -p[2] : p[2]) * U];
-  return out;
-}
-function applyLocal(fig, L) {
-  for (const j of rig.joints) { const q = L[j.id]; fig.bones[j.id].quaternion.set(q[1], q[2], q[3], q[0]); }
-  fig.bones.pelvis.position.set(...L.__root);
-}
+/* ---------------- figure: the Studio clay athlete (src/athlete.js), driven by RepRig world poses ---------------- */
+const CHAR = RRAthlete.loadCharacter(RR_DATA.character);
+const makeAthlete = (k) => { const v = CHAR.variant(k); const a = RRAthlete.buildAthlete(CHAR.sh, v.ch, v.pos, rig, v.look); a.mesh.name = 'Body'; a.key = k; return a; };
+// RepRig cm -> this body: the athlete is RepRig scaled by its leg length, so the props, mat and guides share that scale
+const ikWeights = (pose, ex) => { const w = {}; for (const c of ex.contacts || []) { const k = pose.ik && pose.ik[c.id]; if (k) w[c.id] = k.weight ?? 1; } return w; };
 
 /* ---------------- scene ---------------- */
 const stage = $('stage'), canvas = $('cv');
@@ -120,9 +41,12 @@ key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -1.
 scene.add(key);
 const rim = new THREE.DirectionalLight(0xbfd8ff, 0.8); rim.position.set(-2.5, 1.8, -2); scene.add(rim);
 const floor = new THREE.Mesh(new THREE.CircleGeometry(4.5, 64), new THREE.MeshStandardMaterial({ roughness: 0.95 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-const matMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.85 })); matMesh.receiveShadow = true; scene.add(matMesh);
-const fig = buildFigure(true); scene.add(fig.mesh);
-const propGroup = new THREE.Group(); propGroup.name = 'Props'; scene.add(propGroup);
+let A = makeAthlete(RR_DATA.character.default || 'm'); scene.add(A.mesh);
+const world = new THREE.Group(); world.name = 'World'; world.scale.setScalar(A.sLeg); scene.add(world);
+const matMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.85 })); matMesh.receiveShadow = true; world.add(matMesh);
+const propGroup = new THREE.Group(); propGroup.name = 'Props'; world.add(propGroup);
+// Male is the default; the female variant ships in the data for a later switch (__rr.setAthlete('f')).
+function setAthlete(k) { if (!RR_DATA.character.variants[k] || k === A.key) return; scene.remove(A.mesh); A.mesh.geometry.dispose(); A = makeAthlete(k); scene.add(A.mesh); world.scale.setScalar(A.sLeg); loadExercise(S.ex); }
 const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf2d230, hurdle: 0xe0483e, bench: 0x3a3f48, dumbbell: 0x2b2f36, kettlebell: 0x2b2f36 };
 // Equipment from the module's props list (the mat is drawn separately). Units: cm in, metres out.
 function buildProps(props, group) {
@@ -143,7 +67,7 @@ function buildProps(props, group) {
 }
 
 // guides
-const guideGroup = new THREE.Group(); scene.add(guideGroup);
+const guideGroup = new THREE.Group(); world.add(guideGroup);
 const pathMat = new THREE.LineDashedMaterial({ dashSize: 0.035, gapSize: 0.03, transparent: true, opacity: 0.9 });
 let pathLine = null, pathTop = null;
 const dot = new THREE.Mesh(new THREE.SphereGeometry(0.014, 16, 12), new THREE.MeshBasicMaterial()); guideGroup.add(dot);
@@ -168,7 +92,7 @@ function loadExercise(i) {
   const box = new THREE.Box3();
   for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); }
   for (const pr of EX.props || []) { if (pr.kind === 'mat') continue; const c = pr.center || [0, 0, 0], sz = pr.size || [0, 0, 0]; box.expandByPoint(toV3([c[0] - sz[0] / 2, c[1], c[2] - sz[2] / 2], false)); box.expandByPoint(toV3([c[0] + sz[0] / 2, c[1] + sz[1], c[2] + sz[2] / 2], false)); }
-  box.getCenter(center); radius = box.getSize(new THREE.Vector3()).length() / 2;
+  box.getCenter(center).multiplyScalar(A.sLeg); radius = (box.getSize(new THREE.Vector3()).length() / 2) * A.sLeg;
   const mat = EX.props.find((p) => p.kind === 'mat');
   matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
   propGroup.clear(); buildProps(EX.props, propGroup); propGroup.scale.z = S.side === 'L' ? -1 : 1;
@@ -208,13 +132,11 @@ let lastW = null, lastPose = null;
 function update() {
   const pose = tl.pose(S.t), W = R.evalPose(rig, pose, EX.contacts), mirror = S.side === 'L';
   lastW = W; lastPose = pose;
-  applyLocal(fig, localQuats(W, mirror));
-  // muscles
-  for (const mm of fig.muscles) {
-    const id = mm.userData.muscle, role = roleOf[id], on = role && (S.show[role] || S.hover === id);
-    mm.visible = !!on;
-    if (on) { const a = Math.max(tl.activation(id, S.t), S.hover === id ? 1 : 0); mm.material.color.setHex(ROLE[role]); mm.material.emissive.setHex(ROLE[role]); mm.material.emissiveIntensity = 0.15 + 0.55 * a; mm.material.opacity = 0.22 + 0.58 * a; }
-  }
+  A.pose(W, mirror, ikWeights(pose, EX));
+  // muscles: each shown group glows in its role colour, brighter as it works harder
+  const glow = {};
+  for (const id in roleOf) { const role = roleOf[id]; if (!(S.show[role] || S.hover === id)) continue; glow[id] = { a: S.hover === id ? 1 : 0.3 + 0.7 * tl.activation(id, S.t), role }; }
+  A.setGlow(glow);
   // guides
   guideGroup.visible = S.show.paths;
   const pal = BG[S.bg], col = new THREE.Color(pal.guide);
@@ -241,7 +163,7 @@ function update() {
 }
 function placeLabel(el, v3, text) {
   if (!S.show.paths) { el.style.display = 'none'; return; }
-  const p = v3.clone().project(camera);
+  const p = world.localToWorld(v3.clone()).project(camera);
   if (p.z > 1) { el.style.display = 'none'; return; }
   el.style.display = 'block'; el.textContent = text;
   const x = (p.x * 0.5 + 0.5) * stage.clientWidth, y = (-p.y * 0.5 + 0.5) * stage.clientHeight;
@@ -254,31 +176,34 @@ function applyBackdrop() {
 }
 
 /* ---------------- glTF export ---------------- */
-function bakeClip(ex, mirror, fps) {
+function bakeClip(ex, a, mirror, fps) {
   const tlx = R.buildTimeline(ex), Dx = tlx.duration, n = Math.round(Dx * fps) + 1, times = new Float32Array(n);
-  const q = {}, rootP = new Float32Array(n * 3);
-  for (const j of rig.joints) q[j.id] = new Float32Array(n * 4);
+  const q = a.bones.map(() => new Float32Array(n * 4)), rootP = new Float32Array(n * 3), iRoot = a.B.indexOf('pelvis');
   for (let k = 0; k < n; k++) {
-    const t = Math.min(Dx, k / fps); times[k] = t;
-    const L = localQuats(R.evalPose(rig, tlx.pose(t), ex.contacts), mirror);
-    for (const j of rig.joints) { const v = L[j.id]; q[j.id].set([v[1], v[2], v[3], v[0]], k * 4); }
-    rootP.set(L.__root, k * 3);
+    const t = Math.min(Dx, k / fps); times[k] = t; const pz = tlx.pose(t);
+    a.pose(R.evalPose(rig, pz, ex.contacts), mirror, ikWeights(pz, ex));
+    a.bones.forEach((b, i) => q[i].set([b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w], k * 4));
+    const p = a.bones[iRoot].position; rootP.set([p.x, p.y, p.z], k * 3);
   }
-  const tracks = rig.joints.map((j) => new THREE.QuaternionKeyframeTrack(`${j.id}.quaternion`, times, q[j.id]));
+  const tracks = a.bones.map((b, i) => new THREE.QuaternionKeyframeTrack(`${b.name}.quaternion`, times, q[i]));
   tracks.push(new THREE.VectorKeyframeTrack('pelvis.position', times, rootP));
   return new THREE.AnimationClip(`${ex.exercise.id}_${mirror ? 'left' : 'right'}`, Dx, tracks);
 }
 async function exportGLB(i) {
-  const ex = EXS[i], f = buildFigure(false);
+  const ex = EXS[i], a = makeAthlete(A.key);
+  a.mesh.geometry.setAttribute('color', new THREE.Float32BufferAttribute(a.exportColors(), 3));
+  for (const k of ['aCloth', 'aMisc', 'aRest', 'aGlow']) a.mesh.geometry.deleteAttribute(k); // shader-only data
+  a.mesh.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0, name: 'reprig_body' });
   const armature = new THREE.Group(); armature.name = 'Armature';
   armature.rotation.y = -Math.PI / 2; // figure faces +X in rig space; glTF convention faces +Z
-  armature.add(f.mesh); armature.userData = { rig: RIG.rigId, exercise: ex.exercise.id, units: 'meters', note: 'Clips: <id>_right, <id>_left. Generated by RepRig.' };
-  applyLocal(f, localQuats(R.evalPose(rig, R.buildTimeline(ex).pose(0), ex.contacts), false));
+  armature.add(a.mesh); armature.userData = { rig: RIG.rigId, character: RR_DATA.character.id, exercise: ex.exercise.id, units: 'meters', note: 'Clips: <id>_right, <id>_left. Generated by RepRig.' };
+  const p0 = R.buildTimeline(ex).pose(0); a.pose(R.evalPose(rig, p0, ex.contacts), false, ikWeights(p0, ex));
+  const props = new THREE.Group(); props.name = 'Props'; props.scale.setScalar(a.sLeg); buildProps(ex.props, props); armature.add(props);
   armature.updateMatrixWorld(true);
-  const props = new THREE.Group(); props.name = 'Props'; buildProps(ex.props, props); armature.add(props);
-  const clips = ex.exercise.authoredSide === 'bilateral' ? [bakeClip(ex, false, 30)] : [bakeClip(ex, false, 30), bakeClip(ex, true, 30)];
+  const clips = ex.exercise.authoredSide === 'bilateral' ? [bakeClip(ex, a, false, 30)] : [bakeClip(ex, a, false, 30), bakeClip(ex, a, true, 30)];
   if (clips.length === 1) clips[0].name = ex.exercise.id;
   const buf = await new GLTFExporter().parseAsync(armature, { binary: true, animations: clips });
+  a.mesh.geometry.dispose();
   return buf;
 }
 
@@ -412,4 +337,4 @@ if (stage.clientWidth < 600) S.show.angles = false;
 buildStatic(); applyBackdrop(); resize(); loadExercise(S.ex); roStage.observe(stage);
 setPlaying(!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
 $('loading').remove(); syncUI(true); requestAnimationFrame(frame);
-window.__rr = { S, R, rig, exportGLB, load: loadExercise, setT: (t) => { S.t = t; update(); renderer.render(scene, camera); syncUI(true); }, setCam: setCamera, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), get tl() { return tl; }, get EX() { return EX; } };
+window.__rr = { S, R, rig, exportGLB, setAthlete, get athlete() { return A; }, load: loadExercise, setT: (t) => { S.t = t; update(); renderer.render(scene, camera); syncUI(true); }, setCam: setCamera, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), get tl() { return tl; }, get EX() { return EX; } };
