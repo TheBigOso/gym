@@ -9,7 +9,7 @@ const DEBUG = process.argv.includes('--debug');
 const bottomOf = (W, id) => { const s = rig.shapes.find((x) => x.id === id), g = R.shapeWorld(W, s); return g.kind === 'capsule' ? Math.min(g.a[1] - g.r[0], g.b[1] - g.r[1]) : g.c[1] - Math.hypot(g.axes[0][1], g.axes[1][1], g.axes[2][1]); };
 const trunkFromVertical = (W) => V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]);
 const headPt = (W, v) => V.add(W.head_c1.p, Q.rot(W.head_c1.q, v));
-const HAND_C = [-8.6, 5.5, 9], HAND_TIP = [-8.6, 8, -0.6]; // head-local hand centre and fingertips
+const { HAND_C, HAND_TIP, headInHands } = require('./families/core-a'); // head-local hand centre and fingertips (rig v2: follow the fitted head)
 
 /* ---------------- 1) Lying base: pelvis and upper back on the mat ---------------- */
 const sup = L.POSES.supine({ kneeFlex: 90 });
@@ -17,16 +17,14 @@ const base0 = clone(sup.pose);
 base0.root.pos = [0, base0.root.pos[1], 0];
 // Pitch the pelvis and give the spine a small lordosis so the buttocks, low ribs and upper back all rest on the mat.
 let lie = L.solvePose(base0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-  (W) => [bottomOf(W, 'buttock_r') * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
+  (W) => [bottomOf(W, 'buttock_r') * 4, Math.min(bottomOf(W, 'chest'), bottomOf(W, 'traps_r'), bottomOf(W, 'traps_l')) * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
   L.obj.reg('ch.spine_l5.flex', -8, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', 92, 0.2),
 ]).pose;
 // The pelvis rolls on the buttocks as it tips toward the thighs; sit it 0.5 cm high at rest so the buttocks
 // press at most ~0.5 cm into the mat at the top (the pelvis joint itself never moves).
 lie.root.pos[1] = r1(lie.root.pos[1] + 0.5);
 // Head cradled: neck flexion just enough that the back of the hands rests on the mat.
-lie = L.solvePose(lie, ['ch.neck_c7.flex'], [(W) => [(headPt(W, [HAND_C[0] - 1.8, HAND_C[1], HAND_C[2]])[1] - 1.6) * 3]]).pose;
-lie.ch.head_c1.flex = r1(lie.ch.neck_c7.flex * 0.45 / 0.55);
-lie = L.solvePose(lie, ['ch.neck_c7.flex'], [(W) => [(headPt(W, [HAND_C[0] - 1.8, HAND_C[1], HAND_C[2]])[1] - 1.6) * 3]]).pose;
+lie = headInHands(lie);
 const NECK0 = r1(lie.ch.neck_c7.flex + lie.ch.head_c1.flex);
 const P0 = lie.root.rot.pitch, ROOT = lie.root.pos.slice();
 
@@ -61,7 +59,7 @@ function cradle(pose, opt = {}) {
   const g = opt.guess || { shoulder_r: { plane: 10, elev: 150, axial: -70 }, elbow_r: { flex: 130 }, wrist_r: { pron: 0, flex: 0, dev: 0 }, sc_r: { protract: 0, elevate: 4 } };
   for (const j in g) p.ch[j] = clone(g[j]);
   const objs = [
-    (W) => V.sub(V.add(W.wrist_r.p, Q.rot(W.wrist_r.q, [1.0, -8.4, 0])), headPt(W, HAND_C)).map((v) => v * 3),
+    (W) => V.sub(V.add(W.wrist_r.p, Q.rot(W.wrist_r.q, [1.0, -8.9, 0])), headPt(W, HAND_C)).map((v) => v * 3),
     (W) => V.sub(W.handtip_r.p, headPt(W, HAND_TIP)).map((v) => v * 2),
     // Palm faces the head: wrist X axis along the head's forward axis.
     (W) => V.sub(Q.rot(W.wrist_r.q, [1, 0, 0]), Q.rot(W.head_c1.q, [1, 0, 0])).map((v) => v * 3),

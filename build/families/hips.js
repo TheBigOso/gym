@@ -20,7 +20,7 @@ function lieBase() {
   const sup = L.POSES.supine({ kneeFlex: 90 });
   const p0 = clone(sup.pose); p0.root.pos = [0, p0.root.pos[1], 0];
   return L.solvePose(p0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [bottomOf(W, 'buttock_r') * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
+    (W) => [bottomOf(W, 'buttock_r') * 4, Math.min(bottomOf(W, 'chest'), bottomOf(W, 'traps_r'), bottomOf(W, 'traps_l')) * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
     L.obj.reg('ch.spine_l5.flex', -8, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', 92, 0.2),
   ]).pose;
 }

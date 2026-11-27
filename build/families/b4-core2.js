@@ -23,7 +23,7 @@ function lie({ kneeFlex = 90, headRest = 'hands', pitch = 92 } = {}) {
   const base0 = clone(sup.pose);
   base0.root.pos = [0, base0.root.pos[1], 0];
   let p = L.solvePose(base0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [Math.min(bottomOf(W, 'buttock_r'), bottomOf(W, 'thigh_r')) * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
+    (W) => [Math.min(bottomOf(W, 'buttock_r'), bottomOf(W, 'thigh_r')) * 4, Math.min(bottomOf(W, 'chest'), bottomOf(W, 'traps_r'), bottomOf(W, 'traps_l')) * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
     L.obj.reg('ch.spine_l5.flex', -8, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', pitch, 0.2),
   ]).pose;
   p.root.pos[1] = r1(p.root.pos[1] + 0.2);
@@ -31,8 +31,7 @@ function lie({ kneeFlex = 90, headRest = 'hands', pitch = 92 } = {}) {
   p.ch.neck_c7 = { rot: 0, flex: 0 }; p.ch.head_c1 = { rot: 0, flex: 0 };
   if (headRest === 'floor') p = CA.restHead(p);
   else if (headRest === 'hands') {
-    const cr = (q) => L.solvePose(q, ['ch.neck_c7.flex'], [(W) => [(headPt(W, [CA.HAND_C[0] - 1.8, CA.HAND_C[1], CA.HAND_C[2]])[1] - 1.6) * 3]]).pose;
-    p = cr(p); p.ch.head_c1 = { rot: 0, flex: r1(p.ch.neck_c7.flex * 0.45 / 0.55) }; p = cr(p);
+    p = CA.headInHands(p);
   }
   if (!kneeFlex) {
     for (const s of ['r', 'l']) { p.ch[`hip_${s}`] = { flex: 0, abd: 0, rot: 0 }; p.ch[`knee_${s}`] = { flex: 2 }; p.ch[`ankle_${s}`] = { dorsi: -25 }; }
