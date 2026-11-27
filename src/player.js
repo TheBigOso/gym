@@ -47,7 +47,7 @@ const matMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshSta
 const propGroup = new THREE.Group(); propGroup.name = 'Props'; world.add(propGroup);
 // Male is the default; the female variant ships in the data for a later switch (__rr.setAthlete('f')).
 function setAthlete(k) { if (!RR_DATA.character.variants[k] || k === A.key) return; scene.remove(A.mesh); A.mesh.geometry.dispose(); A = makeAthlete(k); scene.add(A.mesh); world.scale.setScalar(A.sLeg); loadExercise(S.ex); }
-const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf2d230, hurdle: 0xe0483e, bench: 0x3a3f48, dumbbell: 0x2b2f36, kettlebell: 0x2b2f36 };
+const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf2d230, hurdle: 0xe0483e, bench: 0x3a3f48, dumbbell: 0x2b2f36, kettlebell: 0x2b2f36, wall: 0x6e7680 };
 // Equipment from the module's props list (the mat is drawn separately). Units: cm in, metres out.
 function buildProps(props, group) {
   for (const pr of props || []) {
@@ -81,7 +81,7 @@ const toV3 = (p, mirror) => new THREE.Vector3(p[0] * U, p[1] * U, (mirror ? -p[2
 function setLine(line, pts) { line.geometry.dispose(); line.geometry = new THREE.BufferGeometry().setFromPoints(pts); if (line.material.isLineDashedMaterial) line.computeLineDistances(); }
 
 /* ---------------- exercise loading ---------------- */
-let pathWorld = [], center = new THREE.Vector3(), radius = 1;
+let pathWorld = [], center = new THREE.Vector3(), radius = 1, halfH = 1;
 function loadExercise(i) {
   S.ex = i; EX = EXS[i]; META = EX.exercise; tl = R.buildTimeline(EX); D = tl.duration;
   roleOf = {}; for (const role in META.muscles) for (const id of META.muscles[role]) roleOf[id] = role;
@@ -90,9 +90,9 @@ function loadExercise(i) {
   if (g) for (let k = 0; k <= 160; k++) { const t = g.from + ((g.to - g.from) * k) / 160; pathWorld.push(R.evalPose(rig, tl.pose(t), EX.contacts)[g.joint].p); }
   // framing from samples
   const box = new THREE.Box3();
-  for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); }
+  for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); box.expandByPoint(toV3(V.add(W.head_c1.p, [0, 17, 0]), false)); } // joints stop at the skull base: include the top of the head (#74)
   for (const pr of EX.props || []) { if (pr.kind === 'mat') continue; const c = pr.center || [0, 0, 0], sz = pr.size || [0, 0, 0]; box.expandByPoint(toV3([c[0] - sz[0] / 2, c[1], c[2] - sz[2] / 2], false)); box.expandByPoint(toV3([c[0] + sz[0] / 2, c[1] + sz[1], c[2] + sz[2] / 2], false)); }
-  box.getCenter(center).multiplyScalar(A.sLeg); radius = (box.getSize(new THREE.Vector3()).length() / 2) * A.sLeg;
+  box.getCenter(center).multiplyScalar(A.sLeg); const bs = box.getSize(new THREE.Vector3()); radius = (bs.length() / 2) * A.sLeg; halfH = (bs.y / 2) * A.sLeg;
   const mat = EX.props.find((p) => p.kind === 'mat');
   matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
   propGroup.clear(); buildProps(EX.props, propGroup); propGroup.scale.z = S.side === 'L' ? -1 : 1;
@@ -109,7 +109,12 @@ function rebuildGuides() {
 function setCamera(preset) {
   S.cam = preset; const p = EX.camera.presets[preset]; if (!p) return;
   const yaw = p.yaw * R.DEG, pitch = p.pitch * R.DEG, m = S.side === 'L' ? -1 : 1;
-  const dist = (radius * 0.82) / Math.sin((camera.fov * R.DEG) / 2) / Math.min(1, Math.max(0.55, camera.aspect));
+  // fit the whole movement: the old radius-only fit cropped heads and feet on tall, narrow standing poses, so the
+  // vertical extent (feet to head top, foreshortened by the pitch) must also fit the vertical field of view
+  const tanV = Math.tan((camera.fov * R.DEG) / 2);
+  const distR = (radius * 0.82) / Math.sin((camera.fov * R.DEG) / 2) / Math.min(1, Math.max(0.55, camera.aspect));
+  const distH = (halfH * Math.cos(pitch) * 1.18) / tanV + radius * 0.35;
+  const dist = Math.max(distR, distH);
   const tgt = center.clone(); tgt.y = Math.max(0.25, center.y - 0.03);
   camera.position.set(tgt.x + dist * Math.sin(yaw) * Math.cos(pitch), tgt.y + dist * Math.sin(pitch), tgt.z + m * dist * Math.cos(yaw) * Math.cos(pitch));
   controls.target.copy(tgt); controls.update();
