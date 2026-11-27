@@ -39,10 +39,11 @@ function poseAt(pitch) {
   if (HAND) { q = H.fitArm(q, 'l', contacts[1], HAND.l, H.WALL_ARM_GUESS('l')); delete q.__cost; q.ik.arm_l = { target: HAND.l.slice(), weight: 1 }; }
   return q;
 }
-{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_l.p; HAND = { l: [r1(S[0] + 47), r1(S[1] - 14), r1(S[2] + 3)] }; }
-const WALL_X = r1(HAND.l[0] + H.WALL_PALM);
+// left fingertips on the wall for balance: elbow soft (about 40 degrees) on the rig arm, the wall at the rig hand's palm face
+{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_l.p; HAND = { l: H.wallHandTargets([S[0], S[1], -S[2]], { flex: 40, drop: 14, inset: 3 }).l }; }
 const N = 10, poses = {};
 for (let i = 0; i <= N; i++) poses[`p${i}`] = poseAt(r1(PITCH_TOP * i / N));
+const WALL_X = H.wallFaceX(poses.p0, contacts); // palm face of the rig hand shape
 poses.top2 = poseAt(PITCH_TOP + 0.6);
 const keyframes = F.raiseKeys(N, { hold: 2.2 });
 F.wrapAll(poses);
