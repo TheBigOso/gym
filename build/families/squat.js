@@ -7,6 +7,8 @@ const qArr = (q) => q.map((v) => +v.toFixed(6));
 const kneeOf = (W, s) => 180 - V.angle(V.sub(W[`hip_${s}`].p, W[`knee_${s}`].p), V.sub(W[`ankle_${s}`].p, W[`knee_${s}`].p));
 const trunkLean = (W) => V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]);
 const ANKLE_REST = V.angle(V.scale(rig.byId.ankle_r.offset, -1), rig.byId.toe_r.offset);
+// Leg angles are rotations: keep them in (-180, 180] so a solver that wandered a full turn (e.g. ankle 386) stores the real angle
+const wrapLeg = (q, s) => { for (const [j, cs] of [[`hip_${s}`, ['flex', 'abd', 'rot']], [`knee_${s}`, ['flex']], [`ankle_${s}`, ['dorsi']]]) for (const c of cs) if (q.ch[j] && Math.abs(q.ch[j][c] ?? 0) > 180) q.ch[j][c] = Math.round(L.wrap(q.ch[j][c]) * 1e6) / 1e6; };
 const SHOULDER_W = 2 * rig.byId.shoulder_r.offset[2] + 2 * rig.byId.sc_r.offset[2];
 
 // cfg: { stance, toe, kneeTop, kneeBottom, pitchBottom, backBottom, rootX, footX, spine: {l5,t12,t6}, arms: 'forward'|'sides',
@@ -69,6 +71,7 @@ function author(cfg, meta) {
     for (const s of ['r', 'l']) {
       const objs = [L.obj.at(`knee_${s}`, Wi[`knee_${s}`].p, 2), L.obj.at(`ankle_${s}`, Wi[`ankle_${s}`].p, 3), L.obj.at(`toe_${s}`, Wi[`toe_${s}`].p, 2)];
       q = L.solvePose(q, LEG_PATHS(s), objs, { iters: 200 }).pose;
+      wrapLeg(q, s);
     }
     return q;
   }

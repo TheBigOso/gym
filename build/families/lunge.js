@@ -13,6 +13,8 @@ const footQ = (pitch = 0, yaw = 0) => Q.mul(L.footRot(yaw), Q.axis([0, 0, 1], -p
 const footShape = (s) => rig.shapes.find((x) => x.id === `foot_${s}`);
 const footMinY = (W, s) => { const g = R.shapeWorld(W, footShape(s)); return g.c[1] - Math.hypot(g.axes[0][1], g.axes[1][1], g.axes[2][1]); };
 const kneeOf = (W, s) => 180 - V.angle(V.sub(W[`hip_${s}`].p, W[`knee_${s}`].p), V.sub(W[`ankle_${s}`].p, W[`knee_${s}`].p));
+// Leg angles are rotations: keep them in (-180, 180] so a solver that wandered a full turn stores the real angle
+const wrapLeg = (q, s) => { for (const [j, cs] of [[`hip_${s}`, ['flex', 'abd', 'rot']], [`knee_${s}`, ['flex']], [`ankle_${s}`, ['dorsi']]]) for (const c of cs) if (q.ch[j] && Math.abs(q.ch[j][c] ?? 0) > 180) q.ch[j][c] = Math.round(L.wrap(q.ch[j][c]) * 1e6) / 1e6; };
 const trunkLean = (W) => V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]);
 
 function makeFamily({ toe = 6, half = 9 } = {}) {
@@ -86,6 +88,7 @@ function makeFamily({ toe = 6, half = 9 } = {}) {
         if (!best || r.cost < best.cost - 1e-6) best = r;
       }
       q = best.pose;
+      wrapLeg(q, s);
     }
     return q;
   }
