@@ -8,9 +8,8 @@ const D = require('./families/dumbbell');
 const meta = require('./meta/dumbbell-incline-curl.json');
 
 const ANGLE = 55, SEAT = 32, WIDTH = 28, HINGE_X = -20;
-// Mesh corrections (cm), measured on the Studio clay male in the player (see the report): the rig shapes sit this far off
-// the pad/seat so the skinned mesh rests on them within about 1 cm
-const OFF = { seatOff: +(process.env.SEAT_OFF ?? -6.3), lowOff: +(process.env.LOW_OFF ?? -6.4), upOff: +(process.env.UP_OFF ?? -2.9), headOff: +(process.env.HEAD_OFF ?? -6) };
+// Rig shapes rest on the seat and pad (rig v2 matches the skinned mesh, so no mesh offsets); env overrides for experiments
+const OFF = { seatOff: +(process.env.SEAT_OFF ?? 0), lowOff: +(process.env.LOW_OFF ?? 0), upOff: +(process.env.UP_OFF ?? 0), headOff: +(process.env.HEAD_OFF ?? 0) };
 const b = D.bench({ x: HINGE_X + SEAT / 2, seat: SEAT, height: 45, width: WIDTH, angle: ANGLE, back: 80 }), pad = C.padFrame(b, WIDTH);
 const S = C.seatOnBench(b, pad, Object.assign({ stance: 17, footDX: 33, headOn: false }, OFF));
 const { contacts } = S;
@@ -18,7 +17,8 @@ const { contacts } = S;
 S.pose.ch.neck_c7 = { rot: 0, flex: 2 }; S.pose.ch.head_c1 = { rot: 0, flex: 14 };
 const arm = (a) => ({ plane: a.plane, elev: a.elev, axial: (a.twist || 0) - a.plane, flex: a.flex, pron: a.pron });
 const BOT = { plane: -60, elev: 40, flex: 5, pron: 8, twist: 0 };
-const TOP = { plane: -60, elev: 31, flex: 128, pron: 0, twist: -10 };
+// the humerus turns out a little (twist -20) so the forearm path clears the front of the thigh near the hip
+const TOP = { plane: -60, elev: 31, flex: 128, pron: 0, twist: -20 };
 const SQZ = Object.assign({}, TOP, { flex: 130, elev: 30 });
 const mk = (a) => { const p = L.clone(S.pose); C.setArm(p, 'r', arm(a)); C.setArm(p, 'l', arm(a)); return p; };
 const poses = { bottom: mk(BOT), up50: mk(C.mixArm(BOT, TOP, 0.5)), top: mk(TOP), squeeze: mk(SQZ), down66: mk(C.mixArm(BOT, TOP, 0.66)), down33: mk(C.mixArm(BOT, TOP, 0.33)) };

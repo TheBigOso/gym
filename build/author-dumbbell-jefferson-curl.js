@@ -32,7 +32,7 @@ function clear(W, c) {
 }
 let ARMG = null;
 function arms(p) {
-  const W0 = L.fk(p, S.contacts), Sh = W0.shoulder_r.p, reach = L.reach(5);
+  const W0 = L.fk(p, S.contacts), Sh = W0.shoulder_r.p, reach = L.reach(5);   // the wrist can extend (wristW 0.01) so the fingers point down and the dumbbell hangs upright from a forward arm
   let q = null;
   // the solved hand can land a little off its target (the hand orientation is a soft goal): raise the planned clearance
   // until the dumbbell the arm actually holds clears the legs and the box by 2 cm
@@ -41,7 +41,7 @@ function arms(p) {
     const place = (y) => { let x = Sh[0] + 40; while (x > Sh[0] - 30 && clear(W0, [x - 1, y, 0]) > M) x -= 1; let a = x - 1, b = x; for (let i = 0; i < 8; i++) { const m = (a + b) / 2; if (clear(W0, [m, y, 0]) > M) b = m; else a = m; } return [b, y, 0]; };
     let ya = -20, yb = Sh[1];
     for (let i = 0; i < 20; i++) { const y = (ya + yb) / 2; if (V.len(V.sub(wristOf(place(y)), Sh)) > reach) ya = y; else yb = y; }
-    q = B.holdArm(p, wristOf(place(yb)), { palm, axis: thumb, axialW: 0.02, tw: [10, 10, 10], dirW: 2, extra: [(W, qq) => [Math.max(0, qq.ch.shoulder_r.elev - 176) * 3, ARMG ? (L.wrap(qq.ch.shoulder_r.plane - ARMG[0])) * 0.03 : 0]], guesses: (ARMG ? [ARMG] : []).concat([[30, 15, 0, 5, 90], [60, 30, 0, 5, 90], [90, 90, 0, 5, 90]]) });
+    q = B.holdArm(p, wristOf(place(yb)), { palm, axis: thumb, axialW: 0.02, tw: [10, 10, 10], dirW: 2, wristW: 0.01, extra: [(W, qq) => [Math.max(0, qq.ch.shoulder_r.elev - 176) * 3, Math.max(0, qq.ch.shoulder_r.plane - 138) * 3, ARMG ? (L.wrap(qq.ch.shoulder_r.plane - ARMG[0])) * 0.03 : 0]], guesses: (ARMG ? [ARMG] : []).concat([[30, 15, 0, 5, 90], [60, 30, 0, 5, 90], [90, 90, 0, 5, 90]]) });
     q.ch.shoulder_r.elev = r1(((q.ch.shoulder_r.elev % 360) + 360) % 360);   // the solver can wander a full turn
     const Wq = L.fk(q, S.contacts);
     if (clear(Wq, DBH.dumbbellAt(Wq, 'r', 'jeff', DSZ).c) >= 2.5) break;
