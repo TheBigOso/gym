@@ -145,7 +145,7 @@ function groundPose(pose, contacts) { const p = clone(pose); p.root.pos[1] = r1(
 const footRot = (yawDeg = 0) => Q.axis([0, 1, 0], yawDeg); // world-locked flat foot, toes along +X turned by yaw
 const legContact = (side, bend = 'forward') => ({ id: `leg_${side}`, label: `${side === 'r' ? 'Right' : 'Left'} foot`, chain: [`hip_${side}`, `knee_${side}`, `ankle_${side}`, `toe_${side}`], pole: [1, 0, side === 'r' ? 0.15 : -0.15], bend, handRot: footRot(0).map((v) => +v.toFixed(6)) });
 const handContact = (side) => ({ id: `arm_${side}`, label: `${side === 'r' ? 'Right' : 'Left'} hand`, chain: [`shoulder_${side}`, `elbow_${side}`, `wrist_${side}`, `handtip_${side}`], pole: [-1, 0.1, side === 'r' ? 0.35 : -0.35], handRot: (side === 'l' ? handRotL : handRotR).map((v) => +v.toFixed(6)) });
-const ANKLE_H = 6.6; // ankle joint height when the foot is flat (foot shape bottom)
+const ANKLE_H = 6.8; // ankle joint height when the foot is flat (foot shape bottom)
 const zero = () => ({ rot: 0, flex: 0, latFlex: 0 });
 const POSES = {
   // Standing tall, feet under hips, arms at sides. Feet planted with leg IK targets.

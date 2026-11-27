@@ -335,8 +335,10 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
   if (look.bun) { const g = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.85 })); const hb = bones[bi('head')], hh0 = H('head'); g.scale.set(0.034 * ks, 0.031 * ks, 0.036 * ks); g.position.set((ec[0] - 16.4 * ks - hh0[0]) * U, (ec[1] + 7.2 * ks - hh0[1]) * U, 0); g.castShadow = true; hb.add(g); }
   // ---- retarget tables ----
   const rest = R.evalPose(rig, {});
-  const legRR = rest.hip_r.p[1] - rest.ankle_r.p[1], legMH = H('thigh_r')[1] - H('foot_r')[1];
-  const sLeg = legMH / legRR, ankleRR = 6.6, ankleMH = H('foot_r')[1];
+  // scale from leg segment lengths (the mesh stands with feet apart, so its vertical leg height is shorter than the leg)
+  const L3 = (a, b) => V.len(V.sub(a, b));
+  const legRR = L3(rest.hip_r.p, rest.knee_r.p) + L3(rest.knee_r.p, rest.ankle_r.p), legMH = L3(H('thigh_r'), H('calf_r')) + L3(H('calf_r'), H('foot_r'));
+  const sLeg = legMH / legRR, ankleRR = 6.8, ankleMH = H('foot_r')[1];
   const hipMidRest = V.scale(V.add(H('thigh_r'), H('thigh_l')), 0.5), pelRest = H('pelvis');
   const align = {};
   for (const n in DRIVE) { const d = DRIVE[n]; if (d[2] && bi(n) >= 0) align[n] = arc(V.sub(T(n), H(n)), V.sub(rest[d[2]].p, rest[d[0]].p)); }
