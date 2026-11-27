@@ -2,7 +2,7 @@
 // bent, the top (right) leg resting on the bottom leg; fingertips of both hands behind the head, elbows wide. Side-bend the
 // trunk to lift both shoulders off the mat, bringing the top ribs toward the top hip (right obliques and quadratus
 // lumborum), squeeze, lower under control. The pelvis and legs stay still. The root is written with yaw -90 / roll +90 so
-// that pitch 180 lays the pelvis on its left side (see bent-knee-lying-twist). Floor contact calibrated to the mesh.
+// that pitch 180 lays the pelvis on its left side (see bent-knee-lying-twist).
 const L = require('./lib');
 const { V, Q, r1, clone } = L;
 const CA = require('./families/core-a');
@@ -10,8 +10,9 @@ const CB = require('./families/core-b');
 const M = require('./families/b4-core2');
 const meta = require('./meta/side-crunch.json');
 
-// Mesh offsets for side-lying (mesh lowest point minus rig shape lowest point), measured with b2/b4c2/bones.mjs
-const SIDE = { hip: +(process.env.SH || 3), shoulder: +(process.env.SS || -1), shank: +(process.env.SK || 2.2) };
+// Side-lying contacts: the rig shapes rest on the mat (rig v2 shapes match the body). hip / shoulder = height of the lowest
+// hip and shoulder-side shapes, shank = lowest point of the bottom shank and foot (cm)
+const SIDE = { hip: +(process.env.SH || 0), shoulder: +(process.env.SS || 0), shank: +(process.env.SK || 0.2) };
 let p = M.lie({ kneeFlex: 0, headRest: 'free' });
 p.root.rot = { yaw: -90, pitch: 180, roll: 90 };
 for (const j of ['spine_l5', 'spine_t12', 'spine_t6']) p.ch[j] = { rot: 0, flex: 0, latFlex: 0 };
@@ -19,18 +20,24 @@ p.ch.hip_r = { flex: 25, abd: -9, rot: 0 }; p.ch.hip_l = { flex: 25, abd: 0, rot
 p.ch.knee_r = { flex: 35 }; p.ch.knee_l = { flex: 35 }; p.ch.ankle_r = { dorsi: -20 }; p.ch.ankle_l = { dorsi: -20 };
 const hipLow = (W) => Math.min(M.bottomOf(W, 'pelvis'), M.bottomOf(W, 'buttock_l'), M.bottomOf(W, 'thigh_l'), M.bottomOf(W, 'quad_l'));
 const shLow = (W) => Math.min(M.bottomOf(W, 'deltoid_l'), M.bottomOf(W, 'ribcage'), M.bottomOf(W, 'chest'));
-// left hip and left shoulder/ribs on the mat; the trunk may sag a little sideways (latFlex) and tip (pitch)
-p = L.solvePose(p, ['root.pos.1', 'root.rot.pitch'], [
-  (W) => [(hipLow(W) + SIDE.hip) * 4, (shLow(W) + SIDE.shoulder) * 4],
-  L.obj.reg('root.rot.pitch', 180, 2)], { iters: 400 }).pose;
-// legs resting: the top knee and foot rest on the bottom ones, the bottom leg on the mat
-p = L.solvePose(p, ['ch.hip_r.abd', 'ch.hip_l.abd'], [(W) => [(M.bottomOf(W, 'shank_l') - SIDE.shank) * 3, (W.knee_r.p[1] - W.knee_l.p[1] - 11) * 2], CA.limitPen(['ch.hip_r.abd', 'ch.hip_l.abd'], 4), L.obj.reg('ch.hip_r.abd', -8, 0.05), L.obj.reg('ch.hip_l.abd', 0, 0.05)], { iters: 200 }).pose;
 CB.neck(p, 4);
 p.ch.sc_l = { protract: +(process.env.PRO || 28), elevate: 4 }; // bottom shoulder rolled forward so it is not crushed under the trunk
-// bottom (left) hand rests palm down on the mat in front of the chest (planted, for balance only)
+// left hip and left shoulder/ribs on the mat (the shoulders are wider than the hips, so the body tips a little about its
+// front-back axis, roll), and the legs resting: the top knee and foot on the bottom ones, the bottom leg on the mat
+const ABD = ['ch.hip_r.abd', 'ch.hip_l.abd'];
+// bottom (left) hand rests palm down on the mat in front of the chest (planted, for balance only); refitted with the body
+// because the arm placement moves the bottom deltoid
 const HC = [Object.assign(L.handContact('l'), { pole: [0.3, 1, 0] })];
-const Wp = L.fk(p), SL = Wp.shoulder_l.p, dH = Math.sqrt(L.reach(45) ** 2 - (SL[1] - 2.6) ** 2 - 64);
-const HAND_L = [r1(SL[0] + 8), 2.6, r1(SL[2] - dH)];
+let HAND_L = null;
+for (let it = 0; it < 5; it++) {
+  p = L.solvePose(p, ['root.pos.1', 'root.rot.roll'], [(W) => [(hipLow(W) - SIDE.hip) * 4, (shLow(W) - SIDE.shoulder) * 4]], { iters: 300 }).pose;
+  p = L.solvePose(p, ABD, [(W) => [(M.minOf(W, ['shank_l', 'calf_l', 'foot_l']) - SIDE.shank) * 3, (W.knee_r.p[1] - W.knee_l.p[1] - 11) * 2], CA.limitPen(ABD, 4), L.obj.reg('ch.hip_r.abd', -8, 0.05), L.obj.reg('ch.hip_l.abd', 0, 0.05)], { iters: 200 }).pose;
+  const SL = L.fk(p).shoulder_l.p, dH = Math.sqrt(L.reach(60) ** 2 - (SL[1] - 2.6) ** 2 - 64);
+  HAND_L = [r1(SL[0] + 8), 2.6, r1(SL[2] - dH)];
+  p = CA.fitArm(p, 'l', HAND_L, HC);
+}
+for (const k of ['yaw', 'pitch', 'roll']) p.root.rot[k] = r1(p.root.rot[k]);
+p.root.pos[1] = r1(p.root.pos[1]); for (const s of ['r', 'l']) p.ch[`hip_${s}`].abd = r1(p.ch[`hip_${s}`].abd);
 const rest = p;
 
 function key(k, ref) {
@@ -61,12 +68,11 @@ const ex = CA.buildModule(meta, poses, keyframes, HC);
 
 const latSum = (q) => q.ch.spine_l5.latFlex + q.ch.spine_t12.latFlex + q.ch.spine_t6.latFlex;
 const rep = CA.scan(ex, { shLift: (W) => W.shoulder_l.p[1], hip: hipLow });
-M.meshFloor(ex, rep);
 const W0 = L.fk(poses.rest, HC), Wt = L.fk(poses.topHold, HC), kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`;
 kin[0].setup = `${d(latSum(rest))} (resting on the side)`; kin[0].peak = `${d(latSum(poses.topHold))} (lumbar ${d(poses.topHold.ch.spine_l5.latFlex)}, thoracic ${d(poses.topHold.ch.spine_t12.latFlex + poses.topHold.ch.spine_t6.latFlex)})`;
 kin[1].setup = 'Bottom shoulder on the mat'; kin[1].peak = `Bottom shoulder ${r1(Wt.shoulder_l.p[1] - W0.shoulder_l.p[1])} cm up, top shoulder ${r1(Wt.shoulder_r.p[1] - W0.shoulder_r.p[1])} cm up`;
 kin[2].setup = `Hips ${d(rest.ch.hip_l.flex)}, knees ${d(rest.ch.knee_l.flex)}, legs stacked`; kin[2].peak = 'Unchanged (pelvis and legs still)';
 kin[3].setup = 'Top hand behind the head, bottom hand resting on the mat in front of the chest'; kin[3].peak = 'Top elbow stays wide; the bottom hand only balances';
 kin[4].setup = 'Rest 0.8 s'; kin[4].peak = '1.1 s up, 0.6 s squeeze, 1.8 s down, 0.9 s rest';
-console.log(`Side crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} floorTol=${ex.checks.floorTolerance} rest pitch=${rest.root.rot.pitch} y=${rest.root.pos[1]} lat=${rest.ch.spine_l5.latFlex}/${rest.ch.spine_t12.latFlex} hipAbd=${rest.ch.hip_r.abd}/${rest.ch.hip_l.abd}`);
+console.log(`Side crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} rest pitch=${rest.root.rot.pitch} y=${rest.root.pos[1]} lat=${rest.ch.spine_l5.latFlex}/${rest.ch.spine_t12.latFlex} hipAbd=${rest.ch.hip_r.abd}/${rest.ch.hip_l.abd}`);
 M.guard('side-crunch', ex, rep, [Wt.shoulder_l.p[1] - W0.shoulder_l.p[1] < 6 && 'bottom shoulder barely lifts']);

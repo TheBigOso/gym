@@ -14,14 +14,15 @@ const LEG_R = shapesOf(/^(thigh|quad|shank|calf|foot)_r$/), LEG_L = shapesOf(/^(
 const clear = (ids, clr = 0.3, w = 3) => (W) => ids.map((id) => Math.min(0, bottomOf(W, id) - clr) * w);
 const limitPen = (paths, w = 2) => (W, pose) => paths.map((pth) => { const [, j, c] = pth.split('.'), lim = rig.byId[j].limits && rig.byId[j].limits[c], v = L.getPath(pose, pth) ?? 0; return lim ? (Math.max(0, lim[0] - v) + Math.max(0, v - lim[1])) * w : 0; });
 
-// Lying base: pelvis, low ribs and upper back on the mat. spine = desired lying curve (l5 > 0 flattens the low back).
+// Lying base: pelvis (lowest of the buttocks and the back of the thigh at the hip), low ribs and upper back on the mat. spine = desired lying curve (l5 > 0 flattens the low back).
 function lie({ kneeFlex = 0, spine = { l5: 2, t12: 2, t6: 4 }, pitch = 92 } = {}) {
   const p0 = clone(L.POSES.supine({ kneeFlex }).pose);
   p0.root.pos = [0, p0.root.pos[1], 0];
   let p = L.solvePose(p0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [bottomOf(W, 'buttock_r') * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.0) * 4],
+    (W) => [Math.min(bottomOf(W, 'buttock_r'), bottomOf(W, 'thigh_r')) * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.0) * 4],
     L.obj.reg('ch.spine_l5.flex', spine.l5, 0.15), L.obj.reg('ch.spine_t12.flex', spine.t12, 0.25), L.obj.reg('ch.spine_t6.flex', spine.t6, 0.4), L.obj.reg('root.rot.pitch', pitch, 0.2),
   ]).pose;
+  p.root.pos[1] = r1(p.root.pos[1] + 0.2); // a few mm of margin so nothing settles through the mat
   p.ch.sc_r = { protract: 0, elevate: 0 }; p.ch.sc_l = { protract: 0, elevate: 0 };
   return p;
 }

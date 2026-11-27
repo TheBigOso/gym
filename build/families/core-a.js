@@ -35,10 +35,9 @@ function lie({ kneeFlex = 90, headRest = 'floor' } = {}) {
   p.root.pos[1] = r1(p.root.pos[1] + 0.5);
   p.ch.sc_r = { protract: 0, elevate: 0 }; p.ch.sc_l = { protract: 0, elevate: 0 };
   if (headRest === 'floor') {
-    // Back of the head rests on the mat: neck flexion so the head shape just touches.
-    p = L.solvePose(p, ['ch.neck_c7.flex'], [(W) => [(minOf(W, ['head', 'hair']) - 0.1) * 3], L.obj.reg('ch.neck_c7.flex', 4, 0.05)]).pose;
-    p.ch.head_c1 = { rot: 0, flex: r1(p.ch.neck_c7.flex * 0.8) };
-    p = L.solvePose(p, ['ch.neck_c7.flex'], [(W) => [(minOf(W, ['head', 'hair']) - 0.1) * 3]]).pose;
+    // Head resting: rig v2 puts the head about 5 cm forward of the upper back, so with a comfortable neck the back of the
+    // head stays a little off the mat (as on a real person without a pillow). See restHead.
+    p = restHead(p);
   } else if (headRest === 'hands') {
     // Head cradled in the hands: neck flexion just enough that the back of the hands rests on the mat (as the sit-up).
     const cr = (q) => L.solvePose(q, ['ch.neck_c7.flex'], [(W) => [(headPt(W, [HAND_C[0] - 1.8, HAND_C[1], HAND_C[2]])[1] - 1.6) * 3]]).pose;
@@ -51,6 +50,17 @@ function lie({ kneeFlex = 90, headRest = 'floor' } = {}) {
     mirrorLeg(p);
   }
   return { pose: p, P0: p.root.rot.pitch, NECK: p.ch.neck_c7.flex + (p.ch.head_c1 ? p.ch.head_c1.flex : 0) };
+}
+
+// Neck and head (55/45 split) settled toward the mat: extend only as far as a relaxed neck goes (total NECK_REST, about
+// -14 / -11 degrees), stopping earlier if the back of the head reaches `clr` cm above the mat. Never forced onto the mat.
+const NECK_REST = -25;
+function restHead(pose, { clr = 0.3, min = NECK_REST } = {}) {
+  const set = (q, f) => { q.ch.neck_c7 = { rot: 0, flex: r1(f * 0.55) }; q.ch.head_c1 = { rot: 0, flex: r1(f * 0.45) }; return q; };
+  let lo = min, hi = 40;
+  if (minOf(L.fk(set(clone(pose), lo)), ['head', 'hair']) >= clr) return set(clone(pose), lo);
+  for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (minOf(L.fk(set(clone(pose), m)), ['head', 'hair']) < clr) lo = m; else hi = m; }
+  return set(clone(pose), hi);
 }
 
 /* ---------------- Planted feet (knees bent): IK contacts with leg channels fitted to the IK ---------------- */
@@ -191,4 +201,4 @@ function guard(name, rep, extra = []) {
 }
 
 module.exports = { qArr, bottomOf, minOf, trunkFromFloor, upperFromFloor, legFromFloor, thighFromFloor, kneeOf, headPt, HAND_C, HAND_TIP, LEG_IDS, ARM_IDS, limitPen, mirrorArm, mirrorLeg,
-  lie, setLeg, setLegs, footContacts, fitLeg, plantFeet, cradle, handContacts, handTargets, fitArm, plantHands, spine, neck, buildModule, scan, guard };
+  lie, restHead, NECK_REST, setLeg, setLegs, footContacts, fitLeg, plantFeet, cradle, handContacts, handTargets, fitArm, plantHands, spine, neck, buildModule, scan, guard };

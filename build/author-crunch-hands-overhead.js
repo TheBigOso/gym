@@ -9,7 +9,7 @@ const M = require('./families/b4-core2');
 const meta = require('./meta/crunch-hands-overhead.json');
 
 const ANG = +(process.env.ANG || -12), WIDTH = 14;
-const lie0 = M.lie({ kneeFlex: 90, headRest: 'floor', m: Object.assign({}, M.MESH, M.OVERHEAD) });
+const lie0 = M.lie({ kneeFlex: 90, headRest: 'floor' });
 const F = CA.plantFeet(lie0, 90);
 const lie = F.pose, NECK0 = r1(lie.ch.neck_c7.flex + lie.ch.head_c1.flex);
 let ARM = null;
@@ -38,7 +38,6 @@ const ex = CA.buildModule(meta, poses, keyframes, F.contacts);
 const elbowOf = (W) => CA.kneeOf({ hip_r: W.shoulder_r, knee_r: W.elbow_r, ankle_r: W.wrist_r }, 'r');
 const armToTrunk = (W) => L.V.angle(L.V.sub(W.wrist_r.p, W.shoulder_r.p), L.V.sub(W.neck_c7.p, W.spine_t12.p));
 const rep = CA.scan(ex, { upper: (W) => CA.upperFromFloor(W), lowBack: (W) => CA.minOf(W, ['buttock_r', 'pelvis']), hand: (W) => Math.min(W.wrist_r.p[1], W.wrist_l.p[1]), arm: armToTrunk });
-M.meshFloor(ex, rep);
 const Wl = L.fk(lie, F.contacts), Wt = L.fk(poses.topHold, F.contacts), kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`, pk = poses.topHold;
 kin[0].setup = d(CA.upperFromFloor(Wl)); kin[0].peak = `${d(CA.upperFromFloor(Wt))} (C7 up ${r1(Wt.neck_c7.p[1] - Wl.neck_c7.p[1])} cm)`;
 kin[1].setup = d(lie.ch.spine_l5.flex) + ' (slight lordosis)'; kin[1].peak = `${d(pk.ch.spine_l5.flex)} (low back stays on the mat)`;
@@ -46,6 +45,6 @@ kin[2].setup = d(lie.ch.spine_t12.flex + lie.ch.spine_t6.flex) + ' (resting curv
 kin[3].setup = `Shoulder elevation ${d(pk.ch.shoulder_r.elev)}, elbows ${d(elbowOf(Wl))}, arms ${d(armToTrunk(Wl))} off the trunk line`; kin[3].peak = `Unchanged relative to the trunk (hands rise ${r1(Wt.wrist_r.p[1] - Wl.wrist_r.p[1])} cm)`;
 kin[4].setup = `Hip ${d(lie.ch.hip_r.flex)}, knee ${d(CA.kneeOf(Wl, 'r'))}`; kin[4].peak = 'Unchanged (pelvis and feet still)';
 kin[5].setup = 'Rest 0.8 s'; kin[5].peak = '1.0 s up, 0.5 s squeeze, 1.6 s down, 1.1 s rest';
-console.log(`Crunch hands overhead: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} floorTol=${ex.checks.floorTolerance}`);
+console.log(`Crunch hands overhead: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)}`);
 for (const k of KEYS) { const p = poses[k.name], W = L.fk(p, F.contacts); console.log(`  ${k.name.padEnd(8)} spine=${p.ch.spine_l5.flex}/${p.ch.spine_t12.flex}/${p.ch.spine_t6.flex} neck=${p.ch.neck_c7.flex}+${p.ch.head_c1.flex} upper=${CA.upperFromFloor(W).toFixed(1)} sh=${p.ch.shoulder_r.plane}/${p.ch.shoulder_r.elev}/${p.ch.shoulder_r.axial} wr=${p.ch.wrist_r.pron}/${p.ch.wrist_r.flex}/${p.ch.wrist_r.dev} handY=${W.wrist_r.p[1].toFixed(1)} gap=${L.V.len(L.V.sub(W.wrist_r.p, W.wrist_l.p)).toFixed(1)}`); }
 M.guard('crunch-hands-overhead', ex, rep, [(CA.upperFromFloor(Wt) < 25 || CA.upperFromFloor(Wt) > 50) && 'upper-trunk curl outside 25-50 degrees']);

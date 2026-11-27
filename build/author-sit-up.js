@@ -31,19 +31,20 @@ function trunk(k, guess) {
   CA.neck(p, k.neck == null ? NECK0 : k.neck);
   let P = P0;
   if (k.fromFloor != null) {
-    let lo = 0, hi = P0 + 10;
+    // step down from the lying pitch to the first crossing (the measure folds back past vertical), then bisect
+    let hi = P0 + 10, lo = hi;
+    while (lo > 0 && trunkFromFloor(L.fk(setP(clone(p), lo))) <= k.fromFloor) { hi = lo; lo -= 2; }
     for (let i = 0; i < 60; i++) { P = (lo + hi) / 2; if (trunkFromFloor(L.fk(setP(clone(p), P))) > k.fromFloor) lo = P; else hi = P; }
   } else P = P0 + (k.pitch || 0);
   setP(p, P);
   // keep the buttocks at their lying depth (the pelvis rolls on them, so the joint drops a little as it tips forward)
-  // measured on the mesh: sitting up on the sit bones the athlete's buttocks need about 1.6 cm more drop than the shapes
-  const W = L.fk(p, F.contacts), drop = Math.max(0, sitBottom(W) - SIT0) + 1.6 * Math.max(0, Math.min(1, (P0 - P) / (P0 - 40)));
+  const W = L.fk(p, F.contacts), drop = Math.max(0, sitBottom(W) - SIT0);
   setP(p, P, drop);
   // re-fit the leg channels to the anchored feet (the pelvis moved a little)
   let q = p;
   for (const s of ['r', 'l']) q = CA.fitLeg(q, s, F.targets[s], F.contacts);
   q.ik = clone(lie.ik);
-  const out = CB.cradle(q, { floor: k.floor ? -M.MESH.arm : 1.0, elbowAnt: k.elbowAnt ?? -3, elbowOut: 20, guess, ref: k.floor ? guess : null });
+  const out = CB.cradle(q, { floor: k.floor ? 0.2 : 1.0, elbowAnt: k.elbowAnt ?? -3, elbowOut: 20, guess, ref: k.floor ? guess : null });
   return out;
 }
 const KEYS = [
@@ -72,7 +73,6 @@ const band = [77, 83].map((a) => trunk(Object.assign({}, KEYS[3], { fromFloor: a
 ex.checks.measure = { name: 'hipFlexion', min: Math.floor(Math.min(...band)), max: Math.ceil(Math.max(...band)) };
 
 const rep = CA.scan(ex, { trunk: (W) => trunkFromFloor(W), hip: (W, p) => p.ch.hip_r.flex, sit: (W) => sitBottom(W) });
-M.meshFloor(ex, rep);
 const Wl = L.fk(lie, F.contacts), Wt = L.fk(poses.topHold, F.contacts), kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`, pk = poses.topHold;
 kin[0].setup = 'Lying (shoulder blades on the mat)'; kin[0].peak = `${d(trunkFromFloor(Wt))} from the floor (chest toward the thighs)`;
 kin[1].setup = d(lie.ch.spine_l5.flex) + ' (slight lordosis)'; kin[1].peak = `${d(pk.ch.spine_l5.flex)} (L5-T12 segment, rounded)`;
@@ -80,6 +80,6 @@ kin[2].setup = d(lie.ch.spine_t12.flex + lie.ch.spine_t6.flex) + ' (resting curv
 kin[3].setup = d(lie.ch.hip_r.flex); kin[3].peak = `${d(pk.ch.hip_r.flex)} (pelvis rolled toward the thighs)`;
 kin[4].setup = d(CA.kneeOf(Wl, 'r')); kin[4].peak = `${d(CA.kneeOf(Wt, 'r'))}, feet unchanged`;
 kin[5].setup = 'Rest 0.8 s'; kin[5].peak = '0.7 s curl, 0.9 s sit up, 0.5 s pause, 2.1 s roll down, 1.4 s rest';
-console.log(`Sit-up: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} floorTol=${ex.checks.floorTolerance} measure=${JSON.stringify(ex.checks.measure)}`);
+console.log(`Sit-up: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} measure=${JSON.stringify(ex.checks.measure)}`);
 for (const k of KEYS) { const p = poses[k.name], W = L.fk(p, F.contacts); console.log(`  ${k.name.padEnd(8)} pitch=${p.root.rot.pitch} y=${p.root.pos[1]} hip=${p.ch.hip_r.flex} spine=${p.ch.spine_l5.flex}/${p.ch.spine_t12.flex}/${p.ch.spine_t6.flex} trunk=${trunkFromFloor(W).toFixed(1)} sit=${sitBottom(W).toFixed(1)} sh=${p.ch.shoulder_r.plane}/${p.ch.shoulder_r.elev}/${p.ch.shoulder_r.axial} elb=${p.ch.elbow_r.flex} min=${JSON.stringify(L.shapeMinY(W))}`); }
 M.guard('sit-up', ex, rep, [(rep.trunk[1] < 75 || rep.trunk[1] > 88) && `peak trunk ${rep.trunk[1]} outside 75-88 degrees`]);
