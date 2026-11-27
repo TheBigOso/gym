@@ -17,7 +17,7 @@ const feet = { r: { c: 'flat', x: 0 }, l: { c: 'flat', x: 0 } };
 const PITCH = +(process.env.P ?? -76), KNEE_TOP = 5, KNEE = +(process.env.K ?? 20);
 // goblet arms solved once on the standing pose (upper-trunk frame), then carried by the trunk
 const stand = F.pose(F.stand(feet, { knee: KNEE_TOP }));
-const gob = B3L.gobletArms(stand, { at: [25, 6, 5.4], elbow: [14, -16, 12], tilt: 0.45 });
+const gob = B3L.gobletArms(stand, { at: [25, 6, 5.4], elbow: [14, -16, 17], tilt: 0.45 }); // elbow z 17: rig v2 shoulders are wider (z 20.2)
 const ARMS = ['sc_r', 'sc_l', 'shoulder_r', 'shoulder_l', 'elbow_r', 'elbow_l', 'wrist_r', 'wrist_l'];
 const arms = (p) => { for (const j of ARMS) p.ch[j] = clone(gob.ch[j]); return p; };
 function at(f) {

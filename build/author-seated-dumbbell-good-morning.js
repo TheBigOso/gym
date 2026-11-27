@@ -42,7 +42,7 @@ function key(pitch, sp, g = 0) {
 FEET = { r: { c: 'flat', x: FX, z: HALF }, l: { c: 'flat', x: FX, z: -HALF } };
 const s0 = key(0, { l5: 0, t12: 0, t6: 0 });
 let stand = F.pose(s0);
-const gob = B3L.gobletArms(stand, { at: [25, 6, 5.4], elbow: [14, -16, 12], tilt: 0.45 });
+const gob = B3L.gobletArms(stand, { at: [25, 6, 5.4], elbow: [14, -16, 17], tilt: 0.45 }); // elbow z 17: rig v2 shoulders are wider (z 20.2)
 const ARMS = ['sc_r', 'sc_l', 'shoulder_r', 'shoulder_l', 'elbow_r', 'elbow_l', 'wrist_r', 'wrist_l'];
 const PITCH = +(process.env.P ?? -54);
 function at(f) {

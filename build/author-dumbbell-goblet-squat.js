@@ -11,7 +11,8 @@ const meta = require('./meta/dumbbell-goblet-squat.json');
 const STANCE = 19.5, TOE = 18;
 const OFF = B.GOBLET_OFFSET;
 // hands in front of the sternum (spine_t6 frame); the elbows drop a little lower and wider as the squat deepens
-const armsFn = (p, f) => B.gobletArms(p, { at: [25, 6 - 2 * f, 5.4], elbow: [14, -16, 12 + 2 * f], tilt: 0.45 });
+// (elbow z 17: the rig v2 shoulders sit at z 20.2, so the upper arms hang forward and only slightly in, not across the chest)
+const armsFn = (p, f) => B.gobletArms(p, { at: [25, 6 - 2 * f, 5.4], elbow: [14, -16, 17 + 2 * f], tilt: 0.45 });
 const { ex, report: r, contacts, poses } = F.author({
   stance: STANCE, toe: TOE, kneeTop: 3, kneeBottom: 118, pitchBottom: -34, backBottom: -18, kneeOut: 1.5,
   spine: { l5: -4, t12: -3, t6: 0 }, arms: 'none', armsFn, lead: 1.5, settle: 0.3,

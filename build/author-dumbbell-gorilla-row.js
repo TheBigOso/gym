@@ -5,7 +5,7 @@
 // floor, then row the left side. The hinge is held still the whole loop (balanced over the mid-foot). Both feet planted;
 // each hand is planted while its dumbbell rests on the floor. Alternating (bilateral loop).
 const L = require('./lib');
-const { R, r1, clone } = L;
+const { R, V, r1, clone } = L;
 const { makeFamily } = require('./families/lunge');
 const B = require('./families/b3-back');
 const H = require('./families/b4-hinges');
@@ -14,13 +14,13 @@ const meta = require('./meta/dumbbell-gorilla-row.json');
 
 const TOE = 30, HALF = 40;
 const F = makeFamily({ toe: TOE, half: HALF });
-for (const c of F.contacts) { const s = c.id.endsWith('_r') ? 1 : -1, a = (TOE + 6) * R.DEG; c.pole = [+Math.cos(a).toFixed(3), 0, +(s * Math.sin(a)).toFixed(3)]; }   // knees over the toes
-const SIZE = [28, 18, 18], DSZ = { length: SIZE[0], diameter: SIZE[1] };
+for (const c of F.contacts) { const s = c.id.endsWith('_r') ? 1 : -1, a = (TOE + +(process.env.KP ?? 20)) * R.DEG; c.pole = [+Math.cos(a).toFixed(3), 0, +(s * Math.sin(a)).toFixed(3)]; }   // knees over the toes (rig v2: pole 20 deg outside the foot puts the knee above the ankle, not inside it)
+const SIZE = [+(process.env.LEN ?? 28), +(process.env.DIA ?? 18), +(process.env.DIA ?? 18)], DSZ = { length: SIZE[0], diameter: SIZE[1] };
 const feet = { r: { c: 'flat', x: 0 }, l: { c: 'flat', x: 0 } };
-const PITCH = +(process.env.P ?? -86), FLOOR = +(process.env.DBF ?? -0.7);   // rig dumbbell low point on the floor (the athlete's sits a little higher)
+const PITCH = +(process.env.P ?? -86), FLOOR = +(process.env.DBF ?? 0.5);   // rig dumbbell low point on the floor (rig v2 shapes match the mesh; the hand shape then sits just above the floor)
 // hanging arms for the set-up (rowArm at f = 0: hands a little forward of and inside the shoulders); shoulder blades
 // protracted on the floor, retracted at the top of the row
-const ROW = { top: { du: -22, dz: 8, wx: 8, wz: 0 }, sc: [{ protract: 10, elevate: -1 }, { protract: -14, elevate: -2 }], hang: [6, -3], bend: 3 };
+const ROW = { top: { du: -22, dz: 8, wx: 8, wz: 0 }, sc: [{ protract: +(process.env.PR ?? 20), elevate: -1 }, { protract: -14, elevate: -2 }], hang: [+(process.env.HX ?? 6), +(process.env.HZ ?? -3)], bend: 3 };
 const hinge = (knee) => B.hinge(F, { pitch: PITCH, knee, feet, spine: { l5: -3, t12: 0, t6: 1 }, sc: ROW.sc[0], size: DSZ, kg: 0, midfoot: 5,   // the dumbbells rest on the floor: balance the body alone
   neck: (lean) => -Math.min(lean, 80) * 0.22, arms: (p) => B.mirrorArm(B.rowArm(p, 0, ROW, {})) });
 // knee angle (root height) that sets the hanging dumbbells on the floor
@@ -37,15 +37,27 @@ base = H.fitArm(base, 'r', contacts, 'hold_r'); const fitR = base.__fit; base = 
 // handle's front end tipped down a little at the top. The arm is solved for each point (one branch, kept by the guess).
 const Wb = L.fk(base, contacts), C0 = DBH.dumbbellAt(Wb, 'r', 'handle', DSZ).c, SH = Wb.shoulder_r.p;
 const END = [SH[0] - +(process.env.EX ?? 1), SH[1] - +(process.env.EY ?? 10), C0[2] + +(process.env.EZ ?? 22)];
+const ZLAG = +(process.env.ZL ?? 0), Z0 = +(process.env.Z0 ?? 0);
+// Rig v2 row path (polyline, arc-length parameter; points are [dx from the floor position, height, dz from the floor position]):
+// the handle rises inside the knee to just below knee height, then swings out above the knee to beside the chest. The v2
+// trunk is wider and the thighs sit beside the lower ribs in this deep stance, so the old straight path (END below) went
+// through the thigh. Points separated by '/'. Set WP='' to fall back to the old path.
+const WPS = (process.env.WP ?? '0,45,7/-2,51,18/-4,58,25/-6,63,26').split('/').filter(Boolean).map((t) => t.split(',').map(Number));
+const PATH = WPS.length ? [C0, ...WPS.map((d) => [C0[0] + d[0], d[1], C0[2] + d[2]])] : null;
+function along(P, u) {
+  const seg = P.slice(1).map((q, i) => V.len(V.sub(q, P[i]))), tot = seg.reduce((a, b) => a + b, 0);
+  let d = u * tot;
+  for (let i = 0; i < seg.length; i++) { if (d <= seg[i] || i === seg.length - 1) return V.add(P[i], V.scale(V.sub(P[i + 1], P[i]), Math.min(1, d / seg[i]))); d -= seg[i]; }
+}
 const state = { cost: 0 };
 let guess = null;
 function row(f) {
   const q0 = clone(base), u = f * f * (3 - 2 * f);
   q0.ch.sc_r = { protract: r1(ROW.sc[0].protract + (ROW.sc[1].protract - ROW.sc[0].protract) * u), elevate: r1(ROW.sc[0].elevate + (ROW.sc[1].elevate - ROW.sc[0].elevate) * u) };
-  const fy = Math.min(1, f / 0.75), fx = Math.max(0, (f - 0.25) / 0.75), sy = fy * fy * (3 - 2 * fy), sx = fx * fx * (3 - 2 * fx);
-  const c = [C0[0] + (END[0] - C0[0]) * sx, C0[1] + (END[1] - C0[1]) * sy, C0[2] + (END[2] - C0[2]) * sy];
+  const fy = Math.min(1, f / 0.75), fx = Math.max(0, (f - 0.25) / 0.75), sy = fy * fy * (3 - 2 * fy), sx = fx * fx * (3 - 2 * fx), fz = Math.max(0, (f - Z0) / (1 - Z0)), sz = fz * fz * (3 - 2 * fz);
+  const c = PATH ? along(PATH, u) : [C0[0] + (END[0] - C0[0]) * sx, C0[1] + (END[1] - C0[1]) * sy, C0[2] + (END[2] - C0[2]) * (Z0 > 0 ? sz : (sy + (sx - sy) * ZLAG))];
   const tl = -20 * u * R.DEG, palm = [0, 0, -1], thumb = [Math.cos(tl), Math.sin(tl), 0];
-  const q = B.holdArm(q0, B.wristFromHandle(c, palm, thumb), { palm, axis: thumb, axialW: 0.02, tw: [6, 6, 6], dirW: 2, guesses: (guess ? [guess] : []).concat([[base.ch.shoulder_r.plane, base.ch.shoulder_r.elev, base.ch.shoulder_r.axial, base.ch.elbow_r.flex, base.ch.wrist_r.pron], [70, 45, 0, 8, 90], [40, 30, 0, 60, 90], [-30, 40, 40, 100, 90]]) });
+  const q = B.holdArm(q0, B.wristFromHandle(c, palm, thumb), { palm, axis: thumb, axialW: 0.02, tw: [6, 6, 6], dirW: 2, extra: [(W, q) => [Math.max(0, q.ch.shoulder_r.elev - 175) * 2]], guesses: (guess ? [guess] : []).concat([[base.ch.shoulder_r.plane, base.ch.shoulder_r.elev, base.ch.shoulder_r.axial, base.ch.elbow_r.flex, base.ch.wrist_r.pron], [70, 45, 0, 8, 90], [40, 30, 0, 60, 90], [-30, 40, 40, 100, 90]]) });
   guess = [q.ch.shoulder_r.plane, q.ch.shoulder_r.elev, q.ch.shoulder_r.axial, q.ch.elbow_r.flex, q.ch.wrist_r.pron];
   state.cost = Math.max(state.cost, q.__cost); delete q.__cost;
   return B.wrapPose(q);

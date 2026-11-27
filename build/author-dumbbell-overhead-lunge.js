@@ -12,7 +12,7 @@ const K = require('./families/b4-squats2');
 
 const F = makeFamily({ toe: 6, half: 9 });
 const STEP = 80, BACK = r1(BALL_SHIFT); // right ankle lands 80 cm ahead; the left rolls onto its ball (ankle moves 7.8 cm forward)
-const S = F.split('r', STEP, BACK);
+const S = F.split('r', STEP, BACK, { backKneeY: 14 }); // back knee 14 cm up: the rig v2 legs (thigh 40.6, shank 42.9) would bend it past 105 at 13
 // right arm: wrist straight above the shoulder (world vertical), elbow locked, palm in; left hand on the hip
 const LOCK = { 'ch.shoulder_r.plane': 6.7, 'ch.shoulder_r.elev': 158, 'ch.shoulder_r.axial': -96, 'ch.elbow_r.flex': 13, 'ch.wrist_r.pron': 17, 'ch.wrist_r.flex': -8, 'ch.wrist_r.dev': -1 };
 let armErr = 0;
