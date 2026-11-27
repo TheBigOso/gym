@@ -17,10 +17,12 @@ const flat = { r: { c: 'flat', x: 0 }, l: { c: 'flat', x: 0 } };
 // straight arms at `a` degrees from hanging (+ forward), hands meeting at the midline
 const arm = (a, flex = 5) => {
   const dir = (W) => { const S = W.shoulder_r.p, len = L.reach(flex), dz = ZW - S[2], ls = Math.sqrt(len * len - dz * dz); return [ls * Math.sin(a * Math.PI / 180), -ls * Math.cos(a * Math.PI / 180), dz]; };
-  return { w: (W) => V.add(W.shoulder_r.p, dir(W)), elbow: (W) => V.add(W.shoulder_r.p, V.scale(V.norm(dir(W)), L.UA)), thumb: [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180), 0], elbowW: 0.6 };
+  // palm medial and the thumb in the sagittal plane: the wrist deviates so the dumbbell hangs in the sagittal plane
+  // (between the legs) instead of following the inward slant of the forearm
+  return { w: (W) => V.add(W.shoulder_r.p, dir(W)), elbow: (W) => V.add(W.shoulder_r.p, V.scale(V.norm(dir(W)), L.UA)), thumb: [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180), 0], palm: [0, 0, -1], elbowW: 0.6 };
 };
 const sc = (e, p) => ({ protract: p, elevate: e });
-const KB = +(process.env.KB ?? 40), PB = +(process.env.PB ?? -52), AB = +(process.env.AB ?? -35);
+const KB = +(process.env.KB ?? 40), PB = +(process.env.PB ?? -54), AB = +(process.env.AB ?? -20);
 const Bd = {
   stand: { feet: flat, knee: 5, pitch: 0, sc: sc(-2, 6) },
   back: { feet: flat, knee: KB, pitch: PB, shX: 12, spine: { l5: -2, t12: 0, t6: 1 }, sc: sc(-4, 8), neck: [-14, -10] },
@@ -29,7 +31,8 @@ const Bd = {
   top: { feet: flat, knee: 3, pitch: 3, sc: sc(2, 10) },
   fall: { feet: flat, knee: 6, pitch: 0, sc: sc(0, 8) },
 };
-const A = { stand: arm(14), back: arm(AB), rise: arm(-5), snap: arm(40), top: arm(88), fall: arm(40), dip: arm(-10) };
+const AS = +(process.env.AS ?? 22);
+const A = { stand: arm(AS), back: arm(AB), rise: arm(-5), snap: arm(40), top: arm(88), fall: arm(40), dip: arm(+(process.env.AD ?? 0)) };
 Bd.dip = { feet: flat, knee: 14, pitch: -30, shX: 6, sc: sc(-3, 7) };
 const K = (name, t, n) => ({ name, t, cfg: Bd[name], arm: A[name], n });
 const keys = [K('stand', 0), { same: 'stand', t: 0.6 }, K('dip', 1.0), K('back', 1.35, 1), K('rise', 1.62, 1), K('snap', 1.82), K('top', 2.08, 1),
@@ -41,9 +44,8 @@ const { poses, keyframes, err } = P.chain(F, keys);
 const ex = H.module_(meta, F.contacts, poses, keyframes);
 ex.props = [P.B.heldProp('r', 'end')];
 const held = [{ side: 'r', grip: 'end' }];
-// The dumbbell passes between the thighs with the forearms brushing them: the rig thigh shapes are fatter than the
-// athlete's, so the legs are checked on the skinned mesh (b2/b4p/mesh.mjs: >= -0.4 cm, grazing) and left out here.
-const rep = P.B.sweep(ex, { held, skipBody: ['hand_l', 'thumb_l', 'forearm_l', 'thigh_r', 'thigh_l', 'quad_r', 'quad_l', 'shank_r', 'shank_l', 'calf_r', 'calf_l'] });
+// The dumbbell passes between the thighs (rig v2 leg shapes match the drawn legs, so they are checked too).
+const rep = P.B.sweep(ex, { held, skipBody: (process.env.SKIP || 'hand_l,thumb_l,forearm_l').split(',') });
 const jump = P.jumps(ex);
 const W = (n) => L.fk(poses[n], F.contacts), set = H.setKin(ex);
 const Wb = W('back'), Wt = W('top');

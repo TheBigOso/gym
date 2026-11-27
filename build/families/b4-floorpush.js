@@ -5,9 +5,8 @@
 //  - pike helpers (inverted V, hips high) and the push-up to side plank roll live in their authors; shared bits are here.
 //  - Floor lying with dumbbells: lieFloor (supine on the mat, knees bent, feet planted) and floorSweep (feet slide, floor,
 //    dumbbells vs floor / body / each other). The dumbbell arm solves come from b3-chest.js (pressPath, flyPath, solveArmDB).
-// The Studio clay athlete differs from the rig shapes: lying on the floor its back and head sit a few cm above where the rig
-// shapes touch (measured with b2/b4fp/mesh.mjs); the rig shapes may not go below the floor (verify, 0.5 cm), so the floor
-// authors place the rig shapes on the floor (within that tolerance) and report the measured mesh gaps.
+// Rig v2: the collision shapes are fitted to the drawn body, so the floor authors place the rig shapes on the floor and the
+// clearances they compute are what the viewer shows (the push-up mesh-arm helpers below date from rig v1).
 const L = require('../lib');
 const { R, V, Q, rig, r1, clone, fk, solvePose } = L;
 const H = require('./hips');
@@ -213,8 +212,15 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
 // Supine on the mat, head toward -X, knees bent with the feet flat (leg contacts), shoulder blades set back and down.
 function lieFloor({ knee = 80, footZ = 16, yaw = 8 } = {}) {
   const CA = require('./core-a');
-  const lie = CA.lie({ kneeFlex: 90, headRest: 'floor' });
+  const lie = CA.lie({ kneeFlex: 90, headRest: 'none' });
   let p = clone(lie.pose);
+  // Rig v2: the head sits forward of the upper back, so with a neutral neck the back of the head rests a little off the mat
+  // (as on a real person). Let it settle toward the mat within a relaxed neck extension (neck -14, head -11 at most).
+  p = solvePose(p, ['ch.neck_c7.flex', 'ch.head_c1.flex'], [
+    (W) => { const h = minOf(W, ['head', 'hair']) - 0.3; return [Math.min(0, h) * 4, Math.max(0, h) * 1]; },
+    L.obj.reg('ch.neck_c7.flex', 0, 0.2), L.obj.reg('ch.head_c1.flex', 0, 0.2),
+    (W, q) => [Math.min(0, q.ch.neck_c7.flex + 14) * 3, Math.min(0, q.ch.head_c1.flex + 11) * 3],
+  ]).pose;
   p.ch.sc_r = clone(C.SC); p.ch.sc_l = clone(C.SC);
   const contacts = C.footContacts(yaw);
   const fx = C.footXForKnee(p, contacts, footZ, knee);

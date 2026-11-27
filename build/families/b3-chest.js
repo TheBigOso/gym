@@ -39,12 +39,17 @@ function makeBench(angle = 0, opt = {}) {
 // Position along the pad (cm from the hinge) of a world point
 const alongPad = (B, p) => V.dot(V.sub(p, B.hinge), B.padDir);
 
-// The skinned mesh back sits this many cm closer to the pad than the rig shapes predict (positive = sink the rig in).
-let PAD_SINK = +(process.env.PAD_SINK ?? 2); // measured with b2/chest_mesh.mjs: the mesh upper back then rests within about 1 cm of the pad
-// The mesh head sits about 9-10 cm higher than the rig head shapes predict when lying (measured on the pad and on the floor
-// in the glute bridge), so the rig hair shape is aimed HEAD_LIFT cm into the pad for the drawn head to rest on it.
-let SEAT_SINK = +(process.env.SEAT_SINK ?? 7.5); // the mesh buttocks sit higher than the rig buttock shapes; 7.5 puts them on the seat (within 1 cm)
-const HEAD_LIFT = +(process.env.HEAD_LIFT ?? -9);
+// Rig v2: the collision shapes are fitted to the drawn body, so the pad / seat contacts are solved on the rig shapes directly
+// (no skinned-mesh sinks). PAD_SINK / SEAT_SINK stay as overrides (0 = shapes resting on the surfaces).
+let PAD_SINK = +(process.env.PAD_SINK ?? 0);
+let SEAT_SINK = +(process.env.SEAT_SINK ?? 0);
+// Lying, the head sits forward of the upper back, so with a neutral neck the back of the head rests just off the pad (as on a
+// real person). HEAD_LIFT: the least gap (cm) kept between the rig head / hair shapes and the pad; the head is only drawn
+// gently toward the pad within the neck's comfortable range.
+const HEAD_LIFT = +(process.env.HEAD_LIFT ?? 0.3);
+// The rig neck capsule (r 6.4 at C7) reaches about 8 cm behind the drawn back of the neck at its base (where the traps and
+// upper back meet the pad), so its pad allowance is generous; the traps / chest shapes carry the real upper-back contact.
+const NECK_MIN = -8;
 const setSink = (v) => { PAD_SINK = v; };
 
 /**
@@ -62,11 +67,12 @@ function layOnBench(B, opt = {}) {
   const pad = (W, id) => planeClear(W, id, B.padN, B.padD) + sink();
   const seat = (W, id) => planeClear(W, id, B.seatN, B.seatD) + SEAT_SINK;
   const objs = [
-    (W) => [pad(W, 'chest') * 4, Math.min(0, pad(W, 'ribcage')) * 4, Math.max(0, pad(W, 'ribcage') - 1.0) * 2, Math.min(0, pad(W, 'neck') - (opt.neckMin ?? 0.3)) * 4, Math.min(0, pad(W, 'abdomen') - 1.0) * 4],
-    (W) => [Math.min(0, pad(W, 'hair') - (opt.headLift ?? 0)) * 4, (pad(W, 'hair') - (opt.headLift ?? 0)) * 1.2],
+    (W) => [pad(W, 'chest') * 4, Math.min(0, pad(W, 'ribcage')) * 4, Math.max(0, pad(W, 'ribcage') - 1.0) * 2, Math.min(0, pad(W, 'neck') - (opt.neckMin ?? NECK_MIN)) * 4, Math.min(0, pad(W, 'abdomen') - 1.0) * 4, Math.min(0, pad(W, 'traps_r')) * 4],
+    (W) => { const h = Math.min(pad(W, 'hair'), pad(W, 'head')) - (opt.headLift ?? HEAD_LIFT); return [Math.min(0, h) * 4, Math.max(0, h) * (opt.headPull ?? 1)]; },
     (W) => [Math.min(seat(W, 'buttock_r'), seat(W, 'buttock_l')) * 4, Math.min(0, pad(W, 'buttock_r') + SEAT_SINK - PAD_SINK) * 4, Math.min(0, seat(W, 'pelvis')) * 4],
     L.obj.reg('ch.spine_l5.flex', opt.l5 ?? -6, 0.15), L.obj.reg('ch.spine_t12.flex', opt.t12 ?? 2, 0.25), L.obj.reg('ch.spine_t6.flex', opt.t6 ?? 4, 0.4),
     L.obj.reg('ch.neck_c7.flex', 4, 0.2), L.obj.reg('ch.head_c1.flex', 2, 0.2),
+    (W, q) => [Math.min(0, q.ch.head_c1.flex + 20) * 3, Math.min(0, q.ch.neck_c7.flex + 20) * 3], // keep the neck well inside its extension limits
   ];
   if (opt.pitch != null) objs.push(L.obj.reg('root.rot.pitch', opt.pitch, opt.pitchW ?? 0.4));
   const paths = ['root.pos.0', 'root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex', 'ch.neck_c7.flex', 'ch.head_c1.flex'];
@@ -201,7 +207,7 @@ function bodyBenchPen(B, W, s) {
 // Whole-loop scan: feet slide, floor, dumbbell vs body / bench / floor (both hands), body vs bench, joint angles via probe
 function sweep(ex, B, { grips, skip = [/^(hand|thumb|forearm)_r$/], skipL = [/^(hand|thumb|forearm)_l$/], probe, n = 600 } = {}) {
   const tl = R.buildTimeline(ex), Dn = ex.timeline.duration, out = { slide: 0, floor: 1e9, dbFloor: 1e9, dbBody: -1e9, dbBench: -1e9, bodyBench: -1e9 };
-  const benchShapes = rig.shapes.filter((s) => !/^(hand|thumb|forearm|upperarm|biceps|deltoid|foot|shank|calf)_/.test(s.id) && !/^(head|hair|jaw|nose|ear|eye|brow|neck)/.test(s.id)); // head: checked on the mesh (chest_mesh.mjs)
+  const benchShapes = rig.shapes.filter((s) => !/^(hand|thumb|forearm|upperarm|biceps|deltoid|foot|shank|calf)_/.test(s.id) && !/^(jaw|nose|ear|eye|brow|neck)/.test(s.id)); // the head / hair rest just off the pad (the neck capsule overreaches the drawn neck, see NECK_MIN)
   for (let i = 0; i <= n; i++) {
     const t = (i / n) * Dn, pz = tl.pose(t), W = R.evalPose(rig, pz, ex.contacts);
     for (const id of ['leg_r', 'leg_l']) { const k = pz.ik && pz.ik[id]; if (!k) continue; out.slide = Math.max(out.slide, V.len(V.sub(W[`ankle_${id.slice(-1)}`].p, k.target))); }
@@ -236,7 +242,7 @@ function elbowFlare(W, s = 'r') {
 // Upper arm below (+) / above (-) the trunk's back plane, deg
 function armDip(W, s = 'r') { const F = trunkFrame(W), ua = V.norm(V.sub(W[`elbow_${s}`].p, W[`shoulder_${s}`].p)); return -Math.asin(V.dot(ua, F.v)) / R.DEG; }
 
-module.exports = { planeClear, planePoint, makeBench, alongPad, layOnBench, benchFit, setSink, get PAD_SINK() { return PAD_SINK; }, footContacts, plantFeet, footXForKnee,
+module.exports = { HEAD_LIFT, planeClear, planePoint, makeBench, alongPad, layOnBench, benchFit, setSink, get PAD_SINK() { return PAD_SINK; }, footContacts, plantFeet, footXForKnee,
   dbAt, dbPoints, dbBodyPen, dbBenchPen, solveArmDB, mirrorArm, trunkFrame, sweep, dumbbellProp, elbowFlexOf, elbowFlare, armDip, DB };
 
 // Press path: n+1 arm keys from the bottom (f = 0: elbows out `flare` deg from the trunk, upper arm `dip` deg below the
@@ -270,7 +276,7 @@ const SC = { protract: -6, elevate: -2 }; // shoulder blades drawn back and down
 // Lying base for a bench angle: flat (pelvis arched slightly, hip at hipX) or incline (buttocks in the crease); feet planted
 function benchBase(angle, { hipX = 10, knee = 85, footZ = 24, yaw = 12 } = {}) {
   const B = makeBench(angle);
-  let p = layOnBench(B, Object.assign({ headLift: HEAD_LIFT, neckMin: HEAD_LIFT / 2 }, angle ? { pitch: 90 - angle, l5: -10 } : { hipX, pitch: +(process.env.FPITCH ?? 89), pitchW: 0.8, l5: +(process.env.FL5 ?? -8) }));
+  let p = layOnBench(B, Object.assign({ headLift: HEAD_LIFT }, angle ? { pitch: 90 - angle, l5: -10 } : { hipX, pitch: +(process.env.FPITCH ?? 89), pitchW: 0.8, l5: +(process.env.FL5 ?? -8) }));
   p.ch.sc_r = clone(SC); p.ch.sc_l = clone(SC);
   const contacts = footContacts(yaw), fx = footXForKnee(p, contacts, footZ, knee);
   p = plantFeet(p, contacts, fx, footZ);
