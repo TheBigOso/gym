@@ -51,7 +51,7 @@ const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf
 // Equipment from the module's props list (the mat is drawn separately). Units: cm in, metres out.
 function buildProps(props, group) {
   for (const pr of props || []) {
-    if (pr.kind === 'mat') continue;
+    if (pr.kind === 'mat' || (pr.attach && pr.attach.joint)) continue; // held props ride on the athlete's hand (see heldProps)
     const [cx, cy, cz] = (pr.center || [0, 0, 0]).map((v) => v * U), [sx, sy, sz] = (pr.size || [30, 30, 30]).map((v) => v * U);
     const mat = new THREE.MeshStandardMaterial({ color: pr.color ? new THREE.Color(pr.color) : PROP_COLOR[pr.kind] || 0x888888, roughness: 0.7 });
     let m;
@@ -59,10 +59,48 @@ function buildProps(props, group) {
     else if (pr.kind === 'stick') { m = new THREE.Mesh(new THREE.CylinderGeometry(sy / 2, sy / 2, sx, 12), mat); m.rotation.z = Math.PI / 2; m.position.set(cx, cy + sy / 2, cz); }
     else if (pr.kind === 'hurdle') { m = new THREE.Group(); const bar = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, sz), mat); bar.position.y = sy; m.add(bar); for (const z of [-sz / 2, sz / 2]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.02, sy, 0.02), mat); leg.position.set(0, sy / 2, z); m.add(leg); } m.position.set(cx, cy, cz); }
     else if (pr.kind === 'ladder') { m = new THREE.Group(); const n = Math.max(2, Math.round(sx / 0.45)); for (const z of [-sz / 2, sz / 2]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.006, 0.025), mat); rail.position.set(0, 0.003, z); m.add(rail); } for (let i = 0; i <= n; i++) { const rung = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.006, sz), mat); rung.position.set(-sx / 2 + (i * sx) / n, 0.003, 0); m.add(rung); } m.position.set(cx, cy, cz); }
+    else if (pr.kind === 'bench' && pr.backAngle != null) { // adjustable bench: seat pad + back pad hinged at one end of the seat
+      m = new THREE.Group(); const pad = 0.06, legM = new THREE.MeshStandardMaterial({ color: 0x9aa1aa, roughness: 0.5, metalness: 0.6 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(sx, pad, sz), mat); seat.position.set(0, sy - pad / 2, 0); m.add(seat);
+      for (const fx of [-0.35, 0.35]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, sy - pad, sz * 0.8), legM); leg.position.set(fx * sx, (sy - pad) / 2, 0); m.add(leg); }
+      const dir = pr.backSide ?? -1, bl = (pr.backLength ?? 80) * U, a = pr.backAngle * R.DEG;
+      const hinge = new THREE.Group(); hinge.position.set(dir * sx / 2, sy, 0); hinge.rotation.z = dir * a; m.add(hinge); // the pad rises away from the seat
+      const back = new THREE.Mesh(new THREE.BoxGeometry(bl, pad, sz), mat); back.position.set(dir * bl / 2, -pad / 2, 0); hinge.add(back);
+      const sY = sy - pad + Math.sin(a) * bl * 0.7, sX = dir * (sx / 2 + Math.cos(a) * bl * 0.7); // support under 70% of the pad
+      if (a > 0.05) { const strut = new THREE.Mesh(new THREE.BoxGeometry(0.05, sY, 0.05), legM); strut.position.set(sX, sY / 2, 0); m.add(strut); }
+      else { const foot = new THREE.Mesh(new THREE.BoxGeometry(0.05, sy - pad, 0.05), legM); foot.position.set(dir * (sx / 2 + bl * 0.9), (sy - pad) / 2, 0); m.add(foot); }
+      m.position.set(cx, cy, cz);
+    }
     else { m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat); m.position.set(cx, cy + sy / 2, cz); }
     if (pr.rotY) m.rotation.y = pr.rotY * R.DEG;
     m.name = pr.id; m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     group.add(m);
+  }
+}
+
+// Held props (dumbbells): built along +X, re-parented each frame to the athlete hand that holds them (the side switch swaps hands)
+function dumbbellMesh(pr) {
+  const L = ((pr.size && pr.size[0]) || 32) * U, D = ((pr.size && pr.size[1]) || 12) * U, hl = Math.min(0.14, L * 0.45), plate = (L - hl) / 2;
+  const iron = new THREE.MeshStandardMaterial({ color: pr.color ? new THREE.Color(pr.color) : PROP_COLOR.dumbbell, roughness: 0.55, metalness: 0.35 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.3, metalness: 0.9 });
+  const g = new THREE.Group(); g.name = pr.id;
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, hl + 0.02, 16), steel); handle.rotation.z = Math.PI / 2; g.add(handle);
+  for (const sgn of [-1, 1]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(D / 2, D / 2, plate, 6), iron); h.rotation.z = Math.PI / 2; h.position.x = sgn * (hl / 2 + plate / 2); g.add(h); }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+let held = [];
+function buildHeld(props) {
+  for (const h of held) h.mesh.removeFromParent();
+  held = (props || []).filter((pr) => pr.attach && pr.attach.joint && pr.kind === 'dumbbell').map((pr) => ({ pr, side: pr.attach.joint.endsWith('_l') ? 'l' : 'r', mesh: dumbbellMesh(pr) }));
+}
+// grip amounts per displayed hand, and placing each held prop in its hand
+function gripsFor(mirror) { const g = {}; for (const h of held) g[mirror ? (h.side === 'r' ? 'l' : 'r') : h.side] = 1; return g; }
+function placeHeld(a, list, mirror) {
+  for (const h of list) {
+    const ds = mirror ? (h.side === 'r' ? 'l' : 'r') : h.side, gf = a.gripFrame(ds, h.pr.attach.grip || 'handle', h.pr.attach.offset);
+    if (h.mesh.parent !== gf.bone) gf.bone.add(h.mesh);
+    h.mesh.position.copy(gf.pos); h.mesh.quaternion.copy(gf.quat);
   }
 }
 
@@ -95,7 +133,7 @@ function loadExercise(i) {
   box.getCenter(center).multiplyScalar(A.sLeg); const bs = box.getSize(new THREE.Vector3()); radius = (bs.length() / 2) * A.sLeg; halfH = (bs.y / 2) * A.sLeg;
   const mat = EX.props.find((p) => p.kind === 'mat');
   matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
-  propGroup.clear(); buildProps(EX.props, propGroup); propGroup.scale.z = S.side === 'L' ? -1 : 1;
+  propGroup.clear(); buildProps(EX.props, propGroup); buildHeld(EX.props); propGroup.scale.z = S.side === 'L' ? -1 : 1;
   S.t = Math.min(S.t, D - 0.01);
   buildPanel(); rebuildGuides(); setCamera(EX.camera.default);
 }
@@ -137,7 +175,7 @@ let lastW = null, lastPose = null;
 function update() {
   const pose = tl.pose(S.t), W = R.evalPose(rig, pose, EX.contacts), mirror = S.side === 'L';
   lastW = W; lastPose = pose;
-  A.pose(W, mirror, ikWeights(pose, EX));
+  A.pose(W, mirror, ikWeights(pose, EX), gripsFor(mirror)); placeHeld(A, held, mirror);
   // muscles: each shown group glows in its role colour, brighter as it works harder
   const glow = {};
   for (const id in roleOf) { const role = roleOf[id]; if (!(S.show[role] || S.hover === id)) continue; glow[id] = { a: S.hover === id ? 1 : 0.3 + 0.7 * tl.activation(id, S.t), role }; }
@@ -181,17 +219,18 @@ function applyBackdrop() {
 }
 
 /* ---------------- glTF export ---------------- */
-function bakeClip(ex, a, mirror, fps) {
+function bakeClip(ex, a, mirror, fps, grips, extra) {
   const tlx = R.buildTimeline(ex), Dx = tlx.duration, n = Math.round(Dx * fps) + 1, times = new Float32Array(n);
   const q = a.bones.map(() => new Float32Array(n * 4)), rootP = new Float32Array(n * 3), iRoot = a.B.indexOf('pelvis');
   for (let k = 0; k < n; k++) {
     const t = Math.min(Dx, k / fps); times[k] = t; const pz = tlx.pose(t);
-    a.pose(R.evalPose(rig, pz, ex.contacts), mirror, ikWeights(pz, ex));
+    a.pose(R.evalPose(rig, pz, ex.contacts), mirror, ikWeights(pz, ex), grips ? grips(mirror) : null);
     a.bones.forEach((b, i) => q[i].set([b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w], k * 4));
     const p = a.bones[iRoot].position; rootP.set([p.x, p.y, p.z], k * 3);
   }
   const tracks = a.bones.map((b, i) => new THREE.QuaternionKeyframeTrack(`${b.name}.quaternion`, times, q[i]));
   tracks.push(new THREE.VectorKeyframeTrack('pelvis.position', times, rootP));
+  if (extra) tracks.push(...extra(mirror));
   return new THREE.AnimationClip(`${ex.exercise.id}_${mirror ? 'left' : 'right'}`, Dx, tracks);
 }
 async function exportGLB(i) {
@@ -204,8 +243,17 @@ async function exportGLB(i) {
   armature.add(a.mesh); armature.userData = { rig: RIG.rigId, character: RR_DATA.character.id, exercise: ex.exercise.id, units: 'meters', note: 'Clips: <id>_right, <id>_left. Generated by RepRig.' };
   const p0 = R.buildTimeline(ex).pose(0); a.pose(R.evalPose(rig, p0, ex.contacts), false, ikWeights(p0, ex));
   const props = new THREE.Group(); props.name = 'Props'; props.scale.setScalar(a.sLeg); buildProps(ex.props, props); armature.add(props);
+  const heldX = (ex.props || []).filter((pr) => pr.attach && pr.attach.joint && pr.kind === 'dumbbell').map((pr) => ({ pr, side: pr.attach.joint.endsWith('_l') ? 'l' : 'r', mesh: dumbbellMesh(pr) }));
+  placeHeld(a, heldX, false); // static parenting to the hand bones; the clips move them with the hands
+  // one-sided exercises export a left clip too: a mirrored copy of each held prop sits in the other hand, and each clip
+  // shows only its own copies (scale tracks), so the dumbbell is always in the working hand
+  const heldM = ex.exercise.authoredSide === 'bilateral' ? [] : heldX.map((h) => ({ ...h, mesh: dumbbellMesh(h.pr) }));
+  heldX.forEach((h) => { h.mesh.name = `${h.pr.id}_right`; }); heldM.forEach((h) => { h.mesh.name = `${h.pr.id}_left`; });
+  placeHeld(a, heldM, true);
+  const showTracks = (mirror) => heldM.length ? [...heldX.map((h) => [h.mesh.name, mirror ? 0 : 1]), ...heldM.map((h) => [h.mesh.name, mirror ? 1 : 0])].map(([n, v]) => new THREE.VectorKeyframeTrack(`${n}.scale`, [0], [v, v, v])) : [];
+  const gripsX = (mirror) => { const g = {}; for (const h of heldX) g[mirror ? (h.side === 'r' ? 'l' : 'r') : h.side] = 1; return g; };
   armature.updateMatrixWorld(true);
-  const clips = ex.exercise.authoredSide === 'bilateral' ? [bakeClip(ex, a, false, 30)] : [bakeClip(ex, a, false, 30), bakeClip(ex, a, true, 30)];
+  const clips = ex.exercise.authoredSide === 'bilateral' ? [bakeClip(ex, a, false, 30, gripsX, showTracks)] : [bakeClip(ex, a, false, 30, gripsX, showTracks), bakeClip(ex, a, true, 30, gripsX, showTracks)];
   if (clips.length === 1) clips[0].name = ex.exercise.id;
   const buf = await new GLTFExporter().parseAsync(armature, { binary: true, animations: clips });
   a.mesh.geometry.dispose();
@@ -342,4 +390,7 @@ if (stage.clientWidth < 600) S.show.angles = false;
 buildStatic(); applyBackdrop(); resize(); loadExercise(S.ex); roStage.observe(stage);
 setPlaying(!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
 $('loading').remove(); syncUI(true); requestAnimationFrame(frame);
-window.__rr = { S, R, rig, exportGLB, setAthlete, get athlete() { return A; }, load: loadExercise, setT: (t) => { S.t = t; update(); renderer.render(scene, camera); syncUI(true); }, setCam: setCamera, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), get tl() { return tl; }, get EX() { return EX; } };
+window.__rr = { S, R, rig, exportGLB, setAthlete, get athlete() { return A; },
+  // test/review hook: aim the camera at a world point (metres) from a position and render
+  lookAt: (pos, tgt) => { camera.position.set(...pos); controls.target.set(...tgt); controls.update(); camera.lookAt(...tgt); renderer.render(scene, camera); },
+  handPos: (s) => { const b = A.bones[A.B.indexOf('hand_' + s)], v = new THREE.Vector3(); b.getWorldPosition(v); return v.toArray(); }, load: loadExercise, setT: (t) => { S.t = t; update(); renderer.render(scene, camera); syncUI(true); }, setCam: setCamera, measures: (t) => R.measures(R.evalPose(rig, tl.pose(t), EX.contacts)), get tl() { return tl; }, get EX() { return EX; } };
