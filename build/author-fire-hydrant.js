@@ -9,7 +9,7 @@ const H = require('./families/hips');
 const F = require('./families/b4-calvesglutes');
 const meta = require('./meta/fire-hydrant.json');
 
-const A = F.allFours(), { fours, contacts, Wf } = A;
+const A = P.allFours(), { fours, contacts, Wf } = A;
 const ABD_TOP = 44;
 const h0 = fours.ch.hip_r, k0 = fours.ch.knee_r.flex, a0 = fours.ch.ankle_r.dorsi;
 // f: 0 = planted, 1 = top. Hip rotation per key keeps the shin level (ankle at knee height) once the knee is off the mat.

@@ -5,46 +5,15 @@
 // with the pelvis fixed the knee stays on its mat point). A lifting limb's contact weight goes to 0; its FK channels
 // at the planted keys are fitted to the IK solution, so lift-off and touch-down blend without a jump.
 const L = require('./lib');
-const { R, V, Q, rig, clone } = L;
+const { R, V, clone } = L;
 const P = require('./families/prone');
 const meta = require('./meta/bird-dog.json');
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
-const z0 = () => ({ rot: 0, flex: 0, latFlex: 0 });
-const KNEE_Y = +(process.env.KY ?? 5.0);   // knee joint height: the rig shin capsule (5.2 cm radius) rests on the mat
-const ELBOW = +(process.env.EL ?? 35);   // rig supporting elbows: the athlete's arm is shorter, so its arm is near straight here
-const HAND_BACK = +(process.env.HB ?? 6);   // rig wrist this far behind the shoulder: the athlete's shoulder sits further back
-const WRIST_Y = +(process.env.WY ?? 4.0);   // wrist height with the hand rolled TILT deg thumb side up (keeps the athlete's thumb out of the mat)
-const TILT = +(process.env.TILT ?? 15);
+const HAND_BACK = 0;   // hands under the shoulders (rig and body now match: no offsets for the mesh)
 
-/* ---------- All fours ---------- */
-const TH = V.len(rig.byId.knee_r.offset);
-const base = { root: { pos: [0, r3(KNEE_Y + TH), 0], rot: { pitch: -86 } }, ch: {
-  spine_l5: { ...z0(), flex: 2 }, spine_t12: z0(), spine_t6: z0(), neck_c7: { rot: 0, flex: 0 }, head_c1: { rot: 0, flex: 0 },
-  sc_r: { protract: 6, elevate: 2 }, sc_l: { protract: 6, elevate: 2 },
-  hip_r: { flex: 86, abd: 0, rot: 0 }, hip_l: { flex: 86, abd: 0, rot: 0 }, knee_r: { flex: 90 }, knee_l: { flex: 90 }, ankle_r: { dorsi: -70 }, ankle_l: { dorsi: -70 } } };
-P.head(base, -8);
-// Trunk pitch so the shoulders sit one (soft-elbow) arm length above the hands; the thigh stays vertical (hip flex = -pitch).
-const ARM = L.reach(ELBOW);
-const pitchFit = L.solvePose(base, ['root.rot.pitch'], [(W) => [(W.shoulder_r.p[1] - WRIST_Y - Math.sqrt(ARM * ARM - HAND_BACK * HAND_BACK)) * 2]]).pose;
-pitchFit.ch.hip_r.flex = pitchFit.ch.hip_l.flex = r3(-pitchFit.root.rot.pitch);
-const W0 = L.fk(pitchFit);
-// Ankle targets: shin flat behind the knee, foot plantarflexed with the instep on the mat.
-const footQ = (s) => P.qArr(W0[`ankle_${s}`].q);
-const handQ = (s) => { const q = Q.mul(Q.axis([1, 0, 0], TILT), L.handRotR); return P.qArr(s === 'r' ? q : Q.mirrorZ(q)); };
-const contacts = [
-  Object.assign(L.handContact('r'), { pole: [-1, 0.1, 0.25], handRot: handQ('r') }), Object.assign(L.handContact('l'), { pole: [-1, 0.1, -0.25], handRot: handQ('l') }),
-  Object.assign(L.legContact('r'), { label: 'Right shin', pole: [0.4, -1, 0.05], handRot: footQ('r') }),
-  Object.assign(L.legContact('l'), { label: 'Left shin', pole: [0.4, -1, -0.05], handRot: footQ('l') }),
-];
-const HT = {}, AT = {};
-for (const s of ['r', 'l']) {
-  const S = W0[`shoulder_${s}`].p; HT[s] = [r3(S[0] - HAND_BACK), WRIST_Y, r3(S[2])];
-  AT[s] = W0[`ankle_${s}`].p.map(r3);
-}
-pitchFit.ik = { arm_r: { target: HT.r, weight: 1 }, arm_l: { target: HT.l, weight: 1 }, leg_r: { target: AT.r, weight: 1 }, leg_l: { target: AT.l, weight: 1 } };
-const fours = P.fitAll(pitchFit, contacts);
-const Wf = L.fk(fours, contacts);
+/* ---------- All fours (prone family: shins flat and insteps on the mat, hands under the shoulders) ---------- */
+const { fours, contacts, HT, AT, Wf, pitchFit } = P.allFours({ HAND_BACK });
 
 /* ---------- Reaching limbs (FK, contact weight 0) ---------- */
 // Arm forward: in line with the trunk, thumb up (hand vertical); f = 0..1 of the reach, `peel` lifts the hand off first.
@@ -109,7 +78,7 @@ const meas = (n) => {
 const mf = meas('fours'), mo = meas('aOut');
 const kin = ex.exercise.kinematics, set = (p, f, v) => { const k = kin.find((x) => x.measure.startsWith(p)); if (k) k[f] = v; };
 const trunkPitch = V.angle(trunkDir, [1, 0, 0]);
-set('Hands and knees', 'setup', `Hands ${Math.round(HAND_BACK)} cm behind the shoulder joints (rig), knees under the hips (hip ${deg(fours.ch.hip_r.flex)}, knee ${deg(fours.ch.knee_r.flex)})`);
+set('Hands and knees', 'setup', `Hands under the shoulders, knees under the hips (hip ${deg(fours.ch.hip_r.flex)}, knee ${deg(fours.ch.knee_r.flex)})`);
 set('Hands and knees', 'peak', `Supporting hand and knee stay planted (elbow ${deg(P.elbowAngle(L.fk(poses.aOut, contacts), 'l'))})`);
 set('Arm elevation', 'setup', `${deg(180 - mf.armR)} to the trunk (hand on the mat)`); set('Arm elevation', 'peak', `${deg(180 - mo.armR)} (arm level)`);
 set('Hip extension', 'setup', `Hip ${deg(fours.ch.hip_l.flex)} flexion`); set('Hip extension', 'peak', `Hip ${deg(poses.aOut.ch.hip_l.flex)} (leg level, ${deg(mo.legL)} off the inclined trunk line), knee ${deg(poses.aOut.ch.knee_l.flex)}`);

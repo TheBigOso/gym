@@ -20,7 +20,15 @@ const footQ = (phi) => Q.axis([0, 0, 1], -phi); // foot pitched phi° heel-up (0
 const footPitch = (q) => { const f = Q.rot(q, [1, 0, 0]); return -Math.atan2(f[1], f[0]) / R.DEG; };
 const TOE_OFF = rig.byId.toe_r.offset;
 const legLen = (kf) => { const a = V.len(rig.byId.knee_r.offset), b = V.len(rig.byId.ankle_r.offset); return Math.sqrt(a * a + b * b + 2 * a * b * Math.cos(kf * R.DEG)); };
-const ankleFor = (toe, phi) => V.sub(toe, Q.rot(footQ(phi), TOE_OFF));
+const ankleFromToe = (toe, phi) => V.sub(toe, Q.rot(footQ(phi), TOE_OFF));
+// The rig foot is one rigid shape (no toe joint): as it rolls from tucked toes (plank) to heels-down (dog) it pivots about
+// its lowest point, which stays on one floor spot F (the toe joint itself moves a little). F is set by the dog foot
+// (heel pitch HEEL) under the plank toe position.
+const FOOT_SHAPE = rig.shapes.find((x) => x.id === 'foot_r');
+const lowRel = (phi) => { const g = R.shapeWorld({ ankle_r: { p: [0, 0, 0], q: footQ(phi) } }, FOOT_SHAPE), n = Math.hypot(g.axes[0][1], g.axes[1][1], g.axes[2][1]); return g.axes.reduce((c, a) => V.sub(c, V.scale(a, a[1] / n)), g.c); };
+const floorSpot = (toe) => { const A = ankleFromToe(toe, HEEL), lo = lowRel(HEEL); return [A[0] + lo[0], 0, toe[2]]; };
+const ankleFor = (toe, phi) => { const F = floorSpot(toe), lo = lowRel(phi); return [F[0] - lo[0], F[1] - lo[1], F[2]]; };
+const footLow = (W, s) => { const g = R.shapeWorld(W, rig.shapes.find((x) => x.id === `foot_${s}`)), n = Math.hypot(g.axes[0][1], g.axes[1][1], g.axes[2][1]); return g.axes.reduce((c, a) => V.sub(c, V.scale(a, a[1] / n)), g.c); };
 
 // ---- Start: high plank from the shared helper. Its hand contacts stay planted for the whole clip.
 const { pose: plank0, contacts: handC } = L.POSES.plank();
@@ -171,8 +179,9 @@ const tl = R.buildTimeline(ex);
 let drift = { l: 0, r: 0, wr: 0 }, floor = { y: 1e9 };
 for (let i = 0; i <= 1200; i++) {
   const t = (i / 1200) * 12, W = R.evalPose(rig, tl.pose(t), contacts);
-  drift.l = Math.max(drift.l, V.len(V.sub(W.toe_l.p, TOE.l)));
-  if (t < 3.6 || t > 9.2) drift.r = Math.max(drift.r, V.len(V.sub(W.toe_r.p, TOE.r)));
+  const FL = floorSpot(TOE.l), FR = floorSpot(TOE.r), dz = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);   // foot contact spot (x, y); z of the low point shifts with the foot's own offset
+  drift.l = Math.max(drift.l, dz(footLow(W, 'l'), FL));
+  if (t < 3.6 || t > 9.2) drift.r = Math.max(drift.r, dz(footLow(W, 'r'), FR));
   drift.wr = Math.max(drift.wr, V.len(V.sub(W.wrist_r.p, WT.r)), V.len(V.sub(W.wrist_l.p, WT.l)));
   const f = L.shapeMinY(W); if (f.y < floor.y) floor = { y: f.y, id: f.id, t };
 }

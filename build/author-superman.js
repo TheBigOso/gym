@@ -28,12 +28,15 @@ function prone({ spine = [0, 0, 0], hipExt = 0, neck = -12, armUp = 0, sc = [0, 
 // Rest: root height and pitch plus hip angle so the chest, the front of the thighs and the tops of the feet all rest on
 // the mat (nothing below it).
 const BODY = ['chest', 'pecs_r', 'ribcage', 'abdomen', 'pelvis'], THIGH = ['thigh_r', 'quad_r', 'shank_r'];
+// The arms are placed afterwards (finishPose), so they do not hold the body off the mat here.
+const NOT_ARMS = L.rig.shapes.map((x) => x.id).filter((id) => !/^(deltoid|upperarm|biceps|forearm|hand|thumb)_/.test(id));
 function lie(p) {
-  const s = L.solvePose(p, ['root.pos.1', 'root.rot.pitch', 'ch.hip_r.flex', 'ch.ankle_r.dorsi'], [
-    (W) => [lowest(W, BODY) * 3, lowest(W, THIGH) * 2, lowest(W, ['foot_r']) * 1, Math.min(0, lowest(W, ['foot_r']) + 0.1) * 8, Math.min(0, L.shapeMinY(W).y) * 6],
-    (W, q) => [Math.min(0, q.ch.ankle_r.dorsi + 73) * 5],
+  // the knees may soften a little so the plantarflexed feet (ankle range ends at -75) let the chest and pelvis reach the mat
+  const s = L.solvePose(p, ['root.pos.1', 'root.rot.pitch', 'ch.hip_r.flex', 'ch.ankle_r.dorsi', 'ch.knee_r.flex'], [
+    (W) => [lowest(W, BODY) * 3, lowest(W, THIGH) * 2, lowest(W, ['foot_r']) * 1, Math.min(0, lowest(W, ['foot_r']) + 0.1) * 8, Math.min(0, lowest(W, NOT_ARMS)) * 6],
+    (W, q) => [Math.min(0, q.ch.ankle_r.dorsi + 73) * 5, (q.ch.knee_r.flex - 2) * 0.05, Math.min(0, q.ch.knee_r.flex) * 5, Math.max(0, q.ch.hip_r.flex - 3) * 5],
   ]);
-  sym(s.pose, 'hip', s.pose.ch.hip_r); sym(s.pose, 'ankle', s.pose.ch.ankle_r);
+  sym(s.pose, 'hip', s.pose.ch.hip_r); sym(s.pose, 'ankle', s.pose.ch.ankle_r); sym(s.pose, 'knee', s.pose.ch.knee_r);
   return s.pose;
 }
 function finishPose(p, { handsY = 0, ground = true }) {

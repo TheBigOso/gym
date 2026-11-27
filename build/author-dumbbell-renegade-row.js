@@ -12,9 +12,13 @@ const H = require('./families/b4-hinges');
 const DBH = require('./families/dumbbell');
 const meta = require('./meta/dumbbell-renegade-row.json');
 
-const SIZE = [30, 18, 18], DSZ = { length: SIZE[0], diameter: SIZE[1] };
-const HANDLE_Y = +(process.env.HY ?? 9.6);            // rig handle-centre height with the dumbbell resting on the floor (mesh-checked)
-const palm = [0, 0, -1], thumb = [1, 0, 0];            // right hand: palm toward the midline, thumb toward the head
+const DIAM = +(process.env.DIAM ?? 20),   // hex head across (cm)
+      SIZE = [30, DIAM, DIAM], DSZ = { length: SIZE[0], diameter: SIZE[1] };
+const HANDLE_Y = DIAM / 2;                             // handle centre with the dumbbell resting on the floor
+// The rig hand shape is an open hand (fingertips 18 cm from the wrist): roll the hand 25 deg about the handle (wrist in
+// extension, knuckles toward the floor) so the straight fingers stay above the floor beside the handle.
+const ROLL = +(process.env.ROLL ?? -25) * L.R.DEG;
+const palm = [0, Math.sin(ROLL), -Math.cos(ROLL)], thumb = [1, 0, 0];   // right hand: palm toward the midline, thumb toward the head
 const WOFF = V.sub(B.wristFromHandle([0, HANDLE_Y, 0], palm, thumb), [0, 0, 0]);   // wrist relative to the handle centre
 const HZ = +(process.env.HZ ?? 17);                    // handle centre out from the midline
 const P = makePush({ handY: r1(WOFF[1] - 2.6), handZ: r1(HZ + WOFF[2]), ankleZ: +(process.env.AZ ?? 19), flarePole: [-1, 0.2, 0.5] });

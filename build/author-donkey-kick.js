@@ -11,7 +11,7 @@ const H = require('./families/hips');
 const F = require('./families/b4-calvesglutes');
 const meta = require('./meta/donkey-kick.json');
 
-const A = F.allFours(), { fours, contacts, Wf } = A;
+const A = P.allFours(), { fours, contacts, Wf } = A;
 // hip flexion that puts the thigh level (knee at hip height), from the all-fours trunk pitch
 const THIGH_LEVEL = (() => { const q = clone(fours); q.ik.leg_r.weight = 0; let a = -40, b = 40; for (let i = 0; i < 40; i++) { const m = (a + b) / 2; q.ch.hip_r = { flex: m, abd: 0, rot: 0 }; if (L.fk(q).knee_r.p[1] > L.fk(q).hip_r.p[1]) a = m; else b = m; } return r1((a + b) / 2); })();
 const HIP_TOP = Math.max(-19, THIGH_LEVEL - 1);
