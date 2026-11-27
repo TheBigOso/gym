@@ -33,13 +33,14 @@ function poseAt(f) {
   return q;
 }
 { let a = 5, b = 60; for (let i = 0; i < 40; i++) { K0 = (a + b) / 2; if (H.bottomOf(L.fk(poseAt(0), legOnly), 'foot_r') < 1.0) a = K0; else b = K0; } K0 = r1(b); }
-{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = { r: [r1(S[0] + 51), r1(S[1] - 6), r1(S[2] - 2)], l: [r1(S[0] + 51), r1(S[1] - 6), r1(-(S[2] - 2))] }; }
-const WALL_X = r1(HAND.r[0] + H.WALL_PALM);
+{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = H.wallHandTargets(S, { flex: 40 }); }
+
 const poses = { down: poseAt(0), u1: poseAt(0.12), u2: poseAt(0.3), u3: poseAt(0.5), u4: poseAt(0.7), u5: poseAt(0.88), top: poseAt(1), squeeze: poseAt(1.03) };
 const keyframes = [{ t: 0, pose: 'down' }, { t: 0.8, pose: 'down' }, { t: 1.0, pose: 'u1' }, { t: 1.2, pose: 'u2' }, { t: 1.4, pose: 'u3' }, { t: 1.6, pose: 'u4' }, { t: 1.8, pose: 'u5' }, { t: 2.0, pose: 'top' }, { t: 2.25, pose: 'squeeze' }, { t: 2.5, pose: 'top' },
   { t: 2.85, pose: 'u5' }, { t: 3.15, pose: 'u4' }, { t: 3.45, pose: 'u3' }, { t: 3.75, pose: 'u2' }, { t: 4.0, pose: 'u1' }, { t: 4.2, pose: 'down' }, { t: 5.0, pose: 'down' }];
 F.wrapAll(poses);
 const ex = H.module_(meta, contacts, poses, keyframes);
+const WALL_X = H.wallFaceX(poses[Object.keys(poses)[0]], contacts); // palm face of the rig hand shape
 const wall = ex.props.find((p) => p.kind === 'wall'); wall.center = [r1(WALL_X + wall.size[0] / 2), 0, 0];
 let footMin = 1e9, heelButt = 1e9;
 const rep = H.loopReport(ex, { planted: ['leg_l', 'arm_r', 'arm_l'], probe: (W) => { footMin = Math.min(footMin, H.bottomOf(W, 'foot_r')); } });

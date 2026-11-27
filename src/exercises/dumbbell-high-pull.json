@@ -155,7 +155,7 @@
       {
         "measure": "Elbow height",
         "setup": "arms straight",
-        "peak": "elbow 3 cm from shoulder height, 10 cm above the wrist; elbow 131°",
+        "peak": "elbow 3 cm from shoulder height, 10 cm above the wrist; elbow 114°",
         "norm": "Elbows up and out to about shoulder height, above the hands (clinical opinion)",
         "sources": []
       },
@@ -765,20 +765,20 @@
           "elevate": 16
         },
         "shoulder_r": {
-          "plane": 21.4,
-          "elev": 57.7,
-          "axial": 45.4
+          "plane": 29.7,
+          "elev": 58.7,
+          "axial": 40.2
         },
         "shoulder_l": {
-          "plane": 21.4,
-          "elev": 57.7,
-          "axial": 45.4
+          "plane": 29.7,
+          "elev": 58.7,
+          "axial": 40.2
         },
         "elbow_r": {
-          "flex": 100.9
+          "flex": 96.4
         },
         "elbow_l": {
-          "flex": 100.9
+          "flex": 96.4
         },
         "ankle_r": {
           "dorsi": 0.5
@@ -803,12 +803,123 @@
           "flex": 5.7
         },
         "wrist_r": {
-          "pron": 99.4,
+          "pron": 94,
           "flex": 0,
           "dev": 0
         },
         "wrist_l": {
-          "pron": 99.4,
+          "pron": 94,
+          "flex": 0,
+          "dev": 0
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            6.8,
+            13
+          ],
+          "weight": 1
+        },
+        "leg_l": {
+          "target": [
+            0,
+            6.8,
+            -13
+          ],
+          "weight": 1
+        }
+      }
+    },
+    "p2": {
+      "root": {
+        "pos": [
+          -3,
+          90.1,
+          0
+        ],
+        "rot": {
+          "pitch": 0
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 1,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": 0
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": 0
+        },
+        "sc_r": {
+          "protract": -2,
+          "elevate": 16
+        },
+        "sc_l": {
+          "protract": -2,
+          "elevate": 16
+        },
+        "shoulder_r": {
+          "plane": 31.3,
+          "elev": 71,
+          "axial": 27.5
+        },
+        "shoulder_l": {
+          "plane": 31.3,
+          "elev": 71,
+          "axial": 27.5
+        },
+        "elbow_r": {
+          "flex": 107.5
+        },
+        "elbow_l": {
+          "flex": 107.5
+        },
+        "ankle_r": {
+          "dorsi": 0.5
+        },
+        "ankle_l": {
+          "dorsi": 0.5
+        },
+        "hip_r": {
+          "flex": 5,
+          "abd": 2.2,
+          "rot": -7.1
+        },
+        "hip_l": {
+          "flex": 5,
+          "abd": 2.2,
+          "rot": -7.1
+        },
+        "knee_r": {
+          "flex": 5.7
+        },
+        "knee_l": {
+          "flex": 5.7
+        },
+        "wrist_r": {
+          "pron": 95.6,
+          "flex": 0,
+          "dev": 0
+        },
+        "wrist_l": {
+          "pron": 95.6,
           "flex": 0,
           "dev": 0
         }
@@ -876,20 +987,20 @@
           "elevate": 16
         },
         "shoulder_r": {
-          "plane": 13.3,
-          "elev": 80.9,
-          "axial": 19.7
+          "plane": 31.3,
+          "elev": 83,
+          "axial": 12.6
         },
         "shoulder_l": {
-          "plane": 13.3,
-          "elev": 80.9,
-          "axial": 19.7
+          "plane": 31.3,
+          "elev": 83,
+          "axial": 12.6
         },
         "elbow_r": {
-          "flex": 130.7
+          "flex": 114.4
         },
         "elbow_l": {
-          "flex": 130.7
+          "flex": 114.4
         },
         "ankle_r": {
           "dorsi": 0.5
@@ -914,12 +1025,12 @@
           "flex": 5.7
         },
         "wrist_r": {
-          "pron": 102.6,
+          "pron": 94.5,
           "flex": 0,
           "dev": 0
         },
         "wrist_l": {
-          "pron": 102.6,
+          "pron": 94.5,
           "flex": 0,
           "dev": 0
         }
@@ -1077,12 +1188,20 @@
       "pose": "p1"
     },
     {
+      "t": 1.38,
+      "pose": "p2"
+    },
+    {
       "t": 1.45,
       "pose": "top"
     },
     {
       "t": 1.8,
       "pose": "top"
+    },
+    {
+      "t": 2,
+      "pose": "p2"
     },
     {
       "t": 2.2,

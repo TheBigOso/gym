@@ -49,11 +49,11 @@ function hangArms(p0, sc) {
   return q;
 }
 // elbows high: wrist in front of the chest just below shoulder height, elbow up and out
-function pullArms(p0, sc, f) {
+function pullArms(p0, sc, f, pl1 = 12) {
   const p = clone(p0); p.ch.sc_r = clone(sc); p.ch.sc_l = clone(sc);
   const S = L.fk(p, C).shoulder_r.p;
   const lp = (x, y) => x + (y - x) * f, D2R = Math.PI / 180;
-  const e = lp(48, 96) * D2R, pl = lp(22, 12) * D2R;
+  const e = lp(48, 96) * D2R, pl = lp(22, pl1) * D2R;
   const E = V.add(S, V.scale([Math.sin(e) * Math.sin(pl), -Math.cos(e), Math.sin(e) * Math.cos(pl)], L.UA - 0.05));
   const d = V.norm([lp(0.3, 0.55), lp(-0.9, -0.38), lp(-0.32, -0.74)]);
   const Wt = V.add(E, V.scale(d, L.FA - 0.3));
@@ -63,18 +63,26 @@ function pullArms(p0, sc, f) {
   const q = F.solveArm(p, { wrist: Wt, elbow: E, palm, wPalm: 4, guess: { plane: 15, elev: lp(45, 86), axial: lp(40, 70), flex: lp(50, 105), pron: 150 } });
   q.__e = q.__err; return F.mirrorArm(q);
 }
+// rig v2 has a fuller chest: the elbows come a little forward of the frontal plane (plane angle) until the dumbbells clear
+// the chest by about 2.5 cm at the keys
+function pullClear(p0, sc, f) {
+  let q = null;
+  for (let pl1 = 12; pl1 <= 45; pl1 += 1) { q = pullArms(p0, sc, f, pl1); if (K.heldClear(L.fk(q, C), [{ side: 'r' }, { side: 'l' }]).d >= 2.5) break; }
+  return q;
+}
 const SC0 = { protract: 6, elevate: 0 }, SC1 = { protract: 2, elevate: 14 }, SC2 = { protract: -2, elevate: 16 };
 const poses = {
   hang: hangArms(hang.pose, SC0),
   d1: hangArms(blend(hang.pose, T5, 0.55), { protract: 4, elevate: 4 }),
   d2: hangArms(T5, SC1),
-  p1: pullArms(T5, SC2, 0.5),
-  top: pullArms(T5, SC2, 1),
+  p1: pullClear(T5, SC2, 0.5),
+  p2: pullClear(T5, SC2, 0.75),
+  top: pullClear(T5, SC2, 1),
 };
 poses.down = hangArms(T5, { protract: 3, elevate: 2 });
 for (const k in poses) delete poses[k].__e;
-const keyframes = [{ t: 0, pose: 'hang' }, { t: 0.8, pose: 'hang' }, { t: 1.0, pose: 'd1' }, { t: 1.15, pose: 'd2' }, { t: 1.3, pose: 'p1' }, { t: 1.45, pose: 'top' }, { t: 1.8, pose: 'top' },
-  { t: 2.2, pose: 'p1' }, { t: 2.5, pose: 'down' }, { t: 3.0, pose: 'hang' }, { t: 3.8, pose: 'hang' }];
+const keyframes = [{ t: 0, pose: 'hang' }, { t: 0.8, pose: 'hang' }, { t: 1.0, pose: 'd1' }, { t: 1.15, pose: 'd2' }, { t: 1.3, pose: 'p1' }, { t: 1.38, pose: 'p2' }, { t: 1.45, pose: 'top' }, { t: 1.8, pose: 'top' },
+  { t: 2.0, pose: 'p2' }, { t: 2.2, pose: 'p1' }, { t: 2.5, pose: 'down' }, { t: 3.0, pose: 'hang' }, { t: 3.8, pose: 'hang' }];
 
 const ex = H.module_(meta, C, poses, keyframes);
 ex.props = clone(F.DUMBBELLS);

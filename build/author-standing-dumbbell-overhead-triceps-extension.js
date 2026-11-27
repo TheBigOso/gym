@@ -10,15 +10,18 @@ const H = require('./families/hips');
 const T = require('./families/b3-triceps');
 const meta = require('./meta/standing-dumbbell-overhead-triceps-extension.json');
 const ENV = (k, d) => +(process.env[k] ?? d);
-const TOP_FLEX = 6, BOT_FLEX = ENV('BOT_FLEX', 112), ZW = ENV('ZW', 5.5), UA_FWD = ENV('UA_FWD', -0.12);
+// bottom elbow 105 (was 112): rig v2's neck shape sits further back, so the dumbbell behind the head bottoms out a little higher
+const TOP_FLEX = 6, BOT_FLEX = ENV('BOT_FLEX', 105), ZW = ENV('ZW', 5.5), UA_FWD = ENV('UA_FWD', -0.12);
 const OFF = JSON.parse(process.env.OFF || '[8, 7.5, 0]');           // attach.offset, as on the seated version
 const st = L.POSES.standing({ stance: 11, toeOut: 8 });
 const contacts = st.contacts;
 const base = clone(st.pose);
-Object.assign(base.ch, { sc_r: { protract: 0, elevate: 8 }, sc_l: { protract: 0, elevate: 8 }, neck_c7: { rot: 0, flex: 4 }, head_c1: { rot: 0, flex: 2 }, knee_r: { flex: 4 }, knee_l: { flex: 4 } });
+Object.assign(base.ch, { sc_r: { protract: 0, elevate: 8 }, sc_l: { protract: 0, elevate: 8 }, neck_c7: { rot: 0, flex: ENV('NECK', 4) }, head_c1: { rot: 0, flex: ENV('HEADF', 2) }, knee_r: { flex: 4 }, knee_l: { flex: 4 } });
 const Wb = L.fk(base, contacts), S = Wb.shoulder_r.p;
 const uaZ = (ZW - S[2]) / L.reach(TOP_FLEX), uaDir = V.norm([UA_FWD, Math.sqrt(1 - UA_FWD ** 2 - uaZ ** 2), uaZ]);
 const ua = T.upperArm(base, 'r', uaDir, [-1, 0, 0], [[90, 160, 0], [90, 170, 90], [90, 170, -90], [0, 170, 0]]);
+// same arm, other ISB representation, when the plane falls outside the rig limits (-60..140): (p + 180, 360 - e, a + 180)
+if (ua.ch.plane < -60 || ua.ch.plane > 140) ua.ch = { plane: r1(L.wrap(ua.ch.plane + 180)), elev: r1(360 - ua.ch.elev), axial: r1(L.wrap(ua.ch.axial + 180)) };
 base.ch.shoulder_r = ua.ch;
 function armAt(flex) {
   const q = clone(base); q.ch.elbow_r = { flex: r1(flex) };
