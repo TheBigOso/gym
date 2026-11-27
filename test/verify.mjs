@@ -72,7 +72,8 @@ check(ath.variants.includes('f'), 'female variant ships in the character data fo
 // Speed: compare animation time against the player's own frame clock (S.clock), so a slow
 // machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
 await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });
-await page.waitForTimeout(1500);
+// Wait until the player has actually drawn about a second of frames (slow CI GPUs can stall early frames), up to 20 s.
+for (let i = 0; i < 80; i++) { await page.waitForTimeout(250); const c = await page.evaluate(() => __rr.S.clock - window.__c0); if (c > 1.0 && i >= 5) break; }
 const sp = await page.evaluate(() => { const S = __rr.S; const c = S.clock - window.__c0; const out = { r: S.t / c, c, wall: (performance.now() - window.__w0) / 1000 }; S.playing = false; return out; });
 check(sp.c > 0.3 && Math.abs(sp.r - 1.5) < 0.05, `1.5× speed plays at ${sp.r.toFixed(2)}× of the player clock (${sp.c.toFixed(2)} s of frames in ${sp.wall.toFixed(2)} s wall)`);
 check(!errors.length, `no page errors ${errors.length ? JSON.stringify(errors) : ''}`);
