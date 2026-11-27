@@ -47,11 +47,11 @@ const matMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshSta
 const propGroup = new THREE.Group(); propGroup.name = 'Props'; world.add(propGroup);
 // Male is the default; the female variant ships in the data for a later switch (__rr.setAthlete('f')).
 function setAthlete(k) { if (!RR_DATA.character.variants[k] || k === A.key) return; scene.remove(A.mesh); A.mesh.geometry.dispose(); A = makeAthlete(k); scene.add(A.mesh); world.scale.setScalar(A.sLeg); loadExercise(S.ex); }
-const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf2d230, hurdle: 0xe0483e, bench: 0x3a3f48, dumbbell: 0x2b2f36, kettlebell: 0x2b2f36, wall: 0x6e7680 };
+const PROP_COLOR = { box: 0x8a6f52, cone: 0xff7a1a, stick: 0xe8c547, ladder: 0xf2d230, hurdle: 0xe0483e, bench: 0x3a3f48, dumbbell: 0x2b2f36, kettlebell: 0x2b2f36, barbell: 0x2b2f36, wall: 0x6e7680, rack: 0x262a31, pullup_bar: 0x262a31, cable: 0x2a2e35 };
 // Equipment from the module's props list (the mat is drawn separately). Units: cm in, metres out.
 function buildProps(props, group) {
   for (const pr of props || []) {
-    if (pr.kind === 'mat' || (pr.attach && pr.attach.joint)) continue; // held props ride on the athlete's hand (see heldProps)
+    if (pr.kind === 'mat' || (pr.attach && pr.attach.joint)) continue; // held props ride on the athlete's hand (see placeHeld)
     const [cx, cy, cz] = (pr.center || [0, 0, 0]).map((v) => v * U), [sx, sy, sz] = (pr.size || [30, 30, 30]).map((v) => v * U);
     const mat = new THREE.MeshStandardMaterial({ color: pr.color ? new THREE.Color(pr.color) : PROP_COLOR[pr.kind] || 0x888888, roughness: 0.7 });
     let m;
@@ -71,6 +71,33 @@ function buildProps(props, group) {
       else { const foot = new THREE.Mesh(new THREE.BoxGeometry(0.05, sy - pad, 0.05), legM); foot.position.set(dir * (sx / 2 + bl * 0.9), (sy - pad) / 2, 0); m.add(foot); }
       m.position.set(cx, cy, cz);
     }
+    else if (pr.kind === 'rack') { // squat rack / power rack: two uprights (z = +-size[2]/2) with J-hooks at hookY, optional safeties at safetyY
+      m = new THREE.Group(); const post = 0.06, hook = (pr.hookY ?? 140) * U, st = steelMat();
+      for (const z of [-sz / 2, sz / 2]) {
+        for (const x of sx > 0.2 ? [-sx / 2, sx / 2] : [0]) { const up = new THREE.Mesh(new THREE.BoxGeometry(post, sy, post), mat); up.position.set(x, sy / 2, z); m.add(up); }
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(Math.max(sx, 0.5) + post, 0.04, post * 1.4), mat); foot.position.set(0, 0.02, z); m.add(foot);
+        const j = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.03, 0.05), st); j.position.set((sx > 0.2 ? sx / 2 : 0) + 0.05, hook - 0.015, z); m.add(j);
+        const lip = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.05), st); lip.position.set((sx > 0.2 ? sx / 2 : 0) + 0.095, hook + 0.01, z); m.add(lip);
+        if (pr.safetyY != null) { const sf = new THREE.Mesh(new THREE.BoxGeometry(Math.max(sx, 0.5) + 0.3, 0.04, 0.05), st); sf.position.set(0.15, pr.safetyY * U, z); m.add(sf); }
+      }
+      if (sx > 0.2) for (const x of [-sx / 2, sx / 2]) { const top = new THREE.Mesh(new THREE.BoxGeometry(post, post, sz + post), mat); top.position.set(x, sy - post / 2, 0); m.add(top); }
+      m.position.set(cx, cy, cz);
+    }
+    else if (pr.kind === 'pullup_bar') { // free-standing pull-up bar: posts at z = +-size[2]/2, a 3.2 cm bar along Z at height size[1]
+      m = new THREE.Group(); const st = steelMat();
+      for (const z of [-sz / 2, sz / 2]) { const up = new THREE.Mesh(new THREE.BoxGeometry(0.06, sy + 0.04, 0.06), mat); up.position.set(0, (sy + 0.04) / 2, z); m.add(up); const foot = new THREE.Mesh(new THREE.BoxGeometry(Math.max(sx, 0.9), 0.04, 0.08), mat); foot.position.set(0, 0.02, z); m.add(foot); }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, sz, 16), st); bar.rotation.x = Math.PI / 2; bar.position.set(0, sy, 0); m.add(bar);
+      m.position.set(cx, cy, cz);
+    }
+    else if (pr.kind === 'cable') { // cable tower: column at center, pulley at anchor (prop space)
+      m = new THREE.Group(); const col = new THREE.Mesh(new THREE.BoxGeometry(Math.max(sx, 0.14), sy || 2.1, Math.max(sz, 0.14)), mat); col.position.set(0, (sy || 2.1) / 2, 0); m.add(col);
+      if (pr.anchor) { // pulley wheel at the anchor, on an arm from the column (any horizontal direction)
+        const a = pr.anchor.map((v) => v * U), dx = a[0] - cx, dz = a[2] - cz, len = Math.hypot(dx, dz);
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.025, 20), steelMat()); wheel.rotation.x = Math.PI / 2; wheel.position.set(dx, a[1] - cy, dz); m.add(wheel);
+        if (len > 0.03) { const arm = new THREE.Mesh(new THREE.BoxGeometry(len + 0.04, 0.04, 0.04), mat); arm.position.set(dx / 2, a[1] - cy, dz / 2); arm.rotation.y = -Math.atan2(dz, dx); m.add(arm); }
+      }
+      m.position.set(cx, cy, cz);
+    }
     else { m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat); m.position.set(cx, cy + sy / 2, cz); }
     if (pr.rotY) m.rotation.y = pr.rotY * R.DEG;
     m.name = pr.id; m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -78,29 +105,141 @@ function buildProps(props, group) {
   }
 }
 
-// Held props (dumbbells): built along +X, re-parented each frame to the athlete hand that holds them (the side switch swaps hands)
+// ---------------- Held and attached equipment ----------------
+// One-hand items (attach.joint only) ride on that hand's bone: dumbbell, kettlebell (grip 'handle'), cable D-handle,
+// band handle. Two-hand items (attach.joint + attach.with) are placed each frame between both hands: barbell, kettlebell
+// held by the handle in both hands, cable bar or rope, a band held in both hands. Cables and bands are drawn from their anchor (prop
+// space, or a rig joint via anchorJoint) to the hand(s). All meshes are built along +X with the grip at the origin.
+const steelMat = () => new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.3, metalness: 0.9 });
+const ironMat = (pr, c) => new THREE.MeshStandardMaterial({ color: pr.color ? new THREE.Color(pr.color) : c, roughness: 0.55, metalness: 0.35 });
+const shade = (g) => { g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); return g; };
+const cylX = (r, len, mat, seg = 16) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), mat); m.rotation.z = Math.PI / 2; return m; };
 function dumbbellMesh(pr) {
   const L = ((pr.size && pr.size[0]) || 32) * U, D = ((pr.size && pr.size[1]) || 12) * U, hl = Math.min(0.14, L * 0.45), plate = (L - hl) / 2;
-  const iron = new THREE.MeshStandardMaterial({ color: pr.color ? new THREE.Color(pr.color) : PROP_COLOR.dumbbell, roughness: 0.55, metalness: 0.35 });
-  const steel = new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.3, metalness: 0.9 });
+  const iron = ironMat(pr, PROP_COLOR.dumbbell), g = new THREE.Group(); g.name = pr.id;
+  g.add(cylX(0.016, hl + 0.02, steelMat()));
+  for (const sgn of [-1, 1]) { const h = cylX(D / 2, plate, iron, 6); h.position.x = sgn * (hl / 2 + plate / 2); g.add(h); }
+  return shade(g);
+}
+// Olympic barbell: 220 cm, 2.8 cm shaft, sleeves from 65.5 cm out, plates (size[1] diameter, default 45) from 70 cm out.
+function barbellMesh(pr) {
+  const L = ((pr.size && pr.size[0]) || 220) * U, D = ((pr.size && pr.size[1]) || 45) * U, n = pr.plates ?? 1, st = steelMat();
+  const g = new THREE.Group(); g.name = pr.id; g.add(cylX(0.014, 1.31, st));
+  const iron = ironMat(pr, PROP_COLOR.barbell);
+  for (const sgn of [-1, 1]) {
+    const sl = cylX(0.025, L / 2 - 0.655, st); sl.position.x = sgn * (0.655 + (L / 2 - 0.655) / 2); g.add(sl);
+    const col = cylX(0.04, 0.03, st); col.position.x = sgn * 0.67; g.add(col);
+    for (let i = 0; i < n; i++) { const pl = cylX(D / 2, 0.055, iron, 32); pl.position.x = sgn * (0.715 + i * 0.06); g.add(pl); }
+    if (n) { const clamp = cylX(0.035, 0.03, st); clamp.position.x = sgn * (0.7 + n * 0.06); g.add(clamp); }
+  }
+  return shade(g);
+}
+// Kettlebell: handle along X at the origin (the grip), bell hanging below along -Y (16 kg: 21 cm bell, 15 cm wide handle)
+function kettlebellMesh(pr) {
+  const D = ((pr.size && pr.size[1]) || 21) * U, W = ((pr.size && pr.size[0]) || 15) * U, iron = ironMat(pr, PROP_COLOR.kettlebell);
   const g = new THREE.Group(); g.name = pr.id;
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, hl + 0.02, 16), steel); handle.rotation.z = Math.PI / 2; g.add(handle);
-  for (const sgn of [-1, 1]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(D / 2, D / 2, plate, 6), iron); h.rotation.z = Math.PI / 2; h.position.x = sgn * (hl / 2 + plate / 2); g.add(h); }
-  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  return g;
+  g.add(cylX(0.018, W - 0.02, iron));
+  for (const sgn of [-1, 1]) { const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.07, 12), iron); horn.position.set(sgn * (W / 2 - 0.01), -0.035, 0); horn.rotation.z = sgn * 0.25; g.add(horn); }
+  const bell = new THREE.Mesh(new THREE.SphereGeometry(D / 2, 28, 20), iron); bell.scale.y = 0.92; bell.position.y = -0.06 - D * 0.42; g.add(bell);
+  return shade(g);
+}
+// Cable attachments: D-handle (one hand), straight bar (two hands, size[0] long, default 50); a rope is drawn as strands
+function cableHandleMesh(pr) {
+  const st = steelMat(), rub = new THREE.MeshStandardMaterial({ color: 0x23262c, roughness: 0.8 }), g = new THREE.Group(); g.name = pr.id;
+  if ((pr.attachment || 'handle') === 'bar') { g.add(cylX(0.015, ((pr.size && pr.size[0]) || 50) * U, st)); return shade(g); }
+  if (pr.attachment === 'rope') return g; // strands are lines
+  g.add(cylX(0.017, 0.13, rub));
+  const tri = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.006, 8, 3, Math.PI * 2), st); tri.rotation.z = Math.PI / 2; tri.position.y = 0.045; g.add(tri);
+  return shade(g);
+}
+function heldMesh(pr) {
+  if (pr.kind === 'barbell') return barbellMesh(pr);
+  if (pr.kind === 'kettlebell') return kettlebellMesh(pr);
+  if (pr.kind === 'cable') return cableHandleMesh(pr);
+  if (pr.kind === 'band') { const g = new THREE.Group(); g.name = pr.id; return g; }
+  return dumbbellMesh(pr);
+}
+const isHeld = (pr) => !!(pr.attach && pr.attach.joint);
+const HELD_KINDS = new Set(['dumbbell', 'barbell', 'kettlebell', 'cable', 'band']);
+const LINE_COLOR = { cable: 0xc9ced6, band: 0x3faa5a, rope: 0x2b2f36 }; // steel cable stands out against the tower and the backdrop
+// a unit cylinder (Y up, 1 long) that `setLine` stretches between two points
+function lineMesh(pr, r) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10), new THREE.MeshStandardMaterial({ color: pr.kind === 'band' && pr.color ? new THREE.Color(pr.color) : LINE_COLOR[pr.kind] || 0x30343a, roughness: pr.kind === 'cable' ? 0.35 : 0.7, metalness: pr.kind === 'cable' ? 0.7 : 0 }));
+  m.castShadow = true; return m;
+}
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _u = new THREE.Vector3(0, 1, 0);
+function stretchTo(m, a, b) { _a.subVectors(b, a); const len = Math.max(1e-4, _a.length()); m.position.copy(a).addScaledVector(_a, 0.5); m.quaternion.setFromUnitVectors(_u, _a.multiplyScalar(1 / len)); m.scale.set(1, len, 1); }
+function makeHeldItem(pr) {
+  const side = pr.attach.joint.endsWith('_l') ? 'l' : 'r', two = !!pr.attach.with, it = { pr, side, two, mesh: heldMesh(pr), lines: [] };
+  const anchored = pr.anchor || pr.anchorJoint, rope = pr.kind === 'cable' && pr.attachment === 'rope';
+  if (pr.kind === 'cable' && anchored) it.lines.push(lineMesh(pr, 0.0035));
+  if (rope) it.lines.push(lineMesh({ kind: 'rope' }, 0.012), lineMesh({ kind: 'rope' }, 0.012));
+  if (pr.kind === 'band') { const r = 0.006; if (anchored) { it.lines.push(lineMesh(pr, r)); if (two) it.lines.push(lineMesh(pr, r)); } else if (two) it.lines.push(lineMesh(pr, r)); }
+  return it;
 }
 let held = [];
+const freeGroup = new THREE.Group(); freeGroup.name = 'HeldFree'; scene.add(freeGroup); // two-hand items and lines, metres, scene space
 function buildHeld(props) {
-  for (const h of held) h.mesh.removeFromParent();
-  held = (props || []).filter((pr) => pr.attach && pr.attach.joint && pr.kind === 'dumbbell').map((pr) => ({ pr, side: pr.attach.joint.endsWith('_l') ? 'l' : 'r', mesh: dumbbellMesh(pr) }));
+  for (const h of held) { h.mesh.removeFromParent(); h.lines.forEach((l) => l.removeFromParent()); }
+  held = (props || []).filter((pr) => isHeld(pr) && HELD_KINDS.has(pr.kind)).map(makeHeldItem);
+  for (const h of held) { if (h.two) freeGroup.add(h.mesh); h.lines.forEach((l) => freeGroup.add(l)); }
 }
-// grip amounts per displayed hand, and placing each held prop in its hand
-function gripsFor(mirror) { const g = {}; for (const h of held) g[mirror ? (h.side === 'r' ? 'l' : 'r') : h.side] = 1; return g; }
-function placeHeld(a, list, mirror) {
+// grip amounts per displayed hand
+let staticGrip = false; // hands closed on a static bar (pull-up bar)
+function gripsFor(mirror, list = held, closeAll = staticGrip) { const g = closeAll ? { r: 1, l: 1 } : {}; for (const h of list) { const sw = (s) => (mirror ? (s === 'r' ? 'l' : 'r') : s); g[sw(h.side)] = 1; if (h.two) g[sw(h.side === 'r' ? 'l' : 'r')] = 1; } return g; }
+const GRIP_DEFAULT = { barbell: 'bar', kettlebell: 'handle', cable: 'handle', band: 'handle', dumbbell: 'handle' };
+// world position and orientation of the grip point of displayed hand ds
+function gripWorld(a, ds, grip, off) {
+  const gf = a.gripFrame(ds, grip, off); gf.bone.updateWorldMatrix(true, false);
+  const p = gf.bone.localToWorld(gf.pos.clone()), q = gf.bone.getWorldQuaternion(new THREE.Quaternion()).multiply(gf.quatFull);
+  return { p, q, gf };
+}
+// anchor point in scene space (metres): a fixed point in rig space (prop coordinates) or the current position of a rig
+// joint, mirrored with the displayed side. rigSpace is the group whose local units are rig cm * U (viewer: world group)
+function anchorWorld(pr, W, mirror, rigSpace) {
+  const p = pr.anchorJoint && W && W[pr.anchorJoint] ? toV3(W[pr.anchorJoint].p, mirror) : toV3(pr.anchor || [0, 0, 0], mirror);
+  rigSpace.updateWorldMatrix(true, false); return rigSpace.localToWorld(p);
+}
+const _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _x = new THREE.Vector3(), _y = new THREE.Vector3(), _z = new THREE.Vector3();
+// place every held item for this frame. one-hand items are parented to the hand bone; two-hand items and lines are set in
+// scene space (or, for the export, in `space` local coordinates)
+function placeHeld(a, list, mirror, W, rigSpace = world, space = null, moveOneHand = true) {
+  const toSpace = (v) => (space ? space.worldToLocal(v.clone()) : v);
+  const spaceQ = space ? space.getWorldQuaternion(new THREE.Quaternion()).invert() : null;
   for (const h of list) {
-    const ds = mirror ? (h.side === 'r' ? 'l' : 'r') : h.side, gf = a.gripFrame(ds, h.pr.attach.grip || 'handle', h.pr.attach.offset);
-    if (h.mesh.parent !== gf.bone) gf.bone.add(h.mesh);
-    h.mesh.position.copy(gf.pos); h.mesh.quaternion.copy(gf.quat);
+    const pr = h.pr, grip = pr.attach.grip || GRIP_DEFAULT[pr.kind] || 'handle', ds = mirror ? (h.side === 'r' ? 'l' : 'r') : h.side;
+    let attachPts = [];
+    if (!h.two && !moveOneHand) { attachPts = [gripWorld(a, ds, grip, pr.attach.offset).p]; }
+    else if (!h.two) {
+      const gf = a.gripFrame(ds, grip, pr.attach.offset);
+      if (h.mesh.parent !== gf.bone) gf.bone.add(h.mesh);
+      h.mesh.position.copy(gf.pos); h.mesh.quaternion.copy(pr.kind === 'dumbbell' ? gf.quat : gf.quatFull);
+      if (h.lines.length) { h.mesh.updateWorldMatrix(true, false); attachPts = [h.mesh.getWorldPosition(new THREE.Vector3())]; }
+    } else {
+      const os = ds === 'r' ? 'l' : 'r', g1 = gripWorld(a, ds, grip, pr.attach.offset), g2 = gripWorld(a, os, grip, pr.attach.offset);
+      const pR = ds === 'r' ? g1.p : g2.p, pL = ds === 'r' ? g2.p : g1.p, c = pR.clone().add(pL).multiplyScalar(0.5);
+      _x.subVectors(pR, pL).normalize();
+      if (pr.kind === 'kettlebell') { // the bell hangs past the knuckles of both hands (in line with the arms in a swing)
+        const y1 = new THREE.Vector3(0, 1, 0).applyQuaternion(g1.q), y2 = new THREE.Vector3(0, 1, 0).applyQuaternion(g2.q);
+        _y.copy(y1).add(y2); _y.addScaledVector(_x, -_y.dot(_x)); if (_y.lengthSq() < 1e-6) _y.set(0, 1, 0); _y.normalize();
+      } else _y.set(0, 1, 0).addScaledVector(_x, -_x.y).normalize();
+      _z.crossVectors(_x, _y);
+      _q.setFromRotationMatrix(_m.makeBasis(_x, _y, _z));
+      let pos = c;
+      h.mesh.position.copy(toSpace(pos)); h.mesh.quaternion.copy(spaceQ ? spaceQ.clone().multiply(_q) : _q);
+      attachPts = [pR, pL]; h._c = c;
+    }
+    if (!h.lines.length) continue;
+    const anc = pr.anchor || pr.anchorJoint ? anchorWorld(pr, W, mirror, rigSpace) : null;
+    const rope = pr.kind === 'cable' && pr.attachment === 'rope';
+    if (pr.kind === 'cable') {
+      const end = h.two ? (rope ? h._c.clone().addScaledVector(anc ? anc.clone().sub(h._c).normalize() : _y, 0.16) : h._c) : attachPts[0];
+      let i = 0; if (anc) stretchTo(h.lines[i++], toSpace(anc), toSpace(end));
+      if (rope) { stretchTo(h.lines[i++], toSpace(end), toSpace(attachPts[0])); stretchTo(h.lines[i++], toSpace(end), toSpace(attachPts[1])); }
+    } else if (pr.kind === 'band') {
+      if (anc) { stretchTo(h.lines[0], toSpace(anc), toSpace(attachPts[0])); if (h.two) stretchTo(h.lines[1], toSpace(anc), toSpace(attachPts[1])); }
+      else if (h.two) stretchTo(h.lines[0], toSpace(attachPts[0]), toSpace(attachPts[1]));
+    }
   }
 }
 
@@ -129,11 +268,11 @@ function loadExercise(i) {
   // framing from samples
   const box = new THREE.Box3();
   for (let k = 0; k < 24; k++) { const W = R.evalPose(rig, tl.pose((k / 24) * D), EX.contacts); for (const id in W) box.expandByPoint(toV3(W[id].p, false)); box.expandByPoint(toV3(V.add(W.head_c1.p, [0, 17, 0]), false)); } // joints stop at the skull base: include the top of the head (#74)
-  for (const pr of EX.props || []) { if (pr.kind === 'mat') continue; const c = pr.center || [0, 0, 0], sz = pr.size || [0, 0, 0]; box.expandByPoint(toV3([c[0] - sz[0] / 2, c[1], c[2] - sz[2] / 2], false)); box.expandByPoint(toV3([c[0] + sz[0] / 2, c[1] + sz[1], c[2] + sz[2] / 2], false)); }
+  for (const pr of EX.props || []) { if (pr.kind === 'mat' || isHeld(pr)) continue; const c = pr.center || [0, 0, 0], sz = pr.size || [0, 0, 0]; box.expandByPoint(toV3([c[0] - sz[0] / 2, c[1], c[2] - sz[2] / 2], false)); box.expandByPoint(toV3([c[0] + sz[0] / 2, c[1] + sz[1], c[2] + sz[2] / 2], false)); }
   box.getCenter(center).multiplyScalar(A.sLeg); const bs = box.getSize(new THREE.Vector3()); radius = (bs.length() / 2) * A.sLeg; halfH = (bs.y / 2) * A.sLeg;
   const mat = EX.props.find((p) => p.kind === 'mat');
   matMesh.visible = !!mat; if (mat) { matMesh.scale.set(mat.size[0] * U, Math.max(0.004, mat.size[1] * U), mat.size[2] * U); matMesh.position.set(mat.center[0] * U, matMesh.scale.y / 2, mat.center[2] * U); }
-  propGroup.clear(); buildProps(EX.props, propGroup); buildHeld(EX.props); propGroup.scale.z = S.side === 'L' ? -1 : 1;
+  propGroup.clear(); buildProps(EX.props, propGroup); buildHeld(EX.props); staticGrip = (EX.props || []).some((p) => p.kind === 'pullup_bar'); propGroup.scale.z = S.side === 'L' ? -1 : 1;
   S.t = Math.min(S.t, D - 0.01);
   buildPanel(); rebuildGuides(); setCamera(EX.camera.default);
 }
@@ -175,7 +314,7 @@ let lastW = null, lastPose = null;
 function update() {
   const pose = tl.pose(S.t), W = R.evalPose(rig, pose, EX.contacts), mirror = S.side === 'L';
   lastW = W; lastPose = pose;
-  A.pose(W, mirror, ikWeights(pose, EX), gripsFor(mirror)); placeHeld(A, held, mirror);
+  A.pose(W, mirror, ikWeights(pose, EX), gripsFor(mirror)); placeHeld(A, held, mirror, W);
   // muscles: each shown group glows in its role colour, brighter as it works harder
   const glow = {};
   for (const id in roleOf) { const role = roleOf[id]; if (!(S.show[role] || S.hover === id)) continue; glow[id] = { a: S.hover === id ? 1 : 0.3 + 0.7 * tl.activation(id, S.t), role }; }
@@ -219,13 +358,15 @@ function applyBackdrop() {
 }
 
 /* ---------------- glTF export ---------------- */
-function bakeClip(ex, a, mirror, fps, grips, extra) {
+function bakeClip(ex, a, mirror, fps, grips, extra, onFrame) {
   const tlx = R.buildTimeline(ex), Dx = tlx.duration, n = Math.round(Dx * fps) + 1, times = new Float32Array(n);
   const q = a.bones.map(() => new Float32Array(n * 4)), rootP = new Float32Array(n * 3), iRoot = a.B.indexOf('pelvis');
   for (let k = 0; k < n; k++) {
     const t = Math.min(Dx, k / fps); times[k] = t; const pz = tlx.pose(t);
-    a.pose(R.evalPose(rig, pz, ex.contacts), mirror, ikWeights(pz, ex), grips ? grips(mirror) : null);
+    const Wz = R.evalPose(rig, pz, ex.contacts);
+    a.pose(Wz, mirror, ikWeights(pz, ex), grips ? grips(mirror) : null);
     a.bones.forEach((b, i) => q[i].set([b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w], k * 4));
+    if (onFrame) onFrame(k, n, mirror, Wz);
     const p = a.bones[iRoot].position; rootP.set([p.x, p.y, p.z], k * 3);
   }
   const tracks = a.bones.map((b, i) => new THREE.QuaternionKeyframeTrack(`${b.name}.quaternion`, times, q[i]));
@@ -242,18 +383,52 @@ async function exportGLB(i) {
   armature.rotation.y = -Math.PI / 2; // figure faces +X in rig space; glTF convention faces +Z
   armature.add(a.mesh); armature.userData = { rig: RIG.rigId, character: RR_DATA.character.id, exercise: ex.exercise.id, units: 'meters', note: 'Clips: <id>_right, <id>_left. Generated by RepRig.' };
   const p0 = R.buildTimeline(ex).pose(0); a.pose(R.evalPose(rig, p0, ex.contacts), false, ikWeights(p0, ex));
-  const props = new THREE.Group(); props.name = 'Props'; props.scale.setScalar(a.sLeg); buildProps(ex.props, props); armature.add(props);
-  const heldX = (ex.props || []).filter((pr) => pr.attach && pr.attach.joint && pr.kind === 'dumbbell').map((pr) => ({ pr, side: pr.attach.joint.endsWith('_l') ? 'l' : 'r', mesh: dumbbellMesh(pr) }));
-  placeHeld(a, heldX, false); // static parenting to the hand bones; the clips move them with the hands
-  // one-sided exercises export a left clip too: a mirrored copy of each held prop sits in the other hand, and each clip
-  // shows only its own copies (scale tracks), so the dumbbell is always in the working hand
-  const heldM = ex.exercise.authoredSide === 'bilateral' ? [] : heldX.map((h) => ({ ...h, mesh: dumbbellMesh(h.pr) }));
-  heldX.forEach((h) => { h.mesh.name = `${h.pr.id}_right`; }); heldM.forEach((h) => { h.mesh.name = `${h.pr.id}_left`; });
-  placeHeld(a, heldM, true);
-  const showTracks = (mirror) => heldM.length ? [...heldX.map((h) => [h.mesh.name, mirror ? 0 : 1]), ...heldM.map((h) => [h.mesh.name, mirror ? 1 : 0])].map(([n, v]) => new THREE.VectorKeyframeTrack(`${n}.scale`, [0], [v, v, v])) : [];
-  const gripsX = (mirror) => { const g = {}; for (const h of heldX) g[mirror ? (h.side === 'r' ? 'l' : 'r') : h.side] = 1; return g; };
+  const props = new THREE.Group(); props.name = 'Props'; props.scale.setScalar(a.sLeg); armature.add(props);
+  const oneSided = ex.exercise.authoredSide !== 'bilateral';
+  // static props; on one-sided exercises a prop off the midline gets a mirrored twin and each clip shows only its own copy
+  const lopsided = (pr) => !isHeld(pr) && pr.kind !== 'mat' && ((pr.center && Math.abs(pr.center[2]) > 0.01) || (pr.anchor && Math.abs(pr.anchor[2]) > 0.01) || pr.rotY);
+  const statics = (ex.props || []).filter((pr) => !isHeld(pr));
+  buildProps(statics, props);
+  const twins = oneSided ? statics.filter(lopsided) : [];
+  if (twins.length) {
+    const mz = (v) => (v ? [v[0], v[1], -v[2]] : v);
+    buildProps(twins.map((pr) => ({ ...pr, id: `${pr.id}_left`, center: mz(pr.center), anchor: mz(pr.anchor), rotY: pr.rotY ? -pr.rotY : pr.rotY })), props);
+    for (const pr of twins) { const o = props.getObjectByName(pr.id); if (o) o.name = `${pr.id}_right`; }
+  }
+  // held items: one-hand items ride on the hand bones (static parenting; the clips move them); one-sided exercises get a
+  // mirrored copy in the other hand. Two-hand items and cable / band lines are separate nodes with baked tracks per clip.
+  const items = (ex.props || []).filter((pr) => isHeld(pr) && HELD_KINDS.has(pr.kind)).map(makeHeldItem);
+  const oneHand = items.filter((h) => !h.two), freeItems = items.filter((h) => h.two || h.lines.length);
+  placeHeld(a, oneHand.map((h) => ({ ...h, lines: [] })), false, null, props);
+  const heldM = oneSided ? oneHand.map((h) => ({ ...h, mesh: heldMesh(h.pr), lines: [] })) : [];
+  if (oneSided) { oneHand.forEach((h) => { h.mesh.name = `${h.pr.id}_right`; }); heldM.forEach((h) => { h.mesh.name = `${h.pr.id}_left`; }); }
+  placeHeld(a, heldM, true, null, props);
+  const freeNodes = [];
+  for (const h of freeItems) { if (h.two) { armature.add(h.mesh); freeNodes.push(h.mesh); } h.lines.forEach((l, i) => { l.name = `${h.pr.id}_line${i}`; armature.add(l); freeNodes.push(l); }); }
+  const visTracks = (mirror) => {
+    const pairs = [];
+    if (heldM.length) pairs.push(...oneHand.map((h) => [h.mesh.name, mirror ? 0 : 1]), ...heldM.map((h) => [h.mesh.name, mirror ? 1 : 0]));
+    for (const pr of twins) pairs.push([`${pr.id}_right`, mirror ? 0 : 1], [`${pr.id}_left`, mirror ? 1 : 0]);
+    return pairs.map(([nm, v]) => new THREE.VectorKeyframeTrack(`${nm}.scale`, [0], [v, v, v]));
+  };
+  const gripsX = (mirror) => gripsFor(mirror, items, (ex.props || []).some((p) => p.kind === 'pullup_bar'));
   armature.updateMatrixWorld(true);
-  const clips = ex.exercise.authoredSide === 'bilateral' ? [bakeClip(ex, a, false, 30, gripsX, showTracks)] : [bakeClip(ex, a, false, 30, gripsX, showTracks), bakeClip(ex, a, true, 30, gripsX, showTracks)];
+  // per-frame placement of the free nodes, recorded per clip
+  const rec = {};
+  const onFrame = freeNodes.length ? (k, n, mirror, Wz) => {
+    const key = mirror ? 'L' : 'R';
+    if (k === 0) rec[key] = { times: new Float32Array(n), data: freeNodes.map(() => ({ p: new Float32Array(n * 3), q: new Float32Array(n * 4), s: new Float32Array(n * 3) })) };
+    armature.updateMatrixWorld(true);
+    placeHeld(a, freeItems, mirror, Wz, props, armature, false);
+    freeNodes.forEach((nd, i) => { const d = rec[key].data[i]; d.p.set([nd.position.x, nd.position.y, nd.position.z], k * 3); d.q.set([nd.quaternion.x, nd.quaternion.y, nd.quaternion.z, nd.quaternion.w], k * 4); d.s.set([nd.scale.x, nd.scale.y, nd.scale.z], k * 3); });
+  } : null;
+  const extra = (mirror) => {
+    const out = visTracks(mirror), r = rec[mirror ? 'L' : 'R'];
+    if (r) { const fpsT = (k) => k / 30; const n = r.data.length ? r.data[0].p.length / 3 : 0, times = new Float32Array(n); const D0 = R.buildTimeline(ex).duration; for (let k = 0; k < n; k++) times[k] = Math.min(D0, fpsT(k));
+      freeNodes.forEach((nd, i) => { const d = r.data[i]; out.push(new THREE.VectorKeyframeTrack(`${nd.name}.position`, times, d.p), new THREE.QuaternionKeyframeTrack(`${nd.name}.quaternion`, times, d.q), new THREE.VectorKeyframeTrack(`${nd.name}.scale`, times, d.s)); }); }
+    return out;
+  };
+  const clips = !oneSided ? [bakeClip(ex, a, false, 30, gripsX, extra, onFrame)] : [bakeClip(ex, a, false, 30, gripsX, extra, onFrame), bakeClip(ex, a, true, 30, gripsX, extra, onFrame)];
   if (clips.length === 1) clips[0].name = ex.exercise.id;
   const buf = await new GLTFExporter().parseAsync(armature, { binary: true, animations: clips });
   a.mesh.geometry.dispose();

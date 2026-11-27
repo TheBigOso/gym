@@ -90,7 +90,9 @@
               "stick",
               "ladder",
               "hurdle",
-              "wall"
+              "wall",
+              "rack",
+              "pullup_bar"
             ]
           },
           "center": {
@@ -111,10 +113,15 @@
               "grip": {
                 "enum": [
                   "handle",
+                  "bar",
                   "goblet",
                   "end"
                 ],
-                "description": "How a held prop sits in the hand (attach.joint wrist_r / wrist_l)."
+                "description": "How a held prop sits in the hand (attach.joint wrist_r / wrist_l). bar: a barbell in the heel of the palm (the default for a barbell); handle: in the fingers (dumbbell, kettlebell, cable handle)."
+              },
+              "with": {
+                "type": "string",
+                "description": "Second hand for a two-hand item (wrist_l / wrist_r): barbell, kettlebell in both hands (by the handle), cable bar or rope, band held in both hands. The item sits between the two grips."
               }
             }
           },
@@ -140,10 +147,40 @@
               1
             ],
             "description": "bench: which end of the seat the back pad hinges at (-1 = -X end, the default)"
+          },
+          "anchor": {
+            "$ref": "#/$defs/vec3",
+            "description": "cable: the pulley point; band: where the band is fixed (cm, prop space). A cable prop without attach is the tower drawn at center with its pulley at anchor."
+          },
+          "anchorJoint": {
+            "type": "string",
+            "description": "band: anchor that moves with a rig joint (e.g. toe_r for a band under the foot) instead of a fixed anchor."
+          },
+          "attachment": {
+            "enum": [
+              "handle",
+              "bar",
+              "rope"
+            ],
+            "description": "cable: the attachment in the hand(s) (default handle; bar and rope are two-hand)."
+          },
+          "hookY": {
+            "type": "number",
+            "description": "rack: height of the J-hooks (cm, default 140)"
+          },
+          "safetyY": {
+            "type": "number",
+            "description": "rack: height of the safety arms (cm); omit for none"
+          },
+          "plates": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "barbell: plates per side (default 1); size[1] is the plate diameter (default 45)"
           }
         }
       },
-      "description": "Equipment drawn in the player and exported to glTF. center = floor-contact point (cm); size = [x, y, z] extents (cm). cone: size[1] is height, size[0] base diameter; stick: size[0] is length, size[1] diameter."
+      "description": "Equipment drawn in the player and exported to glTF. center = floor-contact point (cm); size = [x, y, z] extents (cm). cone: size[1] is height, size[0] base diameter; stick: size[0] is length, size[1] diameter. rack: size [depth, height, width], uprights at z = +-width/2. pullup_bar: bar along Z at height size[1]. Held items: attach.joint (+ attach.with for two hands)."
     },
     "contacts": {
       "type": "array",
@@ -295,7 +332,7 @@
     },
     "activation": {
       "type": "object",
-      "description": "Per-muscle activation 0\u20131 over time: [[t, value], ...]. Keys are rig muscle ids with _r/_l suffix.",
+      "description": "Per-muscle activation 0–1 over time: [[t, value], ...]. Keys are rig muscle ids with _r/_l suffix.",
       "additionalProperties": {
         "type": "array",
         "items": {
@@ -453,7 +490,7 @@
         },
         "ch": {
           "type": "object",
-          "description": "Anatomical joint channels. spine/neck: flex,latFlex,rot \u00b7 clavicle(sc): protract,elevate \u00b7 shoulder: plane,elev,axial (ISB globe) \u00b7 elbow/knee: flex \u00b7 wrist: pron,flex,dev \u00b7 hip: flex,abd,rot \u00b7 ankle: dorsi",
+          "description": "Anatomical joint channels. spine/neck: flex,latFlex,rot · clavicle(sc): protract,elevate · shoulder: plane,elev,axial (ISB globe) · elbow/knee: flex · wrist: pron,flex,dev · hip: flex,abd,rot · ankle: dorsi",
           "propertyNames": {
             "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
           },

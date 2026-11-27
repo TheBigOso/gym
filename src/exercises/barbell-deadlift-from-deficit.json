@@ -1,0 +1,2527 @@
+{
+  "schemaVersion": "1.0.0",
+  "rig": {
+    "ref": "reprig-studio-clay-v2"
+  },
+  "exercise": {
+    "id": "barbell-deadlift-from-deficit",
+    "name": "Barbell Deadlift from Deficit",
+    "aliases": [
+      "Deficit deadlift",
+      "Barbell deficit deadlift",
+      "Deadlift off a platform"
+    ],
+    "reference": {
+      "source": "GymVisual",
+      "title": "Barbell Deadlift from Deficit",
+      "url": "https://gymvisual.com/videos/14656-barbell-deadlift-from-deficit.html",
+      "productRef": "14656",
+      "listing": "Video (title from the listing URL; the page could not be read from this environment, gymvisual.com is blocked by the proxy, so the movement is taken from the exercise name and standard coaching)",
+      "note": "Reference used only to identify the movement. No GymVisual media is stored here; this rig, model and animation are original."
+    },
+    "type": "Strength",
+    "bodyPart": "Hips (glutes) and back of the thighs",
+    "secondaryBodyParts": [
+      "Thighs (quadriceps)",
+      "Lower back",
+      "Upper back",
+      "Forearms (grip)"
+    ],
+    "equipment": [
+      "Barbell",
+      "Platform"
+    ],
+    "difficulty": "Advanced",
+    "mechanics": "Compound (hip, knee and ankle)",
+    "plane": "Sagittal",
+    "laterality": "Bilateral",
+    "authoredSide": "bilateral",
+    "muscles": {
+      "target": [
+        "glute_max_r",
+        "glute_max_l",
+        "hamstrings_r",
+        "hamstrings_l",
+        "quads_r",
+        "quads_l",
+        "spinal_extensors_r",
+        "spinal_extensors_l"
+      ],
+      "synergist": [
+        "adductors_r",
+        "adductors_l"
+      ],
+      "stabilizer": [
+        "core",
+        "obliques_r",
+        "obliques_l",
+        "lats_r",
+        "lats_l",
+        "upper_traps_r",
+        "upper_traps_l",
+        "rhomboids_midtrap_r",
+        "rhomboids_midtrap_l",
+        "forearm_flexors_r",
+        "forearm_flexors_l",
+        "calves_r",
+        "calves_l"
+      ]
+    },
+    "breathing": {
+      "pattern": "Breathe in and brace before the bar leaves the floor, hold through the pull, breathe out at the top or once the plates are back down.",
+      "cadence": "About 1.9 s up, a short lockout, about 2 s down, reset on the floor"
+    },
+    "prescription": {
+      "frequency": "1-2 times a week",
+      "rest": "2-4 minutes between sets",
+      "sets": "3-4",
+      "reps": "3-6",
+      "tempo": "Controlled pull from the floor, short lockout, controlled lowering",
+      "load": "Barbell load is user-chosen: usually 10-20 % lighter than your floor deadlift; keep the back flat off the floor, about 2-3 reps in reserve.",
+      "progression": "Add 2.5-5 kg when every rep leaves the floor with a flat back; or raise the platform a little (2.5 to 10 cm)."
+    },
+    "cues": [
+      {
+        "id": "c1",
+        "phase": "setup",
+        "text": "Stand on the platform, bar over mid-foot, plates on the floor in front. Hinge down and grip just outside the knees, shins to the bar, hips a little lower than in a floor deadlift, back flat, brace."
+      },
+      {
+        "id": "c2",
+        "phase": "pull",
+        "text": "Push the platform away: the bar slides up the shins, hips and shoulders rising together, then drive the hips through once the bar passes the knees."
+      },
+      {
+        "id": "c3",
+        "phase": "lockout",
+        "text": "Stand tall, hips and knees straight, shoulders over the bar."
+      },
+      {
+        "id": "c4",
+        "phase": "lower",
+        "text": "Hips back first, bar close to the thighs, then bend the knees to set the plates down on the floor."
+      },
+      {
+        "id": "c5",
+        "phase": "reset",
+        "text": "Plates touch down softly; keep the brace or take a new breath, then pull again."
+      }
+    ],
+    "mistakes": [
+      {
+        "id": "m1",
+        "mistake": "Back rounding in the deeper start",
+        "fix": "Use a lower platform or a lighter load until the back stays flat off the floor."
+      },
+      {
+        "id": "m2",
+        "mistake": "Hips shooting up first",
+        "fix": "Push with the legs so the hips and shoulders rise together."
+      },
+      {
+        "id": "m3",
+        "mistake": "Bar drifting forward",
+        "fix": "Keep the bar against the shins and thighs, lats tight."
+      },
+      {
+        "id": "m4",
+        "mistake": "Too high a platform",
+        "fix": "2.5-10 cm is enough; more turns it into a different lift."
+      }
+    ],
+    "kinematics": [
+      {
+        "measure": "Knee flexion",
+        "setup": "≈96° with the plates on the floor",
+        "peak": "≈4° at lockout",
+        "norm": "More knee bend at the start than a floor deadlift because the bar starts lower relative to the feet (clinical opinion); conventional deadlift about 65-85 degrees (Swinton 2011)",
+        "sources": [
+          "swinton2011"
+        ]
+      },
+      {
+        "measure": "Hip flexion",
+        "setup": "≈139° (joint channel); hips 60.3 cm high, knees 52.9 cm, shoulders 75.8 cm",
+        "peak": "≈5° at lockout",
+        "norm": "Hips above the knees, below the shoulders, deeper than from the floor (clinical opinion; conventional start: Escamilla 2002)",
+        "sources": [
+          "escamilla2002"
+        ]
+      },
+      {
+        "measure": "Trunk inclination",
+        "setup": "≈53° from vertical, back flat",
+        "peak": "≈5° at lockout",
+        "norm": "Trunk more inclined than in a floor deadlift at the start (clinical opinion)",
+        "sources": []
+      },
+      {
+        "measure": "Deficit",
+        "setup": "5 cm platform, 60 cm wide (the plates sit outside it, inner faces 68.8 cm from the centre)",
+        "peak": "Bar 22.5 cm above the floor at the start (17.5 cm above the feet); lockout height 85.4 cm",
+        "norm": "Platform about 2.5-10 cm (common coaching)",
+        "sources": []
+      },
+      {
+        "measure": "Tempo",
+        "setup": "Set up 0.8 s",
+        "peak": "1.9 s up, 0.6 s lockout, 2.1 s down, 0.8 s reset on the floor",
+        "norm": "Controlled lift and lowering; reset on the floor each rep (clinical opinion)",
+        "sources": []
+      }
+    ],
+    "safety": {
+      "cautions": [
+        "Only add the deficit once the floor deadlift is solid; the deeper start asks more of the hips and hamstrings.",
+        "The platform must be solid and not slide; leave the plates clear of it.",
+        "Low-back pain: go back to the floor or to blocks.",
+        "Stop if sharp pain, numbness, tingling or giving-way occurs.",
+        "Muscle glow colours and activation curves are illustrative, not measured EMG."
+      ],
+      "modify": [
+        "Tight hips or hamstrings: lower platform (2.5-5 cm).",
+        "Grip: chalk or straps for top sets."
+      ],
+      "regressions": [
+        "Conventional deadlift from the floor.",
+        "Dumbbell deficit deadlift.",
+        "Trap-bar deadlift."
+      ],
+      "progressions": [
+        "Pause just off the floor.",
+        "Slightly higher platform.",
+        "Heavier bar in small steps."
+      ]
+    },
+    "muscleNotes": {
+      "glute_max_r": "Main hip extensor through the longer pull (Escamilla 2002).",
+      "glute_max_l": "Main hip extensor through the longer pull (Escamilla 2002).",
+      "hamstrings_r": "Extend the hip from the deeper hinge (Lee 2018).",
+      "hamstrings_l": "Extend the hip from the deeper hinge (Lee 2018).",
+      "quads_r": "Straighten the knees through the extra range off the floor.",
+      "quads_l": "Straighten the knees through the extra range off the floor.",
+      "spinal_extensors_r": "Hold the back flat with the bar hanging in front (Escamilla 2002).",
+      "spinal_extensors_l": "Hold the back flat with the bar hanging in front (Escamilla 2002).",
+      "adductors_r": "Adductor magnus assists hip extension from the bottom.",
+      "adductors_l": "Adductor magnus assists hip extension from the bottom.",
+      "core": "Bracing stiffens the trunk.",
+      "obliques_r": "Part of the brace.",
+      "obliques_l": "Part of the brace.",
+      "lats_r": "Keep the bar close to the legs.",
+      "lats_l": "Keep the bar close to the legs.",
+      "upper_traps_r": "Hold the shoulders against the bar.",
+      "upper_traps_l": "Hold the shoulders against the bar.",
+      "rhomboids_midtrap_r": "Keep the upper back tight.",
+      "rhomboids_midtrap_l": "Keep the upper back tight.",
+      "forearm_flexors_r": "Hold the bar.",
+      "forearm_flexors_l": "Hold the bar.",
+      "calves_r": "Keep the feet flat on the platform.",
+      "calves_l": "Keep the feet flat on the platform."
+    },
+    "sources": [
+      {
+        "id": "gymvisual",
+        "title": "GymVisual, Barbell Deadlift from Deficit, video (movement reference)",
+        "url": "https://gymvisual.com/videos/14656-barbell-deadlift-from-deficit.html"
+      },
+      {
+        "id": "escamilla2002",
+        "title": "Escamilla et al. 2002, an electromyographic analysis of sumo and conventional style deadlifts (Med Sci Sports Exerc 34(4):682-688; PubMed 11932579)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/11932579/"
+      },
+      {
+        "id": "swinton2011",
+        "title": "Swinton et al. 2011, a biomechanical analysis of straight and hexagonal barbell deadlifts using submaximal loads (J Strength Cond Res 25(7):2000-2009)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/21659894/"
+      },
+      {
+        "id": "lee2018",
+        "title": "Lee et al. 2018, an electromyographic and kinetic comparison of conventional and Romanian deadlifts (J Exerc Sci Fit; PMC6323186)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/30662500/"
+      }
+    ]
+  },
+  "camera": {
+    "default": "threeQuarter",
+    "presets": {
+      "threeQuarter": {
+        "yaw": 50,
+        "pitch": 14,
+        "label": "3/4"
+      },
+      "front": {
+        "yaw": 90,
+        "pitch": 8,
+        "label": "Front"
+      },
+      "side": {
+        "yaw": 0,
+        "pitch": 6,
+        "label": "Side"
+      },
+      "back": {
+        "yaw": -120,
+        "pitch": 18,
+        "label": "Back"
+      },
+      "top": {
+        "yaw": 70,
+        "pitch": 70,
+        "label": "Top"
+      }
+    }
+  },
+  "props": [
+    {
+      "id": "platform",
+      "kind": "box",
+      "center": [
+        7,
+        0,
+        0
+      ],
+      "size": [
+        46,
+        5,
+        60
+      ]
+    },
+    {
+      "id": "barbell",
+      "kind": "barbell",
+      "size": [
+        220,
+        45,
+        45
+      ],
+      "plates": 1,
+      "attach": {
+        "joint": "wrist_r",
+        "with": "wrist_l",
+        "grip": "bar"
+      }
+    }
+  ],
+  "contacts": [
+    {
+      "id": "leg_r",
+      "label": "Right foot",
+      "chain": [
+        "hip_r",
+        "knee_r",
+        "ankle_r",
+        "toe_r"
+      ],
+      "pole": [
+        1,
+        0,
+        0.15
+      ],
+      "bend": "forward",
+      "handRot": [
+        0.997564,
+        0,
+        -0.069756,
+        0
+      ]
+    },
+    {
+      "id": "ball_r",
+      "label": "Right foot (ball)",
+      "chain": [
+        "hip_r",
+        "knee_r",
+        "ankle_r",
+        "toe_r"
+      ],
+      "pole": [
+        1,
+        0,
+        0.15
+      ],
+      "bend": "forward",
+      "handRot": [
+        0.845982,
+        0.036965,
+        -0.059157,
+        -0.528628
+      ]
+    },
+    {
+      "id": "leg_l",
+      "label": "Left foot",
+      "chain": [
+        "hip_l",
+        "knee_l",
+        "ankle_l",
+        "toe_l"
+      ],
+      "pole": [
+        1,
+        0,
+        -0.15
+      ],
+      "bend": "forward",
+      "handRot": [
+        0.997564,
+        0,
+        0.069756,
+        0
+      ]
+    },
+    {
+      "id": "ball_l",
+      "label": "Left foot (ball)",
+      "chain": [
+        "hip_l",
+        "knee_l",
+        "ankle_l",
+        "toe_l"
+      ],
+      "pole": [
+        1,
+        0,
+        -0.15
+      ],
+      "bend": "forward",
+      "handRot": [
+        0.845982,
+        -0.036965,
+        0.059157,
+        -0.528628
+      ]
+    }
+  ],
+  "timeline": {
+    "duration": 6.2,
+    "fps": 60,
+    "loop": true,
+    "interpolation": "monotoneCubic",
+    "phases": [
+      {
+        "id": "setup",
+        "label": "Set up: plates on the floor",
+        "start": 0,
+        "end": 0.8,
+        "breath": "inhale",
+        "cue": "c1"
+      },
+      {
+        "id": "pull",
+        "label": "Pull",
+        "start": 0.8,
+        "end": 2.7,
+        "breath": "hold",
+        "cue": "c2"
+      },
+      {
+        "id": "lockout",
+        "label": "Lockout",
+        "start": 2.7,
+        "end": 3.3,
+        "breath": "exhale",
+        "cue": "c3"
+      },
+      {
+        "id": "lower",
+        "label": "Lower",
+        "start": 3.3,
+        "end": 5.4,
+        "breath": "hold",
+        "cue": "c4"
+      },
+      {
+        "id": "reset",
+        "label": "Plates on the floor, reset",
+        "start": 5.4,
+        "end": 6.2,
+        "breath": "natural",
+        "cue": "c5"
+      }
+    ]
+  },
+  "poses": {
+    "p0": {
+      "root": {
+        "pos": [
+          -27.660525529685856,
+          60.3,
+          0
+        ],
+        "rot": {
+          "pitch": -59.1
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -3,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 1,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 4,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -3.8
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -4.7
+        },
+        "sc_r": {
+          "protract": 14,
+          "elevate": -10
+        },
+        "sc_l": {
+          "protract": 14,
+          "elevate": -10
+        },
+        "shoulder_r": {
+          "plane": 62.1,
+          "elev": 71.4,
+          "axial": 80.3
+        },
+        "shoulder_l": {
+          "plane": 62.1,
+          "elev": 71.4,
+          "axial": 80.3
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 16.5
+        },
+        "ankle_l": {
+          "dorsi": 16.5
+        },
+        "hip_r": {
+          "flex": 138.5,
+          "abd": 8.1,
+          "rot": -3.3
+        },
+        "hip_l": {
+          "flex": 138.5,
+          "abd": 8.1,
+          "rot": -3.3
+        },
+        "knee_r": {
+          "flex": 96
+        },
+        "knee_l": {
+          "flex": 96
+        },
+        "wrist_r": {
+          "pron": 24.5,
+          "flex": 7.9,
+          "dev": 3.6
+        },
+        "wrist_l": {
+          "pron": 24.5,
+          "flex": 7.9,
+          "dev": 3.6
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p1": {
+      "root": {
+        "pos": [
+          -28.910534812289992,
+          68.3,
+          0
+        ],
+        "rot": {
+          "pitch": -57.2
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -2.7,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.9,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 3.6,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -3.7
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -4.5
+        },
+        "sc_r": {
+          "protract": 12.6,
+          "elevate": -9.2
+        },
+        "sc_l": {
+          "protract": 12.6,
+          "elevate": -9.2
+        },
+        "shoulder_r": {
+          "plane": 64.2,
+          "elev": 72,
+          "axial": 80.5
+        },
+        "shoulder_l": {
+          "plane": 64.2,
+          "elev": 72,
+          "axial": 80.5
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 12
+        },
+        "ankle_l": {
+          "dorsi": 12
+        },
+        "hip_r": {
+          "flex": 126,
+          "abd": 7.4,
+          "rot": -4.7
+        },
+        "hip_l": {
+          "flex": 126,
+          "abd": 7.4,
+          "rot": -4.7
+        },
+        "knee_r": {
+          "flex": 81
+        },
+        "knee_l": {
+          "flex": 81
+        },
+        "wrist_r": {
+          "pron": 23.5,
+          "flex": 7.9,
+          "dev": 3.4
+        },
+        "wrist_l": {
+          "pron": 23.5,
+          "flex": 7.9,
+          "dev": 3.4
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p2": {
+      "root": {
+        "pos": [
+          -28.347976726387216,
+          75.4,
+          0
+        ],
+        "rot": {
+          "pitch": -53.8
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -2.4,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.8,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 3.2,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -3.5
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -4.3
+        },
+        "sc_r": {
+          "protract": 11.2,
+          "elevate": -8.4
+        },
+        "sc_l": {
+          "protract": 11.2,
+          "elevate": -8.4
+        },
+        "shoulder_r": {
+          "plane": 65.4,
+          "elev": 68.8,
+          "axial": 81.1
+        },
+        "shoulder_l": {
+          "plane": 65.4,
+          "elev": 68.8,
+          "axial": 81.1
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 8.3
+        },
+        "ankle_l": {
+          "dorsi": 8.3
+        },
+        "hip_r": {
+          "flex": 112.1,
+          "abd": 6.5,
+          "rot": -5.7
+        },
+        "hip_l": {
+          "flex": 112.1,
+          "abd": 6.5,
+          "rot": -5.7
+        },
+        "knee_r": {
+          "flex": 66.9
+        },
+        "knee_l": {
+          "flex": 66.9
+        },
+        "wrist_r": {
+          "pron": 22.7,
+          "flex": 7.9,
+          "dev": 3.3
+        },
+        "wrist_l": {
+          "pron": 22.7,
+          "flex": 7.9,
+          "dev": 3.3
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p3": {
+      "root": {
+        "pos": [
+          -26.36019218672595,
+          81.3,
+          0
+        ],
+        "rot": {
+          "pitch": -49.4
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -2.1,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.7,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 2.8,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -3.2
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -3.9
+        },
+        "sc_r": {
+          "protract": 9.8,
+          "elevate": -7.6
+        },
+        "sc_l": {
+          "protract": 9.8,
+          "elevate": -7.6
+        },
+        "shoulder_r": {
+          "plane": 66,
+          "elev": 63.1,
+          "axial": 82.1
+        },
+        "shoulder_l": {
+          "plane": 66,
+          "elev": 63.1,
+          "axial": 82.1
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 5.4
+        },
+        "ankle_l": {
+          "dorsi": 5.4
+        },
+        "hip_r": {
+          "flex": 97.8,
+          "abd": 5.7,
+          "rot": -6.5
+        },
+        "hip_l": {
+          "flex": 97.8,
+          "abd": 5.7,
+          "rot": -6.5
+        },
+        "knee_r": {
+          "flex": 54.1
+        },
+        "knee_l": {
+          "flex": 54.1
+        },
+        "wrist_r": {
+          "pron": 22.2,
+          "flex": 7.9,
+          "dev": 3.2
+        },
+        "wrist_l": {
+          "pron": 22.2,
+          "flex": 7.9,
+          "dev": 3.2
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p4": {
+      "root": {
+        "pos": [
+          -21.6409239922699,
+          86.5,
+          0
+        ],
+        "rot": {
+          "pitch": -44.1
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -1.8,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.6,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 2.4,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -2.9
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -3.5
+        },
+        "sc_r": {
+          "protract": 8.4,
+          "elevate": -6.8
+        },
+        "sc_l": {
+          "protract": 8.4,
+          "elevate": -6.8
+        },
+        "shoulder_r": {
+          "plane": 65,
+          "elev": 52.9,
+          "axial": 84.2
+        },
+        "shoulder_l": {
+          "plane": 65,
+          "elev": 52.9,
+          "axial": 84.2
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 4.4
+        },
+        "ankle_l": {
+          "dorsi": 4.4
+        },
+        "hip_r": {
+          "flex": 82,
+          "abd": 4.8,
+          "rot": -7
+        },
+        "hip_l": {
+          "flex": 82,
+          "abd": 4.8,
+          "rot": -7
+        },
+        "knee_r": {
+          "flex": 42.5
+        },
+        "knee_l": {
+          "flex": 42.5
+        },
+        "wrist_r": {
+          "pron": 22.2,
+          "flex": 7.9,
+          "dev": 3.2
+        },
+        "wrist_l": {
+          "pron": 22.2,
+          "flex": 7.9,
+          "dev": 3.2
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p5": {
+      "root": {
+        "pos": [
+          -17.788220742637087,
+          90,
+          0
+        ],
+        "rot": {
+          "pitch": -38.2
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -1.5,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.5,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 2,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -2.5
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -3
+        },
+        "sc_r": {
+          "protract": 7,
+          "elevate": -6
+        },
+        "sc_l": {
+          "protract": 7,
+          "elevate": -6
+        },
+        "shoulder_r": {
+          "plane": 63.9,
+          "elev": 44.5,
+          "axial": 86.7
+        },
+        "shoulder_l": {
+          "plane": 63.9,
+          "elev": 44.5,
+          "axial": 86.7
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 2.7
+        },
+        "ankle_l": {
+          "dorsi": 2.7
+        },
+        "hip_r": {
+          "flex": 67.4,
+          "abd": 4.1,
+          "rot": -7.2
+        },
+        "hip_l": {
+          "flex": 67.4,
+          "abd": 4.1,
+          "rot": -7.2
+        },
+        "knee_r": {
+          "flex": 32.1
+        },
+        "knee_l": {
+          "flex": 32.1
+        },
+        "wrist_r": {
+          "pron": 22,
+          "flex": 7.9,
+          "dev": 3.1
+        },
+        "wrist_l": {
+          "pron": 22,
+          "flex": 7.9,
+          "dev": 3.1
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p6": {
+      "root": {
+        "pos": [
+          -13.67268289924938,
+          92.6,
+          0
+        ],
+        "rot": {
+          "pitch": -30.2
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -1.1,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.4,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 1.5,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -2
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -2.4
+        },
+        "sc_r": {
+          "protract": 5.3,
+          "elevate": -5
+        },
+        "sc_l": {
+          "protract": 5.3,
+          "elevate": -5
+        },
+        "shoulder_r": {
+          "plane": 62.5,
+          "elev": 36,
+          "axial": 90.3
+        },
+        "shoulder_l": {
+          "plane": 62.5,
+          "elev": 36,
+          "axial": 90.3
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": 0.9
+        },
+        "ankle_l": {
+          "dorsi": 0.9
+        },
+        "hip_r": {
+          "flex": 50.9,
+          "abd": 3.3,
+          "rot": -7.3
+        },
+        "hip_l": {
+          "flex": 50.9,
+          "abd": 3.3,
+          "rot": -7.3
+        },
+        "knee_r": {
+          "flex": 21.8
+        },
+        "knee_l": {
+          "flex": 21.8
+        },
+        "wrist_r": {
+          "pron": 21.5,
+          "flex": 7.9,
+          "dev": 3.1
+        },
+        "wrist_l": {
+          "pron": 21.5,
+          "flex": 7.9,
+          "dev": 3.1
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p7": {
+      "root": {
+        "pos": [
+          -9.729419901004347,
+          94.2,
+          0
+        ],
+        "rot": {
+          "pitch": -20.7
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -0.7,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.3,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 1,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -1.3
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -1.6
+        },
+        "sc_r": {
+          "protract": 3.5,
+          "elevate": -4
+        },
+        "sc_l": {
+          "protract": 3.5,
+          "elevate": -4
+        },
+        "shoulder_r": {
+          "plane": 60.7,
+          "elev": 28.8,
+          "axial": 94.8
+        },
+        "shoulder_l": {
+          "plane": 60.7,
+          "elev": 28.8,
+          "axial": 94.8
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": -0.9
+        },
+        "ankle_l": {
+          "dorsi": -0.9
+        },
+        "hip_r": {
+          "flex": 33.7,
+          "abd": 2.6,
+          "rot": -7.2
+        },
+        "hip_l": {
+          "flex": 33.7,
+          "abd": 2.6,
+          "rot": -7.2
+        },
+        "knee_r": {
+          "flex": 12.4
+        },
+        "knee_l": {
+          "flex": 12.4
+        },
+        "wrist_r": {
+          "pron": 20.8,
+          "flex": 7.9,
+          "dev": 3
+        },
+        "wrist_l": {
+          "pron": 20.8,
+          "flex": 7.9,
+          "dev": 3
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p8": {
+      "root": {
+        "pos": [
+          -6.442915353263914,
+          94.9,
+          0
+        ],
+        "rot": {
+          "pitch": -10.3
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": -0.4,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0.1,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 0.5,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": -0.7
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": -0.8
+        },
+        "sc_r": {
+          "protract": 1.7,
+          "elevate": -3
+        },
+        "sc_l": {
+          "protract": 1.7,
+          "elevate": -3
+        },
+        "shoulder_r": {
+          "plane": 59.2,
+          "elev": 23.4,
+          "axial": 99.4
+        },
+        "shoulder_l": {
+          "plane": 59.2,
+          "elev": 23.4,
+          "axial": 99.4
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": -1.8
+        },
+        "ankle_l": {
+          "dorsi": -1.8
+        },
+        "hip_r": {
+          "flex": 17.7,
+          "abd": 2.2,
+          "rot": -7.1
+        },
+        "hip_l": {
+          "flex": 17.7,
+          "abd": 2.2,
+          "rot": -7.1
+        },
+        "knee_r": {
+          "flex": 5.9
+        },
+        "knee_l": {
+          "flex": 5.9
+        },
+        "wrist_r": {
+          "pron": 19.9,
+          "flex": 7.9,
+          "dev": 2.8
+        },
+        "wrist_l": {
+          "pron": 19.9,
+          "flex": 7.9,
+          "dev": 2.8
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    },
+    "p9": {
+      "root": {
+        "pos": [
+          -3.9995243643883165,
+          95.1,
+          0
+        ],
+        "rot": {
+          "pitch": 0
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": 0
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": 0
+        },
+        "sc_r": {
+          "protract": 0,
+          "elevate": -2
+        },
+        "sc_l": {
+          "protract": 0,
+          "elevate": -2
+        },
+        "shoulder_r": {
+          "plane": 59.1,
+          "elev": 20,
+          "axial": 102.4
+        },
+        "shoulder_l": {
+          "plane": 59.1,
+          "elev": 20,
+          "axial": 102.4
+        },
+        "elbow_r": {
+          "flex": 4.1
+        },
+        "elbow_l": {
+          "flex": 4.1
+        },
+        "ankle_r": {
+          "dorsi": -0.8
+        },
+        "ankle_l": {
+          "dorsi": -0.8
+        },
+        "hip_r": {
+          "flex": 5,
+          "abd": 2.1,
+          "rot": -7.1
+        },
+        "hip_l": {
+          "flex": 5,
+          "abd": 2.1,
+          "rot": -7.1
+        },
+        "knee_r": {
+          "flex": 4.5
+        },
+        "knee_l": {
+          "flex": 4.5
+        },
+        "wrist_r": {
+          "pron": 19.1,
+          "flex": 8,
+          "dev": 2.7
+        },
+        "wrist_l": {
+          "pron": 19.1,
+          "flex": 8,
+          "dev": 2.7
+        }
+      },
+      "ik": {
+        "leg_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 1
+        },
+        "ball_r": {
+          "target": [
+            0,
+            11.8,
+            13
+          ],
+          "weight": 0
+        },
+        "leg_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 1
+        },
+        "ball_l": {
+          "target": [
+            0,
+            11.8,
+            -13
+          ],
+          "weight": 0
+        }
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "p0"
+    },
+    {
+      "t": 0.8,
+      "pose": "p0"
+    },
+    {
+      "t": 1.172,
+      "pose": "p1"
+    },
+    {
+      "t": 1.346,
+      "pose": "p2"
+    },
+    {
+      "t": 1.49,
+      "pose": "p3"
+    },
+    {
+      "t": 1.623,
+      "pose": "p4"
+    },
+    {
+      "t": 1.75,
+      "pose": "p5"
+    },
+    {
+      "t": 1.903,
+      "pose": "p6"
+    },
+    {
+      "t": 2.08,
+      "pose": "p7"
+    },
+    {
+      "t": 2.289,
+      "pose": "p8"
+    },
+    {
+      "t": 2.7,
+      "pose": "p9"
+    },
+    {
+      "t": 3.3,
+      "pose": "p9"
+    },
+    {
+      "t": 3.3,
+      "pose": "p9"
+    },
+    {
+      "t": 3.754,
+      "pose": "p8"
+    },
+    {
+      "t": 3.985,
+      "pose": "p7"
+    },
+    {
+      "t": 4.181,
+      "pose": "p6"
+    },
+    {
+      "t": 4.35,
+      "pose": "p5"
+    },
+    {
+      "t": 4.491,
+      "pose": "p4"
+    },
+    {
+      "t": 4.637,
+      "pose": "p3"
+    },
+    {
+      "t": 4.797,
+      "pose": "p2"
+    },
+    {
+      "t": 4.989,
+      "pose": "p1"
+    },
+    {
+      "t": 5.4,
+      "pose": "p0"
+    },
+    {
+      "t": 6.2,
+      "pose": "p0"
+    }
+  ],
+  "activation": {
+    "glute_max_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        1.7,
+        0.75
+      ],
+      [
+        2.5,
+        0.9
+      ],
+      [
+        2.7,
+        0.8
+      ],
+      [
+        3.3,
+        0.5
+      ],
+      [
+        4.4,
+        0.6
+      ],
+      [
+        5.4,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "glute_max_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        1.7,
+        0.75
+      ],
+      [
+        2.5,
+        0.9
+      ],
+      [
+        2.7,
+        0.8
+      ],
+      [
+        3.3,
+        0.5
+      ],
+      [
+        4.4,
+        0.6
+      ],
+      [
+        5.4,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "hamstrings_r": [
+      [
+        0,
+        0.35
+      ],
+      [
+        0.8,
+        0.55
+      ],
+      [
+        1.7,
+        0.85
+      ],
+      [
+        2.6,
+        0.6
+      ],
+      [
+        3.3,
+        0.45
+      ],
+      [
+        4.4,
+        0.65
+      ],
+      [
+        5.4,
+        0.5
+      ],
+      [
+        6.2,
+        0.35
+      ]
+    ],
+    "hamstrings_l": [
+      [
+        0,
+        0.35
+      ],
+      [
+        0.8,
+        0.55
+      ],
+      [
+        1.7,
+        0.85
+      ],
+      [
+        2.6,
+        0.6
+      ],
+      [
+        3.3,
+        0.45
+      ],
+      [
+        4.4,
+        0.65
+      ],
+      [
+        5.4,
+        0.5
+      ],
+      [
+        6.2,
+        0.35
+      ]
+    ],
+    "quads_r": [
+      [
+        0,
+        0.35
+      ],
+      [
+        0.8,
+        0.55
+      ],
+      [
+        1.2,
+        0.9
+      ],
+      [
+        1.9,
+        0.6
+      ],
+      [
+        2.7,
+        0.25
+      ],
+      [
+        3.3,
+        0.2
+      ],
+      [
+        4.8,
+        0.5
+      ],
+      [
+        5.4,
+        0.45
+      ],
+      [
+        6.2,
+        0.35
+      ]
+    ],
+    "quads_l": [
+      [
+        0,
+        0.35
+      ],
+      [
+        0.8,
+        0.55
+      ],
+      [
+        1.2,
+        0.9
+      ],
+      [
+        1.9,
+        0.6
+      ],
+      [
+        2.7,
+        0.25
+      ],
+      [
+        3.3,
+        0.2
+      ],
+      [
+        4.8,
+        0.5
+      ],
+      [
+        5.4,
+        0.45
+      ],
+      [
+        6.2,
+        0.35
+      ]
+    ],
+    "spinal_extensors_r": [
+      [
+        0,
+        0.45
+      ],
+      [
+        0.8,
+        0.65
+      ],
+      [
+        1.3,
+        0.9
+      ],
+      [
+        2.1,
+        0.85
+      ],
+      [
+        2.7,
+        0.55
+      ],
+      [
+        3.3,
+        0.5
+      ],
+      [
+        4.6,
+        0.75
+      ],
+      [
+        5.4,
+        0.6
+      ],
+      [
+        6.2,
+        0.45
+      ]
+    ],
+    "spinal_extensors_l": [
+      [
+        0,
+        0.45
+      ],
+      [
+        0.8,
+        0.65
+      ],
+      [
+        1.3,
+        0.9
+      ],
+      [
+        2.1,
+        0.85
+      ],
+      [
+        2.7,
+        0.55
+      ],
+      [
+        3.3,
+        0.5
+      ],
+      [
+        4.6,
+        0.75
+      ],
+      [
+        5.4,
+        0.6
+      ],
+      [
+        6.2,
+        0.45
+      ]
+    ],
+    "adductors_r": [
+      [
+        0,
+        0.2
+      ],
+      [
+        0.8,
+        0.35
+      ],
+      [
+        1.4,
+        0.6
+      ],
+      [
+        2.5,
+        0.4
+      ],
+      [
+        3.3,
+        0.25
+      ],
+      [
+        4.8,
+        0.45
+      ],
+      [
+        6.2,
+        0.2
+      ]
+    ],
+    "adductors_l": [
+      [
+        0,
+        0.2
+      ],
+      [
+        0.8,
+        0.35
+      ],
+      [
+        1.4,
+        0.6
+      ],
+      [
+        2.5,
+        0.4
+      ],
+      [
+        3.3,
+        0.25
+      ],
+      [
+        4.8,
+        0.45
+      ],
+      [
+        6.2,
+        0.2
+      ]
+    ],
+    "core": [
+      [
+        0,
+        0.5
+      ],
+      [
+        0.8,
+        0.65
+      ],
+      [
+        1.6,
+        0.75
+      ],
+      [
+        2.7,
+        0.6
+      ],
+      [
+        4.6,
+        0.7
+      ],
+      [
+        6.2,
+        0.5
+      ]
+    ],
+    "obliques_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.4
+      ],
+      [
+        1.6,
+        0.5
+      ],
+      [
+        2.7,
+        0.4
+      ],
+      [
+        4.6,
+        0.45
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "obliques_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.4
+      ],
+      [
+        1.6,
+        0.5
+      ],
+      [
+        2.7,
+        0.4
+      ],
+      [
+        4.6,
+        0.45
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "lats_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        1.6,
+        0.6
+      ],
+      [
+        2.7,
+        0.4
+      ],
+      [
+        4.6,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "lats_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        1.6,
+        0.6
+      ],
+      [
+        2.7,
+        0.4
+      ],
+      [
+        4.6,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "upper_traps_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        2.1,
+        0.6
+      ],
+      [
+        2.7,
+        0.55
+      ],
+      [
+        4.6,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "upper_traps_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.5
+      ],
+      [
+        2.1,
+        0.6
+      ],
+      [
+        2.7,
+        0.55
+      ],
+      [
+        4.6,
+        0.5
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "rhomboids_midtrap_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.45
+      ],
+      [
+        1.6,
+        0.55
+      ],
+      [
+        2.7,
+        0.45
+      ],
+      [
+        4.6,
+        0.45
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "rhomboids_midtrap_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.8,
+        0.45
+      ],
+      [
+        1.6,
+        0.55
+      ],
+      [
+        2.7,
+        0.45
+      ],
+      [
+        4.6,
+        0.45
+      ],
+      [
+        6.2,
+        0.3
+      ]
+    ],
+    "forearm_flexors_r": [
+      [
+        0,
+        0.4
+      ],
+      [
+        0.8,
+        0.65
+      ],
+      [
+        2.7,
+        0.7
+      ],
+      [
+        5.4,
+        0.65
+      ],
+      [
+        6.2,
+        0.4
+      ]
+    ],
+    "forearm_flexors_l": [
+      [
+        0,
+        0.4
+      ],
+      [
+        0.8,
+        0.65
+      ],
+      [
+        2.7,
+        0.7
+      ],
+      [
+        5.4,
+        0.65
+      ],
+      [
+        6.2,
+        0.4
+      ]
+    ],
+    "calves_r": [
+      [
+        0,
+        0.2
+      ],
+      [
+        0.8,
+        0.3
+      ],
+      [
+        1.6,
+        0.4
+      ],
+      [
+        2.7,
+        0.3
+      ],
+      [
+        6.2,
+        0.2
+      ]
+    ],
+    "calves_l": [
+      [
+        0,
+        0.2
+      ],
+      [
+        0.8,
+        0.3
+      ],
+      [
+        1.6,
+        0.4
+      ],
+      [
+        2.7,
+        0.3
+      ],
+      [
+        6.2,
+        0.2
+      ]
+    ]
+  },
+  "guides": [
+    {
+      "id": "barPath",
+      "kind": "path",
+      "joint": "wrist_r",
+      "from": 0.8,
+      "to": 2.7,
+      "label": "Bar straight up, close to the legs"
+    },
+    {
+      "id": "kneeAngle",
+      "kind": "jointAngle",
+      "joint": "knee_r",
+      "normBand": [
+        80,
+        105
+      ],
+      "label": "Knees bent more than from the floor"
+    }
+  ],
+  "checks": {
+    "stillJoints": [
+      "ankle_r",
+      "ankle_l",
+      "toe_r",
+      "toe_l"
+    ],
+    "plantedContacts": [
+      "leg_r",
+      "leg_l"
+    ],
+    "floorTolerance": 0.5,
+    "measure": {
+      "name": "kneeFlexion",
+      "min": 80,
+      "max": 110
+    }
+  }
+}
