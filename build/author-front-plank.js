@@ -11,10 +11,10 @@ const meta = require('./meta/front-plank.json');
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const ease = (u) => u * u * (3 - 2 * u);
 const KNEEL_BACK = -5;    // kneeling: shoulders 5 cm behind the elbows (upper arm leans back slightly)
-const WRIST_Y = +(process.env.WY ?? 4.2);      // wrist joint height (palms down)
+const WRIST_Y = P.PALM;   // wrist joint height: flat palm on the mat
 const HEAD = -12;         // neck long, eyes on the mat just ahead of the hands
-const DROP = +(process.env.DROP ?? 3.2);       // rig shoulder lowered this far below a vertical upper arm (cm)
-const TILT = +(process.env.TILT ?? 15);       // hand roll (deg): thumb side up
+const DROP = 0;           // upper arm vertical: elbows directly under the shoulders
+const TILT = 0;           // hand roll (deg): palms flat
 
 // Precise solve (3 decimals): the elbow stays planted only if the shoulder stays on its sphere.
 function solve(pose, paths, objs, contacts) {
@@ -28,7 +28,7 @@ function solve(pose, paths, objs, contacts) {
 const base = clone(L.POSES.plank().pose); delete base.ik;
 Object.assign(base.ch, { knee_r: { flex: 3 }, knee_l: { flex: 3 }, sc_r: { protract: 6, elevate: 0 }, sc_l: { protract: 6, elevate: 0 } });
 P.head(base, HEAD);
-const plank0 = solve(base, ['root.pos.1', 'root.rot.pitch'], [L.obj.atY('shoulder_r', P.ELBOW_Y + P.UA - DROP, 3), L.obj.atY('toe_r', 1.5, 3)]).pose;
+const plank0 = solve(base, ['root.pos.1', 'root.rot.pitch'], [L.obj.atY('shoulder_r', P.ELBOW_Y + P.UA - DROP, 3), (W) => [P.bottomOf(W, 'foot_r') * 3]]).pose;   // on the balls of the feet: foot shape on the mat
 const W0 = L.fk(plank0);
 const BACK = Math.sqrt(P.UA ** 2 - (P.UA - DROP) ** 2);
 const E = { r: [r3(W0.shoulder_r.p[0] - BACK), P.ELBOW_Y, r3(W0.shoulder_r.p[2])], l: [r3(W0.shoulder_l.p[0] - BACK), P.ELBOW_Y, r3(W0.shoulder_l.p[2])] };

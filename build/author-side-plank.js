@@ -4,9 +4,7 @@
 // breathing settle, lower. Right forearm: wrist IK target, elbow point on the mat kept one upper-arm length from the
 // shoulder in every key (downward pole keeps it planted). Feet: both ankles planted (right foot on its outer edge, left
 // foot stacked on top), constant world-locked feet.
-// Athlete fit (as in the front plank): the Studio clay athlete's upper arm is shorter than the rig's, so the rig shoulder
-// sits DROP cm lower than a vertical upper arm would put it and the elbow point lies BACK cm toward the feet. That keeps
-// the rig forearm flat on the mat and brings the athlete's elbow down onto the mat, close under its shoulder.
+// Rig v2 matches the rendered body, so the elbow point sits directly under the shoulder (vertical upper arm, DROP 0).
 const L = require('./lib');
 const { R, V, Q, rig, clone } = L;
 const P = require('./families/prone');
@@ -14,9 +12,9 @@ const meta = require('./meta/side-plank.json');
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const ease = (u) => u * u * (3 - 2 * u);
-const DROP = 3.2;        // rig shoulder below a vertical upper arm (cm), see header
-const WRIST_Y = 4.2;     // wrist joint height (hand flat, thumb side tilted up)
-const TILT = 15;         // hand roll, thumb side up (deg)
+const DROP = 0;          // upper arm vertical in the hold (cm below a vertical upper arm)
+const WRIST_Y = P.PALM;  // wrist joint height: flat palm on the mat
+const TILT = 0;          // hand roll, thumb side up (deg)
 const FEET_ABD = -3.5;    // legs drawn together so the feet stack (hip adduction, deg)
 const SETUP_KNEE = 12; // knees soft while the hips rest on the mat (keeps the legs off full reach)
 const SAG = -9;          // setup: lateral flexion toward the top side per spine segment as the hips rest on the mat (deg)
@@ -46,7 +44,7 @@ const AT = { r: W0.ankle_r.p.map(r3), l: W0.ankle_l.p.map(r3) };
 const HAND0 = Q.fromBasis([0, -1, 0], [0, 0, -1], [1, 0, 0]);
 const hand = Q.mul(Q.axis([0, 0, 1], TILT), HAND0);
 const contacts = [
-  Object.assign(L.handContact('r'), { label: 'Right forearm', pole: [0.5, -1, 0], handRot: P.qArr(hand) }),
+  Object.assign(L.handContact('r'), { label: 'Right forearm', pole: [0.15, -1, 0], handRot: P.qArr(hand) }),
   Object.assign(L.legContact('r'), { label: 'Right foot (outer edge)', pole: [0, 0, 1], handRot: P.qArr(W0.ankle_r.q) }),   // knees point forward (+Z)
   Object.assign(L.legContact('l'), { label: 'Left foot (stacked)', pole: [0, 0, 1], handRot: P.qArr(W0.ankle_l.q) }),
 ];
@@ -84,19 +82,20 @@ const setup = place(Object.assign(setSag(clone(hold0), SAG), { root: { pos: [hol
 // Every other key comes from one family: spine side bend, pelvis height above the mat, right-leg abduction and knee bend
 // interpolated between the setup and the hold; the solve (root x, y, roll) keeps the elbow on its mat point.
 const Ws = L.fk(setup, contacts);
-const KEY = { setup: { sag: setup.ch.spine_l5.latFlex, hip: lowHip(Ws), abd: abdR(Ws), knee: SETUP_KNEE }, hold: { sag: 0, hip: lowHip(W0), abd: abdR(W0), knee: KNEE0 } };
+// The elbow angle is interpolated too, so the shoulder travels smoothly over its sphere about the planted elbow.
+const KEY = { setup: { sag: setup.ch.spine_l5.latFlex, hip: lowHip(Ws), abd: abdR(Ws), knee: SETUP_KNEE, elbow: P.elbowAngle(Ws, 'r') }, hold: { sag: 0, hip: lowHip(W0), abd: abdR(W0), knee: KNEE0, elbow: P.elbowAngle(L.fk(hold0, contacts), 'r') } };
 function key(k, start) {
   const p = setSag(clone(start || hold0), k.sag);
-  return finish(place(p, (W) => [(lowHip(W) - k.hip) * 3, (abdR(W) - k.abd) * 0.5, ...knee(k.knee)(W).map((v) => v * 6)]));
+  return finish(place(p, (W) => [(lowHip(W) - k.hip) * 3, (abdR(W) - k.abd) * 0.5, ...knee(k.knee)(W).map((v) => v * 6), (P.elbowAngle(W, 'r') - k.elbow) * 0.5]));
 }
 function between(u) {
   const e = u, mix = (f) => KEY.setup[f] + (KEY.hold[f] - KEY.setup[f]) * e;
   const lerp = (a, b) => r3(a + (b - a) * e);
   const start = clone(hold0); start.root = { pos: setup.root.pos.map((v, i) => lerp(v, hold0.root.pos[i])), rot: { yaw: -90, pitch: 0, roll: lerp(setup.root.rot.roll, hold0.root.rot.roll) } };
-  return key({ sag: mix('sag'), hip: mix('hip'), abd: mix('abd'), knee: mix('knee') }, start);
+  return key({ sag: mix('sag'), hip: mix('hip'), abd: mix('abd'), knee: mix('knee'), elbow: mix('elbow') }, start);
 }
 // Breathing settle: the hips dip dy cm toward the mat (or lift) with a matching small side bend; legs keep their length.
-const breath = (dy) => key({ sag: dy * +(0.8), hip: KEY.hold.hip + dy, abd: KEY.hold.abd, knee: KNEE0 });
+const breath = (dy) => key({ sag: dy * +(0.8), hip: KEY.hold.hip + dy, abd: KEY.hold.abd, knee: KNEE0, elbow: KEY.hold.elbow });
 const poses = { setup: finish(setup), hold: key(KEY.hold) };
 // Hold: breathing settle sampled every 0.4 s (solved keys, so the elbow stays planted between them too).
 // dy: hips dip up to 0.6 cm on each breath (about 3 s per breath) and come back up.
@@ -128,8 +127,8 @@ const meas = (name) => {
 const ms = meas('setup'), mh = meas('hold');
 const kin = ex.exercise.kinematics, set = (p, f, v) => { const k = kin.find((x) => x.measure.startsWith(p)); if (k) k[f] = v; };
 set('Body line', 'setup', `Hips on the mat: trunk ${deg(ms.line)} off the leg line`); set('Body line', 'peak', `${deg(mh.line)} off straight (trunk vs legs); legs ${deg(mh.incline)} up from the mat`);
-set('Elbow position', 'setup', 'On the mat under the shoulder, forearm pointing forward'); set('Elbow position', 'peak', `Under the shoulder (rig elbow point ${Math.round(BACK)} cm toward the feet to fit the athlete's shorter upper arm)`);
-set('Elbow flexion', 'setup', deg(ms.elbow) + ' (rig)'); set('Elbow flexion', 'peak', deg(mh.elbow) + ' (rig)');
+set('Elbow position', 'setup', 'On the mat under the shoulder, forearm pointing forward'); set('Elbow position', 'peak', 'Directly under the shoulder, forearm pointing forward');
+set('Elbow flexion', 'setup', deg(ms.elbow)); set('Elbow flexion', 'peak', deg(mh.elbow));
 set('Pelvis lift', 'setup', 'Pelvis resting on the mat'); set('Pelvis lift', 'peak', `Pelvis ${Math.round(mh.pelvisY)} cm off the mat`);
 set('Trunk lateral bend', 'setup', `${deg(-ms.latFlex)} toward the ceiling`); set('Trunk lateral bend', 'peak', deg(Math.abs(mh.latFlex)));
 set('Tempo', 'setup', '1 s propped on the forearm'); set('Tempo', 'peak', '1.2 s lift, 9 s hold with breathing settles, 1 s lower, 0.8 s rest');

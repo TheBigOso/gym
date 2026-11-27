@@ -27,8 +27,10 @@ function footLow(W, side) {
 }
 const legPaths = (s) => [`ch.hip_${s}.flex`, `ch.hip_${s}.abd`, `ch.knee_${s}.flex`, `ch.ankle_${s}.dorsi`];
 const kneePos = (s) => (W, p) => [Math.min(0, p.ch[`knee_${s}`].flex - 2) * 5];
+const DORSI = rig.byId.ankle_r.limits.dorsi;   // keep 2 deg inside the ankle range
+const ankleLim = (s) => (W, p) => { const d = p.ch[`ankle_${s}`].dorsi; return [(Math.max(0, d - DORSI[1] + 2) + Math.max(0, DORSI[0] + 2 - d)) * 5]; };
 const legObj = (s, leg) => {
-  const o = [obj.aim(`ankle_${s}`, `toe_${s}`, footDir(leg.pitch || 0), 20), obj.reg(`ch.hip_${s}.abd`, 0, 0.02), kneePos(s)];
+  const o = [obj.aim(`ankle_${s}`, `toe_${s}`, footDir(leg.pitch || 0), 20), obj.reg(`ch.hip_${s}.abd`, 0, 0.02), kneePos(s), ankleLim(s)];
   if (leg.ankle) o.push(obj.at(`ankle_${s}`, leg.ankle, 3));
   if (leg.toe) o.push((W) => [(W[`toe_${s}`].p[0] - leg.toe[0]) * 3, (W[`toe_${s}`].p[2] - leg.toe[2]) * 3, (footLow(W, s)[1] - leg.toe[1]) * 3]);
   if (leg.knee != null) o.push(obj.reg(`ch.knee_${s}.flex`, leg.knee, leg.kneeW ?? 0.1));
@@ -109,7 +111,7 @@ const S = {
   catch: { root: onBox(48, 20), pitch: -14, trunk: [6, 4, 2], head: [10, 10], arms: ARMS.catch, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ch: [18, 66, -10] } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
   stick: { root: onBox(44, 18), pitch: -12, trunk: [5, 4, 2], head: [10, 10], arms: ARMS.hold, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ch: [20, 70, -10] } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
   stick2: { root: onBox(42, 17), pitch: -11, trunk: [5, 4, 2], head: [10, 10], arms: ARMS.hold, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ch: [20, 70, -10] } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
-  tall: { root: onBox(10, 3), pitch: 0, trunk: [1, 0, 0], head: [6, 6], arms: ARMS.side, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ch: [6, 62, -10] } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
+  tall: { root: onBox(13, 3), pitch: 0, trunk: [1, 0, 0], head: [6, 6], arms: ARMS.side, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ch: [6, 62, -10] } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
   lower: { root: onBox(62, 24, 3), pitch: -20, trunk: [6, 4, 2], head: [10, 10], arms: ARMS.bal, legs: { r: { ankle: ON_BOX, pitch: 0 }, l: { ankle: [17, 24, -7], pitch: -42 } }, ik: { r: [ON_BOX, 1], l: [STEP_L, 0] } },
   leftTouch: {
     root: [36, 95, 1], pitch: -20, trunk: [6, 4, 2], head: [10, 10], arms: ARMS.bal, free: ['root.pos.0', 'root.pos.1'], objs: [obj.reg('root.pos.0', 32, 0.4)],

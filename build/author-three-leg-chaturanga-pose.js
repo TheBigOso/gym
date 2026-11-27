@@ -15,10 +15,10 @@ const ROLL = 60;                // left-foot roll over the toes for the forward 
 const CHAT_SY = 31.5;           // shoulder joint height at the bottom of chaturanga (cm)
 const LIFT = 12;                // lifted leg sits this many degrees above the body line
 
-/* ---------- Base: POSES.plank(), knees and elbows softened slightly so planted IK limbs keep a margin ---------- */
-const P = L.POSES.plank();
+/* ---------- Base: high plank on the rig shapes, knees and elbows softened slightly so planted IK limbs keep a margin ---------- */
+const P = require('./families/prone').plank({ footY: 0.2 });
 const base = clone(P.pose);
-base.root.pos[1] = r1(base.root.pos[1] - 0.2);   // shoulders 0.2 cm lower -> elbows ~10 deg soft, not locked
+base.root.pos[1] = r1(base.root.pos[1] - 0.2);   // shoulders 0.2 cm lower -> elbows ~10 deg soft, not locked (feet land on the mat)
 const W0 = fk(base);
 const WR = base.ik.arm_r.target, WL = base.ik.arm_l.target;
 const footQ = { r: W0.ankle_r.q.map((v) => +v.toFixed(6)), l: W0.ankle_l.q.map((v) => +v.toFixed(6)) };
