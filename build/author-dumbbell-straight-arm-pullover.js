@@ -11,7 +11,7 @@ const ELBOW = +(process.env.ELBOW ?? 4), DIP = +(process.env.DIP ?? -8);
 const m = P.pulloverModule(meta, { mode: 'straight', elbow: ELBOW, dip: DIP, hipX: +(process.env.HIPX ?? 2) });
 const { ex, poses, contacts, W0, B, T, sw, foot } = m, d = P.d0, set = H.setKin(ex);
 const Wt = L.fk(poses.top, contacts), Wb = L.fk(poses.bottom, contacts), dbT = m.dbAt(Wt), dbB = m.dbAt(Wb);
-set('Bench position', 'setup', `Along the bench, top of the head at the end of the pad (${r1(B.tip[0] - m.headTop)} cm past it)`); set('Bench position', 'peak', 'Glutes, upper back and head on the bench (skinned-mesh offsets from b2/chest_mesh.mjs)');
+set('Bench position', 'setup', `Along the bench, top of the head at the end of the pad (${r1(B.tip[0] - m.headTop)} cm past it)`); set('Bench position', 'peak', 'Glutes and upper back on the bench (rig shapes), back of the head just off the pad with a neutral neck');
 set('Shoulder flexion', 'setup', `${d(m.flexOf(Wt))} (arms over the chest)`); set('Shoulder flexion', 'peak', `${d(m.flexOf(Wb))} at the bottom (arms aimed ${Math.abs(DIP)}° ${DIP < 0 ? 'above' : 'below'} the line of the back so the dumbbell clears the head)`);
 set('Elbow flexion', 'setup', `${d(C_elbow(Wt))} (elbow angle ${d(180 - C_elbow(Wt))})`); set('Elbow flexion', 'peak', `${r1(m.el[0])}-${r1(m.el[1])}° through the arc (fixed)`);
 set('Grip', 'setup', 'Both palms on the top plate, dumbbell hanging along the forearms'); set('Grip', 'peak', `Dumbbell behind the head, lowest point ${r1(Math.min(...dbB.ends.map((e) => e[1])) - dbB.r)} cm above the floor`);

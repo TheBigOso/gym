@@ -6,7 +6,7 @@ const L = require('./lib');
 const { r1, V } = L;
 const P = require('./families/b4-benchpress');
 const meta = require('./meta/dumbbell-larsen-press.json');
-const lying = P.larsenBase({ hipX: +(process.env.HIPX ?? 26), hipExt: +(process.env.HIPEXT ?? -12) });
+const lying = P.larsenBase({ hipX: +(process.env.HIPX ?? 34), hipExt: +(process.env.HIPEXT ?? -12) });
 P.pressModule(meta, { angle: 0, lying, label: 'Dumbbell Larsen Press', kin: (set, m) => {
   const { W0, T } = m, d = P.d0;
   const thigh = V.sub(W0.knee_r.p, W0.hip_r.p), tilt = Math.asin(-thigh[1] / V.len(thigh)) / L.R.DEG;

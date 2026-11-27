@@ -21,7 +21,7 @@ function key(k, ref) {
   let q = p;
   for (const s of ['r', 'l']) {
     const g = ref ? ref[s] : null;
-    q = CB.cradle(q, { side: s, floor: k.floor ? -M.MESH.arm : 1.0, elbowAnt: -3, elbowOut: 18, guess: g, ref: g });
+    q = CB.cradle(q, { side: s, floor: k.floor ? 0.2 : 1.0, elbowAnt: -3, elbowOut: 18, guess: g, ref: g });
     delete q.__cost;
   }
   return q;
@@ -31,7 +31,7 @@ const lieKey = { l5: 0, t12: 0, t6: 0, neck: null, floor: true };
 let best = null;
 for (const pron of [-30, 30, 90]) for (const axial of [-130, -70]) {
   const g = { shoulder: { plane: -5, elev: 126, axial }, elbow: { flex: 136 }, wrist: { pron, flex: 16, dev: -20 }, sc: { protract: -2, elevate: 2 } };
-  const p = CB.cradle(clone(lie), { floor: -M.MESH.arm, guess: g }); if (!best || p.__cost < best.__cost) best = p;
+  const p = CB.cradle(clone(lie), { floor: 0.2, guess: g }); if (!best || p.__cost < best.__cost) best = p;
 }
 const REF0 = { r: CB.armOf(best, 'r'), l: CB.armOf(best, 'r') };
 const arms = (p) => ({ r: CB.armOf(p, 'r'), l: CB.armOf(p, 'l') });
@@ -49,7 +49,6 @@ const ex = CA.buildModule(meta, poses, keyframes, F.contacts);
 const rotOf = (p) => p.ch.spine_l5.rot + p.ch.spine_t12.rot + p.ch.spine_t6.rot;
 const shR = (W) => W.shoulder_r.p[1] - W.shoulder_l.p[1];
 const rep = CA.scan(ex, { upper: (W) => CA.upperFromFloor(W), lowBack: (W) => CA.minOf(W, ['buttock_r', 'buttock_l', 'pelvis']), shoulderTilt: shR, elbowGap: (W) => V.len(V.sub(W.elbow_r.p, W.knee_l.p)) });
-M.meshFloor(ex, rep);
 const Wl = L.fk(lie, F.contacts), Wt = L.fk(poses.holdR, F.contacts), kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`, pk = poses.holdR;
 kin[0].setup = d(CA.upperFromFloor(Wl)); kin[0].peak = `${d(CA.upperFromFloor(Wt))} (C7 up ${r1(Wt.neck_c7.p[1] - Wl.neck_c7.p[1])} cm)`;
 kin[1].setup = 'Facing the ceiling'; kin[1].peak = `${d(Math.abs(rotOf(pk)))} toward the opposite knee (lumbar ${d(Math.abs(pk.ch.spine_l5.rot))}, thoracic ${d(Math.abs(pk.ch.spine_t12.rot + pk.ch.spine_t6.rot))}); working shoulder ${r1(shR(Wt))} cm higher than the other`;
@@ -57,6 +56,6 @@ kin[2].setup = d(lie.ch.spine_t12.flex + lie.ch.spine_t6.flex) + ' (resting curv
 kin[3].setup = `Hip ${d(lie.ch.hip_r.flex)}, knee ${d(CA.kneeOf(Wl, 'r'))}`; kin[3].peak = 'Unchanged (pelvis and feet still)';
 kin[4].setup = 'Fingertips behind the head, elbows wide'; kin[4].peak = `Elbow ${Math.round(V.len(V.sub(Wt.elbow_r.p, Wt.knee_l.p)))} cm from the opposite knee (reaching toward it, not touching)`;
 kin[5].setup = 'Rest 0.6 s'; kin[5].peak = '1.0 s up and turn, 0.4 s squeeze, 1.4 s down, 0.5 s rest per side; 7.2 s loop';
-console.log(`Twisting crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} floorTol=${ex.checks.floorTolerance}`);
+console.log(`Twisting crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)}`);
 for (const n of ['lie', 'upR', 'twistR', 'holdR', 'downR']) { const p = poses[n], W = L.fk(p, F.contacts); console.log(`  ${n.padEnd(7)} spine=${JSON.stringify([p.ch.spine_l5, p.ch.spine_t12, p.ch.spine_t6].map((c) => [c.flex, c.rot, c.latFlex]))} upper=${CA.upperFromFloor(W).toFixed(1)} shTilt=${shR(W).toFixed(1)} shX=${W.shoulder_r.p[0].toFixed(1)}/${W.shoulder_l.p[0].toFixed(1)} R=${p.ch.shoulder_r.plane}/${p.ch.shoulder_r.elev}/${p.ch.shoulder_r.axial} L=${p.ch.shoulder_l.plane}/${p.ch.shoulder_l.elev}/${p.ch.shoulder_l.axial}`); }
 M.guard('twisting-crunch', ex, rep, [shR(Wt) < 4 && 'working shoulder barely turns up', rep.lowBack[1] - rep.lowBack[0] > 1.5 && 'low back lifts']);

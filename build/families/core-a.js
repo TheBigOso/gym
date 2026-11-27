@@ -15,7 +15,7 @@ const legFromFloor = (W, s = 'r') => { const d = V.sub(W[`ankle_${s}`].p, W[`hip
 const thighFromFloor = (W, s = 'r') => { const d = V.sub(W[`knee_${s}`].p, W[`hip_${s}`].p); return Math.atan2(d[1], d[0]) / R.DEG; };
 const kneeOf = (W, s) => 180 - V.angle(V.sub(W[`hip_${s}`].p, W[`knee_${s}`].p), V.sub(W[`ankle_${s}`].p, W[`knee_${s}`].p));
 const headPt = (W, v) => V.add(W.head_c1.p, Q.rot(W.head_c1.q, v));
-const HAND_C = [-8.6, 5.5, 9], HAND_TIP = [-8.6, 8, -0.6]; // head-local hand centre and fingertips (cradle)
+const HAND_C = [-1.6, -0.9, 8.0], HAND_TIP = [-1.6, 1.6, -0.6]; // rig v2: hands cupped behind the fitted hair shape (0.5 cm overlap) // head-local hand centre and fingertips (cradle)
 const LEG_IDS = ['thigh_r', 'thigh_l', 'quad_r', 'quad_l', 'shank_r', 'shank_l', 'calf_r', 'calf_l', 'foot_r', 'foot_l'];
 const ARM_IDS = (s) => [`upperarm_${s}`, `forearm_${s}`, `hand_${s}`, `thumb_${s}`, `deltoid_${s}`, `biceps_${s}`];
 const limitPen = (paths, w = 2) => (W, pose) => paths.map((pth) => { const [, j, c] = pth.split('.'), lim = rig.byId[j].limits && rig.byId[j].limits[c], v = L.getPath(pose, pth) ?? 0; return lim ? (Math.max(0, lim[0] - v) + Math.max(0, v - lim[1])) * w : 0; });
@@ -29,20 +29,18 @@ function lie({ kneeFlex = 90, headRest = 'floor' } = {}) {
   const base0 = clone(sup.pose);
   base0.root.pos = [0, base0.root.pos[1], 0];
   let p = L.solvePose(base0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [bottomOf(W, 'buttock_r') * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
+    (W) => [bottomOf(W, 'buttock_r') * 4, Math.min(bottomOf(W, 'chest'), bottomOf(W, 'traps_r'), bottomOf(W, 'traps_l')) * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
     L.obj.reg('ch.spine_l5.flex', -8, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', 92, 0.2),
   ]).pose;
   p.root.pos[1] = r1(p.root.pos[1] + 0.5);
   p.ch.sc_r = { protract: 0, elevate: 0 }; p.ch.sc_l = { protract: 0, elevate: 0 };
   if (headRest === 'floor') {
-    // Back of the head rests on the mat: neck flexion so the head shape just touches.
-    p = L.solvePose(p, ['ch.neck_c7.flex'], [(W) => [(minOf(W, ['head', 'hair']) - 0.1) * 3], L.obj.reg('ch.neck_c7.flex', 4, 0.05)]).pose;
-    p.ch.head_c1 = { rot: 0, flex: r1(p.ch.neck_c7.flex * 0.8) };
-    p = L.solvePose(p, ['ch.neck_c7.flex'], [(W) => [(minOf(W, ['head', 'hair']) - 0.1) * 3]]).pose;
+    // Head resting: rig v2 puts the head about 5 cm forward of the upper back, so with a comfortable neck the back of the
+    // head stays a little off the mat (as on a real person without a pillow). See restHead.
+    p = restHead(p);
   } else if (headRest === 'hands') {
     // Head cradled in the hands: neck flexion just enough that the back of the hands rests on the mat (as the sit-up).
-    const cr = (q) => L.solvePose(q, ['ch.neck_c7.flex'], [(W) => [(headPt(W, [HAND_C[0] - 1.8, HAND_C[1], HAND_C[2]])[1] - 1.6) * 3]]).pose;
-    p = cr(p); p.ch.head_c1 = { rot: 0, flex: r1(p.ch.neck_c7.flex * 0.45 / 0.55) }; p = cr(p);
+    p = headInHands(p);
   }
   if (!kneeFlex) {
     // Straight legs resting on the mat: hip flexion so the calves and heels just touch.
@@ -51,6 +49,27 @@ function lie({ kneeFlex = 90, headRest = 'floor' } = {}) {
     mirrorLeg(p);
   }
   return { pose: p, P0: p.root.rot.pitch, NECK: p.ch.neck_c7.flex + (p.ch.head_c1 ? p.ch.head_c1.flex : 0) };
+}
+
+// Neck and head (55/45 split) settled toward the mat: extend only as far as a relaxed neck goes (total NECK_REST, about
+// -14 / -11 degrees), stopping earlier if the back of the head reaches `clr` cm above the mat. Never forced onto the mat.
+const NECK_REST = -25;
+// Head cradled in the hands (lying). Rig v2: the head rests a few cm off the mat, so extend the neck (within the relaxed
+// NECK_REST) only until the backs of the hands touch the mat; never past it.
+function headInHands(p) {
+  const set = (q, f) => { q.ch.neck_c7 = { rot: 0, flex: r1(f * 0.55) }; q.ch.head_c1 = { rot: 0, flex: r1(f * 0.45) }; return q; };
+  const low = (f) => headPt(L.fk(set(clone(p), f)), [HAND_C[0] - 1.7, HAND_C[1], HAND_C[2]])[1] - 0.2;
+  let lo = NECK_REST, hi = 40;
+  if (low(lo) >= 0) hi = lo; else for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (low(m) < 0) lo = m; else hi = m; }
+  return set(p, hi);
+}
+
+function restHead(pose, { clr = 0.3, min = NECK_REST } = {}) {
+  const set = (q, f) => { q.ch.neck_c7 = { rot: 0, flex: r1(f * 0.55) }; q.ch.head_c1 = { rot: 0, flex: r1(f * 0.45) }; return q; };
+  let lo = min, hi = 40;
+  if (minOf(L.fk(set(clone(pose), lo)), ['head', 'hair']) >= clr) return set(clone(pose), lo);
+  for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (minOf(L.fk(set(clone(pose), m)), ['head', 'hair']) < clr) lo = m; else hi = m; }
+  return set(clone(pose), hi);
 }
 
 /* ---------------- Planted feet (knees bent): IK contacts with leg channels fitted to the IK ---------------- */
@@ -84,7 +103,7 @@ function cradle(pose, opt = {}) {
   const g = opt.guess || { shoulder_r: { plane: -5, elev: 126, axial: -125 }, elbow_r: { flex: 136 }, wrist_r: { pron: 35, flex: 16, dev: -20 }, sc_r: { protract: -2, elevate: 2 } };
   for (const j in g) p.ch[j] = clone(g[j]);
   const objs = [
-    (W) => V.sub(V.add(W.wrist_r.p, Q.rot(W.wrist_r.q, [1.0, -8.4, 0])), headPt(W, HAND_C)).map((v) => v * 3),
+    (W) => V.sub(V.add(W.wrist_r.p, Q.rot(W.wrist_r.q, [1.0, -8.9, 0])), headPt(W, HAND_C)).map((v) => v * 3),
     (W) => V.sub(W.handtip_r.p, headPt(W, HAND_TIP)).map((v) => v * 2),
     (W) => V.sub(Q.rot(W.wrist_r.q, [1, 0, 0]), Q.rot(W.head_c1.q, [1, 0, 0])).map((v) => v * 3),
     (W) => { const fr = W.spine_t6.q, d = V.sub(W.elbow_r.p, W.shoulder_r.p); return [(V.dot(d, Q.rot(fr, [1, 0, 0])) - (opt.elbowAnt ?? -3)) * 0.8, Math.min(0, V.dot(d, Q.rot(fr, [0, 0, 1])) - 20) * 0.8]; },
@@ -190,5 +209,5 @@ function guard(name, rep, extra = []) {
   if (bad.length) { console.error(`FAIL ${name}: ${bad.join('; ')}`); process.exitCode = 1; }
 }
 
-module.exports = { qArr, bottomOf, minOf, trunkFromFloor, upperFromFloor, legFromFloor, thighFromFloor, kneeOf, headPt, HAND_C, HAND_TIP, LEG_IDS, ARM_IDS, limitPen, mirrorArm, mirrorLeg,
-  lie, setLeg, setLegs, footContacts, fitLeg, plantFeet, cradle, handContacts, handTargets, fitArm, plantHands, spine, neck, buildModule, scan, guard };
+module.exports = { headInHands, qArr, bottomOf, minOf, trunkFromFloor, upperFromFloor, legFromFloor, thighFromFloor, kneeOf, headPt, HAND_C, HAND_TIP, LEG_IDS, ARM_IDS, limitPen, mirrorArm, mirrorLeg,
+  lie, restHead, NECK_REST, setLeg, setLegs, footContacts, fitLeg, plantFeet, cradle, handContacts, handTargets, fitArm, plantHands, spine, neck, buildModule, scan, guard };

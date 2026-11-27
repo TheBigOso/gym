@@ -16,7 +16,7 @@ const base = st.pose;
 const ELBOW_TOP = +(process.env.ELBOW_TOP ?? -2); // elbow height vs the shoulder joint at the top (cm)
 // Wrist target at fraction f: x in front of the body (thigh -> lower chest), z about shoulder width, y rising; elbow on its
 // circle closest to "out to the side and up". Scapulae elevate / upwardly rotate a little near the top.
-const CLR = 1.5; // cm between the plates and the body
+const CLR = +(process.env.CLR ?? 2.5); // cm between the plates and the body at the keys (rig v2's wider pelvis: the in-between frames pass about 2 cm closer)
 function solveAt(f, guess, y, x) {
   // wrist deviation that keeps the handle level (the forearm slants in from the elbow to the hand near the top)
   let best = null;

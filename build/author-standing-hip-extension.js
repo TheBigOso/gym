@@ -46,13 +46,13 @@ function poseAt(f, extra = {}) {
 }
 // Hand targets from the standing pose: in front of the shoulders at about shoulder height, elbows soft
 let HAND = null;
-{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = { r: [r1(S[0] + 51), r1(S[1] - 6), r1(S[2] - 2)], l: [r1(S[0] + 51), r1(S[1] - 6), r1(-(S[2] - 2))] }; }
-// Wall face where the skinned athlete's palms and fingers rest (0.3 cm inside the measured mesh reach; b2/hips_wall.mjs)
-const WALL_X = r1(HAND.r[0] + H.WALL_PALM);
+{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = H.wallHandTargets(S, { flex: 40 }); }
+
 const poses = { stand: poseAt(0), e25: poseAt(0.25), e50: poseAt(0.5), e75: poseAt(0.75), back: poseAt(1), hold: poseAt(1.02), r60: poseAt(0.6), r25: poseAt(0.25), near: poseAt(0.04) };
 const keyframes = [{ t: 0, pose: 'stand' }, { t: 0.8, pose: 'stand' }, { t: 1.1, pose: 'e25' }, { t: 1.4, pose: 'e50' }, { t: 1.7, pose: 'e75' }, { t: 2.0, pose: 'back' }, { t: 2.3, pose: 'hold' }, { t: 2.6, pose: 'back' },
   { t: 3.1, pose: 'r60' }, { t: 3.6, pose: 'r25' }, { t: 4.0, pose: 'near' }, { t: 4.4, pose: 'stand' }, { t: 5.0, pose: 'stand' }];
 const ex = H.module_(meta, contacts, poses, keyframes);
+const WALL_X = H.wallFaceX(poses[Object.keys(poses)[0]], contacts); // palm face of the rig hand shape
 const wall = ex.props.find((p) => p.kind === 'wall'); wall.center = [r1(WALL_X + wall.size[0] / 2), 0, 0];
 let toeMin = 1e9, trunkMax = 0;
 const trunkLean = (W) => V.angle(V.sub(W.neck_c7.p, W.pelvis.p), [0, 1, 0]);

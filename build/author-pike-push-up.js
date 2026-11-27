@@ -15,9 +15,7 @@ const HEEL = 38;                 // heel raised (deg of foot pitch)
 const HEAD_BOT = 5;              // bottom: lowest head shape this far above the floor
 const HEAD_AHEAD = 10;           // ... and this far in front of the wrists (head and hands form a triangle)
 const FOOT_Z = 9;
-const MESH_SLACK = 0.5, ALIGN = +(process.env.ALIGN ?? 25); // top: trunk-to-arm angle, and the arms as straight as the skinned arm allows: its shoulder sits further from the hands
-// than the rig's when the arms are in line with the trunk (b4-floorpush meshShoulder), so the top is solved for the drawn
-// arm to be just straight (MESH_SLACK cm short of full reach) with the palms on the floor; the rig elbow stays a little bent
+const TOP_ELBOW = 6, ALIGN = +(process.env.ALIGN ?? 25); // top: rig arm straight but not locked (elbow TOP_ELBOW deg), palms on the floor, trunk-to-arm angle ALIGN
 const LEG_D = B.legLen(6);
 const contacts = [Object.assign(L.handContact('r'), { pole: [-1, 0.3, 0.42] }), Object.assign(L.handContact('l'), { pole: [-1, 0.3, -0.42] }), L.legContact('r'), L.legContact('l')];
 const WR = [HAND_X, B.PALM, HAND_Z], WL = [HAND_X, B.PALM, -HAND_Z];
@@ -52,7 +50,7 @@ function solve(objs, u, guess) {
   return q;
 }
 // Top: straight arms and the trunk in line with them (shoulders open)
-const top = solve([(W) => [(B.meshReach(W, 'r', WR) - (B.MESH_ARM - MESH_SLACK)) * 4, Math.max(0, B.dist(W.shoulder_r.p, WR) - L.reach(6)) * 4], (W) => [(V.angle(trunk(W), V.sub(WR, W.shoulder_r.p)) - ALIGN) * 0.5]], 0);
+const top = solve([(W) => [(B.dist(W.shoulder_r.p, WR) - L.reach(TOP_ELBOW)) * 4], (W) => [(V.angle(trunk(W), V.sub(WR, W.shoulder_r.p)) - ALIGN) * 0.5]], 0);
 const Wt = L.fk(top, contacts), h0 = headLow(Wt);
 const keyAt = (u, prev) => solve([(W) => { const h = headLow(W); return [(h[1] - (h0[1] + (HEAD_BOT - h0[1]) * u)) * 3, (h[0] - (h0[0] + (HAND_X + HEAD_AHEAD - h0[0]) * u)) * 1]; }], u, prev);
 const ease = (f) => f * f * (3 - 2 * f);
@@ -72,13 +70,13 @@ const hipAng = (W) => V.angle(V.sub(W.neck_c7.p, W.pelvis.p), V.sub(V.scale(V.ad
 const trunkH = (W) => { const t = trunk(W); return Math.atan2(-t[1], t[0]) / R.DEG; };
 const set = H.setKin(ex), d = (v) => `≈${Math.round(v)}°`;
 set('Hip angle', 'setup', `${d(hipAng(Wt))} between trunk and legs`); set('Hip angle', 'peak', `${d(hipAng(Wb))} at the bottom (hips stay high)`);
-set('Elbow flexion', 'setup', `${d(B.meshElbow(Wt, 'r', WR))} on the drawn arm (straight; the rig elbow channel reads ${d(B.elbowFlexOf(Wt))} because the skinned arm is shorter)`); set('Elbow flexion', 'peak', `${d(B.meshElbow(Wb, 'r', WR))} drawn (${d(B.elbowFlexOf(Wb))} rig) at the bottom`);
+set('Elbow flexion', 'setup', `${d(B.elbowFlexOf(Wt))} (arms straight, not locked)`); set('Elbow flexion', 'peak', `${d(B.elbowFlexOf(Wb))} at the bottom`);
 set('Trunk angle', 'setup', `Trunk ${d(trunkH(Wt))} below horizontal (head down)`); set('Trunk angle', 'peak', `${d(trunkH(Wb))} at the bottom`);
 set('Head position', 'setup', `Head between the arms`); set('Head position', 'peak', `Lowest head point ${r1(hb[1])} cm above the floor, ${r1(hb[0] - HAND_X)} cm in front of the wrists`);
 set('Hand width', 'setup', `Wrists ${2 * HAND_Z} cm apart (shoulder joints ${Math.round(B.dist(Wt.shoulder_r.p, Wt.shoulder_l.p))} cm); feet ${2 * FOOT_Z} cm apart, balls ${HAND_X - BALL_X} cm behind the hands`); set('Hand width', 'peak', 'Unchanged (hands and feet planted)');
 set('Tempo', 'setup', `Top ${Th} s`); set('Tempo', 'peak', `${r1(Tb - Th)} s down, ${r1(Tp - Tb)} s pause, ${r1(Tr - Tp)} s up, ${r1(D - Tr)} s at the top`);
 const hf = (p) => p.ch.hip_r.flex;
 ex.checks.measure = { name: 'hipFlexion', min: Math.floor(Math.min(...Object.values(poses).map(hf)) - 3), max: Math.ceil(Math.max(...Object.values(poses).map(hf)) + 3) };
-console.log(`Pike Push-up: wrote ${L.write(ex)}\n  feet ${JSON.stringify(AR)} costs ${JSON.stringify(costs)}\n  top: hipAng ${hipAng(Wt).toFixed(0)} hipFlex ${top.ch.hip_r.flex} elbow ${B.elbowFlexOf(Wt).toFixed(0)} trunk ${trunkH(Wt).toFixed(0)} head ${h0.map(r1)}\n  bottom: hipAng ${hipAng(Wb).toFixed(0)} hipFlex ${poses.bottom.ch.hip_r.flex} elbow ${B.elbowFlexOf(Wb).toFixed(0)} drawnElbow ${B.meshElbow(Wt, 'r', WR).toFixed(0)}/${B.meshElbow(Wb, 'r', WR).toFixed(0)} elbowOut ${(Math.asin(V.norm(V.sub(Wb.elbow_r.p, Wb.shoulder_r.p))[2]) / R.DEG).toFixed(0)} trunk ${trunkH(Wb).toFixed(0)} head ${hb.map(r1)}\n  loop ${JSON.stringify(rep)}`);
+console.log(`Pike Push-up: wrote ${L.write(ex)}\n  feet ${JSON.stringify(AR)} costs ${JSON.stringify(costs)}\n  top: hipAng ${hipAng(Wt).toFixed(0)} hipFlex ${top.ch.hip_r.flex} elbow ${B.elbowFlexOf(Wt).toFixed(0)} trunk ${trunkH(Wt).toFixed(0)} head ${h0.map(r1)}\n  bottom: hipAng ${hipAng(Wb).toFixed(0)} hipFlex ${poses.bottom.ch.hip_r.flex} elbow ${B.elbowFlexOf(Wb).toFixed(0)} elbowOut ${(Math.asin(V.norm(V.sub(Wb.elbow_r.p, Wb.shoulder_r.p))[2]) / R.DEG).toFixed(0)} trunk ${trunkH(Wb).toFixed(0)} head ${hb.map(r1)}\n  loop ${JSON.stringify(rep)}`);
 if (rep.slide > 0.05) { console.error('FAIL: planted contact slides'); process.exitCode = 1; }
 if (rep.floor < -0.5) { console.error('FAIL: below the floor'); process.exitCode = 1; }

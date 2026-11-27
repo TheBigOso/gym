@@ -15,9 +15,11 @@ const F = require('./families/b4-calvesglutes');
 const meta = require('./meta/side-plank-clamshell.json');
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
-const DROP = 3.2, WRIST_Y = 4.2, TILT = 15;        // forearm fit to the athlete (from the side plank)
+const DROP = 0, WRIST_Y = P.PALM, TILT = 0;        // forearm as in the side plank: elbow under the shoulder, palm flat
 const HIP_FLEX = +(process.env.HF ?? 30), KNEE = +(process.env.KN ?? 90), OPEN = +(process.env.OPEN ?? 40), STACK = +(process.env.STACK ?? 7.5);
-const KNEE_Y = +(process.env.KY ?? 5.8), ANKLE_Y = +(process.env.AY ?? 6.0);                  // shank capsule radii (5.2 at the knee, 3.2 at the ankle): shin lying on the mat
+// Bottom shin on the mat: knee joint just above the shank capsule radius (5.3) so the calf clears the mat as the leg rolls
+// with the hips; ankle raised so the foot lies on its outer edge (rig v2 shapes).
+const KNEE_Y = +(process.env.KY ?? 5.5), ANKLE_Y = +(process.env.AY ?? 6.0);
 const z0 = () => ({ rot: 0, flex: 0, latFlex: 0 });
 const base = { root: { pos: [0, 30, 0], rot: { yaw: -90, pitch: 0, roll: 72 } }, ch: {
   spine_l5: z0(), spine_t12: z0(), spine_t6: z0(), neck_c7: { rot: 0, flex: 0 }, head_c1: { rot: 0, flex: 0 },
@@ -49,7 +51,7 @@ const HAND0 = Q.fromBasis([0, -1, 0], [0, 0, -1], [1, 0, 0]), hand = Q.mul(Q.axi
 // knee pole: from the hip-ankle midpoint toward the knee in the hold frame
 const poleR = V.norm(V.sub(K, V.scale(V.add(W0.hip_r.p, AT), 0.5))).map(r3);
 const contacts = [
-  Object.assign(L.handContact('r'), { label: 'Right forearm', pole: [0.5, -1, 0], handRot: P.qArr(hand) }),
+  Object.assign(L.handContact('r'), { label: 'Right forearm', pole: [0.15, -1, 0], handRot: P.qArr(hand) }),
 ];
 const TH = V.len(rig.byId.knee_r.offset);
 // left ankle stacked on top of the right one (FK target)
@@ -57,11 +59,11 @@ const AL = V.add(AT, V.scale(V.norm(V.sub(W0.hip_l.p, W0.hip_r.p)), STACK)).map(
 const lowHip = (W) => Math.min(P.bottomOf(W, 'pelvis'), P.bottomOf(W, 'buttock_r'));
 const setSag = (p, s) => { for (const j of ['spine_l5', 'spine_t12', 'spine_t6']) p.ch[j] = { rot: 0, flex: 0, latFlex: r3(s * (j === 'spine_t6' ? 0.6 : 1)) }; return p; };
 // Place the body: elbow IK point on E, knee IK point on K, pelvis at height hipY; free root x/y/z/roll/pitch, sc_r, side bend
-function place(start, hipY, sagRef) {
+function place(start, hipY, sagRef, elbowRef) {
   const sc0 = base.ch.sc_r;
   const set = (x) => { const q = clone(start); q.root = { pos: [x[0], x[1], x[2]], rot: { yaw: -90, pitch: x[3], roll: x[4] } }; q.ch.sc_r = { protract: x[5], elevate: x[6] }; setSag(q, x[7]); return q; };
-  const res = (x) => { const W = L.fk(set(x), contacts); return [...V.sub(W.elbow_r.p, E).map((v) => v * 20), (V.len(V.sub(W.hip_r.p, K)) - TH) * 20, (lowHip(W) - hipY) * 3, Math.min(0, P.bottomOf(W, 'thigh_r') + 0.3) * 15,
-    x[3] * 2, (x[4] - start.root.rot.roll) * +(process.env.RW ?? 0.3), (x[5] - sc0.protract) * 0.05, (x[6] - sc0.elevate) * 0.05, (x[7] - sagRef) * +(process.env.SW ?? 0.15), (x[2] - start.root.pos[2]) * +(process.env.ZW ?? 0.3), Math.max(0, x[7] + 0.5 * (sagRef < -1)) * 3, Math.min(0, x[6] + 9.5) * 3, Math.max(0, Math.abs(x[7]) - 14.5) * 5]; };
+  const res = (x) => { const W = L.fk(set(x), contacts); return [...V.sub(W.elbow_r.p, E).map((v) => v * 20), (V.len(V.sub(W.hip_r.p, K)) - TH) * 20, (lowHip(W) - hipY) * 3, Math.min(0, P.bottomOf(W, 'thigh_r') - 0.05) * 15,
+    x[3] * 2, (x[4] - start.root.rot.roll) * +(process.env.RW ?? 0.3), (x[5] - sc0.protract) * 0.05, (x[6] - sc0.elevate) * 0.05, (x[7] - sagRef) * +(process.env.SW ?? 0.15), (x[2] - start.root.pos[2]) * +(process.env.ZW ?? 0.3), Math.max(0, x[7] + 0.5 * (sagRef < -1)) * 3, Math.min(0, x[6] + 9.5) * 3, Math.max(0, Math.abs(x[7]) - 14.5) * 5].concat(elbowRef == null ? [] : [(P.elbowAngle(W, 'r') - elbowRef) * 0.5]); };
   const r = start.root, x0 = [r.pos[0], r.pos[1], r.pos[2], r.rot.pitch || 0, r.rot.roll, start.ch.sc_r.protract, start.ch.sc_r.elevate, start.ch.spine_l5.latFlex || 0];
   const sol = R.solveLM(x0, res, { iters: 800 });
   const q = set(sol.x.map(r3)); q.__err = { elbow: V.len(V.sub(L.fk(q, contacts).elbow_r.p, E)), hipK: Math.abs(V.len(V.sub(L.fk(q, contacts).hip_r.p, K)) - TH) };
@@ -85,9 +87,9 @@ function topLeg(q, open) {
 hold0.ik = { arm_r: { target: WT, weight: 1 } };
 const W1 = L.fk(hold0, contacts), HIP_TOP = lowHip(W1);
 const HIP_LOW = +(process.env.HIPLOW ?? 1.5), SAG_LOW = -10;
-function key(f, open, start) { // f: 0 = hips down, 1 = top
+function key(f, open, start, elbowRef) { // f: 0 = hips down, 1 = top
   const s = start || hold0;
-  let q = place(s, HIP_LOW + (HIP_TOP - HIP_LOW) * f, SAG_LOW * (1 - f));
+  let q = place(s, HIP_LOW + (HIP_TOP - HIP_LOW) * f, SAG_LOW * (1 - f), elbowRef);
   const err = q.__err; delete q.__err;
   q = P.fitAll(q, contacts);
   q = F.legTo(q, 'r', { knee: K, ankle: AT, wRot: 0.0005 }); const c = q.__cost; delete q.__cost;   // bottom leg: FK, knee and ankle held on their mat points
@@ -101,9 +103,9 @@ function key(f, open, start) { // f: 0 = hips down, 1 = top
   return q;
 }
 const poses = {}, errs = {};
-const add = (n, f, open, start) => { const q = key(f, open, start); errs[n] = q.__err; delete q.__err; delete q.__up; poses[n] = q; return q; };
+const add = (n, f, open, start, elbowRef) => { const q = key(f, open, start, elbowRef); errs[n] = q.__err; delete q.__err; delete q.__up; poses[n] = q; return q; };
 add('top', 1, 0);
-const NL = +(process.env.NL ?? 16);
+const NL = +(process.env.NL ?? 32);   // dense keys: the solved elbow and bottom knee stay on their mat points between keys
 // lowering chain solved from the top down, each key started from the one above (continuation keeps one smooth branch)
 for (let i = NL - 1; i >= 1; i--) add(`l${i}`, F.easeIO(i / NL), 0, poses[i === NL - 1 ? 'top' : `l${i + 1}`]);
 add('setup', 0, 0, poses.l1);
@@ -130,7 +132,7 @@ const meas = (n) => { const W = L.fk(poses[n], contacts), mid = (a, b) => V.scal
 const ms = meas('setup'), mt = meas('top'), mo = meas('o4');
 const set = H.setKin(ex);
 set('Body line', 'setup', `Hips on the mat, trunk side-bent ${Math.round(-poses.setup.ch.spine_l5.latFlex * 2.6)}° toward the ceiling`); set('Body line', 'peak', `Shoulder-hip-knee ≈${Math.round(mt.line)}° off straight (hips flexed ${HIP_FLEX}° forward of the line)`);
-set('Elbow position', 'setup', 'On the mat under the shoulder, forearm pointing forward'); set('Elbow position', 'peak', `Unchanged (elbow point ${Math.round(BACK)} cm toward the feet to fit the athlete's shorter upper arm)`);
+set('Elbow position', 'setup', 'On the mat under the shoulder, forearm pointing forward'); set('Elbow position', 'peak', 'Unchanged, directly under the shoulder');
 set('Pelvis lift', 'setup', `Pelvis ${ms.pelvisY.toFixed(1)} cm (resting)`); set('Pelvis lift', 'peak', `Pelvis ${Math.round(mt.pelvisY)} cm off the mat`);
 set('Top hip (clam)', 'setup', 'Knees together'); set('Top hip (clam)', 'peak', `Top knee opens ${OPEN}° about the hip-ankle axis (knees ${Math.round(mo.kneeGap)} cm apart; hip abd ${poses.o4.ch.hip_l.abd}°, rot ${poses.o4.ch.hip_l.rot}°)`);
 set('Knees and feet', 'setup', `Knees ≈${Math.round(P.kneeAngle(ms.W, 'r'))}°, feet stacked`); set('Knees and feet', 'peak', 'Bottom knee and shin stay on the mat; the feet stay together');

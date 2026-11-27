@@ -16,7 +16,7 @@ const HZ = 22;                                      // wrists 44 cm apart, a lit
 const FPITCH = +(process.env.FPITCH || 35), A_CORNER = +(process.env.ACORNER || 6);
 const handQ = (s) => Q.mul(Q.axis([0, 0, 1], -FPITCH), s === 'r' ? L.handRotR : L.handRotL);
 const WRIST = (() => { const a = FPITCH * R.DEG, pal = [EDGE - A_CORNER * Math.cos(a), BENCH_H + A_CORNER * Math.sin(a)]; return [r1(pal[0] + PALM * Math.sin(a)), r1(pal[1] + PALM * Math.cos(a))]; })();
-const BACK = +(process.env.BACK ?? -6.5);              // rearmost rig buttock/pelvis point this far in front of the bench face (mesh sits inside the rig shapes)
+const BACK = +(process.env.BACK ?? 0);                 // rearmost rig buttock/pelvis point this far in front of the bench face (rig v2: rig = drawn body, back of the buttocks grazes the face)
 const FOOT_X = +(process.env.FOOT_X || 58), FOOT_Z = 13, TOP_FLEX = 8;
 const LEAN = +(process.env.LEAN || 4);               // trunk lean forward from vertical (deg)
 const HAND = { r: [WRIST[0], WRIST[1], HZ], l: [WRIST[0], WRIST[1], -HZ] };

@@ -10,7 +10,7 @@ const meta = require('./meta/dumbbell-concentration-curl.json');
 
 const SEAT_H = 45, BENCH = { id: 'bench', kind: 'bench', center: [-40, 0, 0], size: [110, SEAT_H, 30] }; // flat bench, the athlete on its +X end
 const SEAT_END = BENCH.center[0] + BENCH.size[0] / 2;
-const SEAT_OFF = +(process.env.SEAT_OFF ?? 0.3); // rig buttock shapes vs the seat top; in this forward lean the skinned mesh sits about where the rig shapes do (measured)
+const SEAT_OFF = +(process.env.SEAT_OFF ?? 0); // rig buttock shapes vs the seat top (rig v2: rig = drawn body, so they rest on it)
 const ENV = (k, d) => +(process.env[k] ?? d);
 const LEAN = { l5: ENV('L5', 10), t12: ENV('T12', 10), t6: ENV('T6', 6) };
 const STANCE = ENV('STANCE', 38), FOOT_DX = ENV('FOOTDX', 30), HIP_ABD = ENV('HABD', 24);
@@ -64,8 +64,9 @@ const TW = ENV('TW', 5), sh = p.ch.shoulder_r;
 const rArm = (a) => ({ plane: sh.plane, elev: sh.elev, axial: TW - sh.plane, flex: a.flex, pron: a.pron });
 const BOT = { flex: ENV('BFLEX', 10), pron: ENV('BPRON', 20) }, TOP = { flex: 124, pron: 0 }, SQZ = { flex: 127, pron: -3 };
 const withArm = (a) => C.setArm(clone(p), 'r', rArm(a));
-// the trunk lean already tips the face down toward the arm; the neck stays near neutral so the head is clear of the dumbbell at the top
-p.ch.neck_c7 = { rot: 0, flex: ENV('NECK', -4) }; p.ch.head_c1 = { rot: 0, flex: ENV('HEAD', 2) };
+// the trunk lean already tips the face down toward the arm; the neck is held slightly extended (eyes on the arm, chin up) so
+// the jaw clears the dumbbell at the top (the v2 rig's shorter upper arm brings the top of the curl closer to the face)
+p.ch.neck_c7 = { rot: 0, flex: ENV('NECK', -17) }; p.ch.head_c1 = { rot: 0, flex: ENV('HEAD', -8) };
 const poses = { bottom: withArm(BOT), up50: withArm(C.mixArm(BOT, TOP, 0.5)), top: withArm(TOP), squeeze: withArm(SQZ), down66: withArm(C.mixArm(BOT, TOP, 0.66)), down33: withArm(C.mixArm(BOT, TOP, 0.33)) };
 const ph = (id) => C.phase(meta, id);
 const keyframes = [{ t: 0, pose: 'bottom' }, { t: ph('lift').start, pose: 'bottom' }, { t: 1.2, pose: 'up50' }, { t: ph('top').start, pose: 'top' }, { t: ph('top').end, pose: 'squeeze' },

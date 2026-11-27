@@ -2,7 +2,7 @@
 // down and toes up (planted leg contacts), trunk tall over the sit bones with no back support. Dumbbells at shoulder height,
 // palms forward, elbows under the wrists and a little in front (scapular plane); press up and slightly in to nearly straight
 // arms (about 1.6 s), short pause, lower in about 2.1 s. Bilateral, handle grip. Press path from family b4-shoulders2.js;
-// the rig sinks SINK cm so the skinned buttocks and heels rest on the mat (measured with b2/b4sh2_floor.mjs).
+// rig v2: the rig buttocks and heels (= the drawn body) rest on the mat, no sink.
 const L = require('./lib');
 const { V, r1, clone } = L;
 const H = require('./families/hips');
@@ -10,7 +10,7 @@ const F = require('./families/b3-shoulders');
 const S = require('./families/b4-shoulders2');
 const meta = require('./meta/dumbbell-z-press.json');
 
-const base = S.longSit({ sink: Number(process.env.SINK ?? 0.3), lean: Number(process.env.LEAN ?? 0), l5: Number(process.env.L5 ?? 2), hipFlex: Number(process.env.HF ?? 89.5) });
+const base = S.longSit({ lean: Number(process.env.LEAN ?? 0), l5: Number(process.env.L5 ?? 2), hipFlex: Number(process.env.HF ?? 89.5) });
 const { poses, err } = S.pressKeys(base.pose, { bottom: 0, p25: 0.25, p50: 0.5, p75: 0.75, top: 1 }, { plane: 30, elev0: 82 });
 poses.topHold = clone(poses.top); poses.topHold.ch.elbow_r.flex = poses.topHold.ch.elbow_l.flex = r1(poses.top.ch.elbow_r.flex + 2);
 const ph = Object.fromEntries(meta.timeline.phases.map((p) => [p.id, p]));

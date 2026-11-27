@@ -18,7 +18,7 @@ const key = (t, name, pose) => { poses[name] = pose; keyframes.push({ t: r1(t * 
 // One lunge stepping with fs from feet-together at x0, then the back leg steps through to x0 + STEP. Starts at t0.
 function lunge(fs, x0, t0, tag) {
   const bs = other(fs), BACK = r1(x0 + BALL_SHIFT), X1 = x0 + STEP;
-  const S = F.split(fs, X1, BACK);
+  const S = F.split(fs, X1, BACK, { backKneeY: 14 }); // back knee 14 cm up: the rig v2 legs (thigh 40.6, shank 42.9) would bend it past 105 at 13
   const on = (planted, pf, swing, x, knee, pitch = -4) => F.rootY({ root: [x, 85, -1.5 * zSign(fs) * (planted === bs ? 1 : -1)], pitch, spine: { l5: -1, t12: 0, t6: 0 }, feet: { [planted]: pf, [planted === fs ? bs : fs]: swing } }, knee, planted);
   const flat = (x, extra = {}) => Object.assign({ c: 'flat', x }, extra);
   const reach = on(bs, flat(x0), flat(x0 + 52, { lift: 5, w: 0 }), x0 + 16, 14, -6);

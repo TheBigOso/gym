@@ -10,7 +10,7 @@ const meta = require('./meta/dumbbell-lunge.json');
 
 const F = makeFamily({ toe: 6, half: 9 });
 const STEP = 80, BACK = r1(BALL_SHIFT); // right ankle lands 80 cm ahead; the left rolls onto its ball (ankle moves 7.8 cm forward)
-const S = F.split('r', STEP, BACK);
+const S = F.split('r', STEP, BACK, { backKneeY: 14 }); // back knee 14 cm up: the rig v2 legs (thigh 40.6, shank 42.9) would bend it past 105 at 13
 const HANG = { out: 9 };
 const arms = (p) => { const q = B.armsHang(p, HANG); delete q.__armCost; return q; };
 const P = (s) => F.pose(Object.assign(clone(s), { arms }));

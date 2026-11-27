@@ -1,3 +1,4 @@
+// Rig v2 (shorter arms): 20 cm plates and a little more shoulder-blade reach at the dead stop keep the hip channel under 140.
 // Dumbbell Pendlay Row (GymVisual #1188712): feet hip width, hips hinged until the back is nearly level (about 10-15 degrees
 // above the floor), knees bent just enough that the straight arms set the dumbbells on the floor under the shoulders
 // (neutral grip). Dead stop on the floor, then a fast row of both dumbbells to the lower ribs (elbows back close to the
@@ -14,10 +15,10 @@ const meta = require('./meta/dumbbell-pendlay-row.json');
 
 const F = makeFamily({ toe: +(process.env.TOE ?? 6), half: +(process.env.HALF ?? 9) });
 for (const c of F.contacts) { const s = c.id.endsWith('_r') ? 1 : -1, a = (+(process.env.TOE ?? 6) + 6) * Math.PI / 180; c.pole = [+Math.cos(a).toFixed(3), 0, +(s * Math.sin(a)).toFixed(3)]; }   // knees track over the toes
-const SIZE = [34, +(process.env.DIA ?? 18), +(process.env.DIA ?? 18)], DSZ = { length: SIZE[0], diameter: SIZE[1] };
+const SIZE = [34, +(process.env.DIA ?? 20), +(process.env.DIA ?? 20)], DSZ = { length: SIZE[0], diameter: SIZE[1] };
 const feet = { r: { c: 'flat', x: 0 }, l: { c: 'flat', x: 0 } };
-const PITCH = +(process.env.P ?? -84), FLOOR = +(process.env.DBF ?? -0.3);   // rig dumbbell low point at the dead stop (the athlete's dumbbells sit about 1.3 cm higher, measured on the mesh; the rig hand shape keeps it from going lower)
-const ROW = { top: { du: -22, dz: +(process.env.DZ ?? 12.5), wx: 8, wz: 3, tilt: 12 }, sc: [{ protract: +(process.env.PR ?? 26), elevate: -1 }, { protract: -14, elevate: -2 }], hang: [+(process.env.HX ?? 8), +(process.env.HZ ?? 9)], bend: +(process.env.BEND ?? 0) };
+const PITCH = +(process.env.P ?? -84), FLOOR = +(process.env.DBF ?? 0.3);   // rig dumbbell low point at the dead stop (rig v2 shapes match the mesh: the plates just touch the floor and the hands stay above it)
+const ROW = { top: { du: -22, dz: +(process.env.DZ ?? 12.5), wx: 8, wz: 3, tilt: 12 }, sc: [{ protract: +(process.env.PR ?? 28), elevate: -1 }, { protract: -14, elevate: -2 }], hang: [+(process.env.HX ?? 8), +(process.env.HZ ?? 9)], bend: +(process.env.BEND ?? 0) };
 const base = (knee) => B.hinge(F, { pitch: PITCH, knee, feet, spine: { l5: -3, t12: 0, t6: 1 }, sc: ROW.sc[0], size: DSZ, kg: +(process.env.KG ?? 0), midfoot: 5,   // balanced at the dead stop, with the dumbbells resting on the floor
   neck: (lean) => -Math.min(lean, 80) * 0.22, arms: (p) => B.mirrorArm(B.rowArm(p, 0, ROW, {})) });
 // knee angle (root height) that sets the hanging dumbbells on the floor

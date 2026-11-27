@@ -9,8 +9,7 @@ const F = require('./families/b3-shoulders');
 const meta = require('./meta/seated-dumbbell-shoulder-press.json');
 
 const ANGLE = 85;
-// back on the pad and buttocks on the seat, measured on the skinned mesh (b2/b3sh_mesh.mjs)
-const SEAT = { pitchAdj: Number(process.env.PITCH_ADJ ?? -6), padOffset: Number(process.env.PAD_OFFSET ?? 7.6), seatDrop: Number(process.env.SEAT_DROP ?? 3.6) };
+const SEAT = {}; // rig v2: rig shapes = drawn body, buttocks rest on the seat and the back on the pad (no mesh offsets)
 const base = F.seated({ angle: ANGLE, ...SEAT });
 const W0 = L.fk(base.pose, base.contacts), S = W0.shoulder_r.p;
 const PLANE = 30 * Math.PI / 180; // elbows about 30 degrees in front of the frontal plane

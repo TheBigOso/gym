@@ -12,6 +12,7 @@ const B3 = require('./families/b3-legs');
 const meta = require('./meta/dumbbell-windmill.json');
 
 const YAW = 40, HALF = +(process.env.HALF || 22);
+const KNEE_R = +(process.env.KNEE_R || 9); // right knee nearly straight (soft enough that the leg never overreaches between keys)
 const contacts = ['r', 'l'].map((s) => Object.assign(L.legContact(s), { pole: [Math.cos(YAW * R.DEG), 0.05, -Math.sin(YAW * R.DEG) + (s === 'r' ? 0.1 : -0.1)], handRot: CA.qArr(L.footRot(YAW)) }));
 const FEET = { r: [0, L.ANKLE_H, HALF], l: [0, L.ANKLE_H, -HALF] };
 const TH = V.len(rig.byId.knee_r.offset), SH = V.len(rig.byId.ankle_r.offset);
@@ -28,7 +29,7 @@ function key(k) {
   for (const j in sp) p.ch[j] = { rot: r1(k.rot * sp[j]), latFlex: r1(k.lat * sp[j]), flex: r1((k.flex || 0) * sp[j]) };
   // pelvis position from the two planted legs (right knee nearly straight, left knee kneeL); roll free, x pulled back
   p = L.solvePose(p, ['root.pos.0', 'root.pos.1', 'root.pos.2', 'root.rot.roll'], [
-    (W) => [(V.len(V.sub(W.hip_r.p, FEET.r)) - legD(7)) * 3, (V.len(V.sub(W.hip_l.p, FEET.l)) - legD(k.kneeL)) * 3],
+    (W) => [(V.len(V.sub(W.hip_r.p, FEET.r)) - legD(KNEE_R)) * 3, (V.len(V.sub(W.hip_l.p, FEET.l)) - legD(k.kneeL)) * 3],
     L.obj.reg('root.pos.0', k.x ?? 0, 0.3), L.obj.reg('root.pos.2', k.z ?? 0, 0.3), L.obj.reg('root.rot.roll', 0, 0.05)], { iters: 400 }).pose;
   p.ik = { leg_r: { target: FEET.r.slice(), weight: 1 }, leg_l: { target: FEET.l.slice(), weight: 1 } };
   for (const s of ['r', 'l']) { p = CA.fitLeg(p, s, FEET[s], contacts); for (const [j, c] of [[`ankle_${s}`, 'dorsi'], [`hip_${s}`, 'rot'], [`hip_${s}`, 'abd']]) p.ch[j][c] = r1(L.wrap(p.ch[j][c])); }

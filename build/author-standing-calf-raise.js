@@ -40,13 +40,14 @@ function poseAt(pitch) {
   if (HAND) for (const s of ['r', 'l']) { q = H.fitArm(q, s, contacts.find((c) => c.id === `arm_${s}`), HAND[s], H.WALL_ARM_GUESS(s)); delete q.__cost; q.ik[`arm_${s}`] = { target: HAND[s].slice(), weight: 1 }; }
   return q;
 }
-// Fingertips resting lightly on a wall in front at about chest height for balance (planted hand contacts)
+// Fingertips resting lightly on a wall in front at about chest height for balance (planted hand contacts): elbows soft
+// (about 40 degrees) on the rig arm, the wall at the palm face of the rig hand shape
 let HAND = null;
-{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = { r: [r1(S[0] + 47), r1(S[1] - 16), r1(S[2] - 3)], l: [r1(S[0] + 47), r1(S[1] - 16), r1(-(S[2] - 3))] }; }
-const WALL_X = r1(HAND.r[0] + H.WALL_PALM);
+{ const W = L.fk(poseAt(0), legOnly), S = W.shoulder_r.p; HAND = H.wallHandTargets(S, { flex: 40, drop: 16, inset: 3 }); }
 // keys every ~3.4 degrees of foot pitch so the ankle's arc about the ball is followed closely between keys
 const N = 10, poses = {}, keyframes = [{ t: 0, pose: 'p0' }, { t: 0.8, pose: 'p0' }];
 for (let i = 0; i <= N; i++) poses[`p${i}`] = poseAt(r1(PITCH_TOP * i / N));
+const WALL_X = H.wallFaceX(poses.p0, contacts); // palm face of the rig hand shape
 poses.top2 = poseAt(PITCH_TOP + 0.6);
 const RISE = [0.8, 1.8], LOWER = [2.6, 4.4];
 const tAt = (span, f) => +(span[0] + (span[1] - span[0]) * f).toFixed(3);

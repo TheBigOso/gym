@@ -3,7 +3,7 @@
 // leg contacts). Both dumbbells at shoulder height, palms forward, elbows under the wrists and a little in front (scapular
 // plane). The right arm presses to nearly straight (1.5 s), pauses and lowers (1.8 s) while the left holds at the shoulder;
 // then the left arm does the same. Bilateral loop (one rep per arm), handle grip in both hands. Seat placement as in the
-// batch 3 seated press (measured on the skinned mesh with b2/b3sh_mesh.mjs).
+// batch 3 seated press (rig shapes on the seat and pad).
 const L = require('./lib');
 const { r1, clone } = L;
 const H = require('./families/hips');
@@ -12,7 +12,7 @@ const S = require('./families/b4-shoulders2');
 const meta = require('./meta/dumbbell-alternate-shoulder-press.json');
 
 const ANGLE = 85;
-const SEAT = { pitchAdj: Number(process.env.PITCH_ADJ ?? -6), padOffset: Number(process.env.PAD_OFFSET ?? 7.6), seatDrop: Number(process.env.SEAT_DROP ?? 3.6) };
+const SEAT = {}; // rig v2: rig shapes = drawn body, buttocks rest on the seat and the back on the pad (no mesh offsets)
 const base = F.seated({ angle: ANGLE, ...SEAT });
 const { poses: P, err } = S.pressKeys(base.pose, { bottom: 0, p25: 0.25, p50: 0.5, p75: 0.75, top: 1 }, { plane: 30, elev0: 82 });
 P.topHold = clone(P.top); P.topHold.ch.elbow_r.flex = P.topHold.ch.elbow_l.flex = r1(P.top.ch.elbow_r.flex + 2);

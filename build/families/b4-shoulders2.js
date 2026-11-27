@@ -61,7 +61,8 @@ const palmDown = (elev, plane) => { const e = elev * D2R, p = plane * D2R; retur
 /* ---------------- bases ---------------- */
 // Upright on the end of a flat bench (no back support): trunk tall, thighs on the seat, feet flat. The pose comes from the
 // seated base with a vertical pad (back and buttocks on one vertical line = trunk upright); then the bench is replaced by a
-// flat bench whose seat end sits under the thighs. seatDrop lowers the rig so the skinned buttocks meet the seat.
+// flat bench whose seat end sits under the thighs. Rig v2: the rig buttocks rest on the seat; seatDrop / pitchAdj (default
+// 0) are optional extra offsets, not mesh compensation.
 function benchEnd({ seatDrop = 0, pitchAdj = 0, stance = 22, toe = 10, front = 14, seatH = 45, footAhead = 4 } = {}) {
   const s = F.seated({ angle: 90, stance, toe, seatH, pitchAdj, seatDrop: 0, footAhead });
   let p = s.pose;
@@ -84,7 +85,7 @@ function longSit({ hipFlex = 89.5, knee = 4, dorsi = -12, abd = 6, lean = 0, l5 
   for (const s of ['r', 'l']) { p.ch[`hip_${s}`] = { flex: hipFlex, abd, rot: -4 }; p.ch[`knee_${s}`] = { flex: knee }; p.ch[`ankle_${s}`] = { dorsi }; }
   p.ch.sc_r = { protract: 2, elevate: 0 }; p.ch.sc_l = { protract: 2, elevate: 0 };
   p.root.pos = [0, 40, 0];
-  // sit bones on the floor (legs and pelvis only: the arms are posed later); sink lets the skinned mesh meet the floor
+  // sit bones on the floor (legs and pelvis only: the arms are posed later); rig v2: the rig shapes rest on the floor (sink 0)
   const low = (W) => Math.min(...['buttock_r', 'buttock_l', 'pelvis', 'thigh_r', 'thigh_l', 'calf_r', 'calf_l', 'shank_r', 'shank_l', 'foot_r', 'foot_l'].map((id) => H.bottomOf(W, id)));
   p.root.pos[1] = r1(p.root.pos[1] - low(L.fk(p)) - sink);
   const W = L.fk(p);

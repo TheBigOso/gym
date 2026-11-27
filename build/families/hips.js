@@ -20,7 +20,7 @@ function lieBase() {
   const sup = L.POSES.supine({ kneeFlex: 90 });
   const p0 = clone(sup.pose); p0.root.pos = [0, p0.root.pos[1], 0];
   return L.solvePose(p0, ['root.pos.1', 'root.rot.pitch', 'ch.spine_l5.flex', 'ch.spine_t12.flex', 'ch.spine_t6.flex'], [
-    (W) => [bottomOf(W, 'buttock_r') * 4, bottomOf(W, 'chest') * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
+    (W) => [bottomOf(W, 'buttock_r') * 4, Math.min(bottomOf(W, 'chest'), bottomOf(W, 'traps_r'), bottomOf(W, 'traps_l')) * 3, Math.min(0, bottomOf(W, 'neck') - 0.5) * 4, Math.max(0, bottomOf(W, 'ribcage') - 1.2) * 2, Math.min(0, bottomOf(W, 'ribcage')) * 4, Math.min(0, bottomOf(W, 'abdomen') - 1.5) * 4],
     L.obj.reg('ch.spine_l5.flex', -8, 0.15), L.obj.reg('ch.spine_t12.flex', 2, 0.25), L.obj.reg('ch.spine_t6.flex', 4, 0.4), L.obj.reg('root.rot.pitch', 92, 0.2),
   ]).pose;
 }
@@ -113,6 +113,14 @@ const handRotWallL = Q.fromBasis([1, 0, 0], [0, -1, 0], [0, 0, -1]), handRotWall
 const WALL_PALM = 6.6;
 const wallHand = (s) => Object.assign(L.handContact(s), { label: `${s === 'r' ? 'Right' : 'Left'} hand (wall)`, pole: [-0.3, -1, s === 'r' ? 0.6 : -0.6], handRot: qArr(s === 'r' ? handRotWallR : handRotWallL) });
 const WALL_ARM_GUESS = (s) => [{ [`shoulder_${s}`]: { plane: 85, elev: 80, axial: 0 }, [`elbow_${s}`]: { flex: 30 }, [`wrist_${s}`]: { pron: 0, flex: -60, dev: 0 } }, { [`shoulder_${s}`]: { plane: 85, elev: 80, axial: -60 }, [`elbow_${s}`]: { flex: 30 }, [`wrist_${s}`]: { pron: 80, flex: -60, dev: 0 } }];
+// Rig v2 (shapes fitted to the body): wall hand targets in front of the shoulder S with the elbow bent about `flex` degrees,
+// and the wall face where the rig hand shape's palm meets it (no mesh measurement needed any more).
+function wallHandTargets(S, { flex = 40, drop = 6, inset = 2 } = {}) {
+  const dx = Math.sqrt(Math.max(0, L.reach(flex) ** 2 - drop * drop - inset * inset));
+  return { r: [r1(S[0] + dx), r1(S[1] - drop), r1(S[2] - inset)], l: [r1(S[0] + dx), r1(S[1] - drop), r1(-(S[2] - inset))] };
+}
+const frontOf = (W, id) => { const g = R.shapeWorld(W, shapeOf(id)); return g.kind === 'capsule' ? Math.max(g.a[0] + g.r[0], g.b[0] + g.r[1]) : g.c[0] + Math.hypot(g.axes[0][0], g.axes[1][0], g.axes[2][0]); };
+const wallFaceX = (pose, contacts) => { const W = L.fk(pose, contacts); return r1(Math.max(frontOf(W, 'hand_r'), frontOf(W, 'hand_l'))); };
 const NOTE = 'Reference used only to identify the movement. No GymVisual media is stored here; this rig, model and animation are original.';
 function module_(meta, contacts, poses, keyframes, extra = {}) {
   const ex = { schemaVersion: '1.0.0', rig: { ref: L.rigDef.rigId }, exercise: clone(meta.exercise), camera: meta.camera, props: clone(meta.props), contacts,
@@ -122,4 +130,4 @@ function module_(meta, contacts, poses, keyframes, extra = {}) {
 }
 const setKin = (ex) => (prefix, field, v) => { const k = ex.exercise.kinematics.find((x) => x.measure.startsWith(prefix)); if (!k) throw new Error(`no kinematics row ${prefix}`); k[field] = v; };
 
-module.exports = { wallHand, WALL_PALM, WALL_ARM_GUESS, handsOnHips, qArr, bottomOf, lowPoint, kneeOf, dorsiOf, footQ, lieBase, legC, handC, fitLeg, fitArm, heelRaise, loopReport, module_, setKin, NOTE, LEG_PATHS };
+module.exports = { wallHand, WALL_PALM, wallHandTargets, wallFaceX, frontOf, WALL_ARM_GUESS, handsOnHips, qArr, bottomOf, lowPoint, kneeOf, dorsiOf, footQ, lieBase, legC, handC, fitLeg, fitArm, heelRaise, loopReport, module_, setKin, NOTE, LEG_PATHS };

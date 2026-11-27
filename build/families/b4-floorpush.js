@@ -5,9 +5,8 @@
 //  - pike helpers (inverted V, hips high) and the push-up to side plank roll live in their authors; shared bits are here.
 //  - Floor lying with dumbbells: lieFloor (supine on the mat, knees bent, feet planted) and floorSweep (feet slide, floor,
 //    dumbbells vs floor / body / each other). The dumbbell arm solves come from b3-chest.js (pressPath, flyPath, solveArmDB).
-// The Studio clay athlete differs from the rig shapes: lying on the floor its back and head sit a few cm above where the rig
-// shapes touch (measured with b2/b4fp/mesh.mjs); the rig shapes may not go below the floor (verify, 0.5 cm), so the floor
-// authors place the rig shapes on the floor (within that tolerance) and report the measured mesh gaps.
+// Rig v2: the rig shoulders, arm (24.4 + 25.7 cm) and collision shapes match the drawn body, so 'arms straight' is solved on
+// the rig arm itself (L.reach) and the clearances computed on the rig shapes are what the viewer shows.
 const L = require('../lib');
 const { R, V, Q, rig, r1, clone, fk, solvePose } = L;
 const H = require('./hips');
@@ -67,19 +66,6 @@ function armFK(pose, s, contact, target, guess) {
   return out;
 }
 
-// The skinned athlete's shoulder (upper-arm bone head) sits at a fixed point in the rig scapula (sc) frame, about 5 cm
-// toward the back and the pelvis from the rig shoulder joint, and its arm (shoulder to wrist) is 50.5 cm long against the
-// rig's 55 (measured on push-up, pike and glute-bridge frames with b2/b4fp/bonepos.mjs). A planted palm is drawn on the
-// floor only if the wrist target is within that reach of the mesh shoulder.
-const MESH_SH = [-5.1, -5.6, 17.5], MESH_ARM = 50.5;
-const meshShoulder = (W, s = 'r') => V.add(W[`sc_${s}`].p, Q.rot(W[`sc_${s}`].q, s === 'r' ? MESH_SH : [MESH_SH[0], MESH_SH[1], -MESH_SH[2]]));
-const meshReach = (W, s, target) => dist(meshShoulder(W, s), target);
-const MESH_UA = 24.5, MESH_FA = 26.0;
-// Elbow flexion of the drawn (skinned) arm for a planted wrist target (law of cosines on the mesh arm)
-// Wrist of the drawn arm when the arm is FK (contact released): mesh shoulder plus the rig segment directions at mesh lengths
-const meshWristFK = (W, s = 'r') => { const S = meshShoulder(W, s), u = V.norm(V.sub(W[`elbow_${s}`].p, W[`shoulder_${s}`].p)), f = V.norm(V.sub(W[`wrist_${s}`].p, W[`elbow_${s}`].p)); return V.add(V.add(S, V.scale(u, MESH_UA)), V.scale(f, MESH_FA)); };
-const meshElbow = (W, s, target) => { const d = Math.min(MESH_UA + MESH_FA - 0.05, meshReach(W, s, target)); return 180 - Math.acos((MESH_UA ** 2 + MESH_FA ** 2 - d * d) / (2 * MESH_UA * MESH_FA)) / R.DEG; };
-
 /**
  * makePushG({ handY, handZ, footY, toeX, ankleZ, flarePole, footTilt })
  *  handY: surface under the palms; footY: surface under the toes (0 floor, 45 bench); toeX: toe joint x (default: lib plank).
@@ -116,16 +102,15 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
   }
   const WR0 = (handX) => [r1(handX), r1(handY + PALM), handZ], WL0 = (handX) => [r1(handX), r1(handY + PALM), -handZ];
   // Body key: solve root x / y / pitch for straight legs (hip-ankle = LEG_D), a straight body line and either the arm
-  // length armD (shoulder to the planted wrist), the chest height chestY, or (free hands) the chest height alone.
-  function body(handX, { armD, meshD, chestY, u, neck = 0 }) {
+  // length armD (shoulder to the planted wrist) or the chest height chestY.
+  function body(handX, { armD, chestY, u, neck = 0 }) {
     const WR = WR0(handX);
     const p = headSc(clone(base), u, neck);
     const objs = [
       (W) => [(dist(W.hip_r.p, AR) - LEG_D) * 4, (dist(W.hip_l.p, AL) - LEG_D) * 4],
       (W) => [(sag(V.sub(W.hip_l.p, AL), trunkDir(W)) - BEND0) * 0.4],
     ];
-    if (meshD != null) objs.push((W) => [(meshReach(W, 'r', WR) - meshD) * 4, Math.max(0, dist(W.shoulder_r.p, WR) - L.reach(5)) * 4]);
-    else if (armD != null) objs.push((W) => [(dist(W.shoulder_r.p, WR) - armD) * 4]);
+    if (armD != null) objs.push((W) => [(dist(W.shoulder_r.p, WR) - armD) * 4]);
     else objs.push((W) => [(chestMinY(W) - chestY) * 4]);
     p.root.pos = [p.root.pos[0], p.root.pos[1] + handY * 0.8 + footY * 0.8, 0];
     p.root.rot.pitch = p.root.rot.pitch + handY * 0.5 - footY * 0.4;
@@ -138,16 +123,13 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
     for (const sd of ['r', 'l']) { q = matchLeg(q, sd, contacts); q = matchArm(q, sd, contacts); }
     return { pose: q, cost: s.cost };
   }
-  // Fully FK arms (hands released, weight 0) for a body key; lift: cm the wrists sit above the planted target.
-  // The drawn FK hand differs from the rig wrist (shorter skinned arm, offset shoulder): the rig target is corrected so the
-  // drawn wrist lands at the wanted point (planted spot + lift), so the hands do not slide when the contact is released (horizontally; the drawn hand may sit a little higher).
+  // Fully FK arms (hands released, weight 0) for a body key; lift: cm the wrists sit above the planted target, dx: cm the
+  // wrists move along x. The rig wrist is the drawn wrist, so the FK arm is fitted straight to the wanted point.
   function freeArms(q, handX, lift = 0, dx = 0) {
     let p = clone(q);
     for (const sd of ['r', 'l']) {
       const T = sd === 'r' ? WR0(handX) : WL0(handX), want = [T[0] + dx, T[1] + lift, T[2]], c = contacts.find((x) => x.id === `arm_${sd}`);
-      let tgt = want.slice(), out = null;
-      for (let it = 0; it < 4; it++) { out = armFK(p, sd, c, tgt); const M = meshWristFK(fk(out), sd); tgt = [tgt[0] + want[0] - M[0], want[1], tgt[2] + want[2] - M[2]]; } // horizontal only: the rig wrist never goes below its planted height
-      p = out;
+      p = armFK(p, sd, c, want);
     }
     p.ik.arm_r = { target: WR0(handX), weight: 0 }; p.ik.arm_l = { target: WL0(handX), weight: 0 };
     return p;
@@ -159,7 +141,7 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
       elbow: m.elbowR, elbowL: m.elbowL, flare: elbowFlare(W, 'r'), wristExt: wristExt(W, 'r'), chestY: chestMinY(W), sh: W.shoulder_r.p[1],
       shAhead: midS(W)[0] - WR[0], bodyAng, bend: sag(V.sub(W.hip_l.p, AL), t) - BEND0,
       knee: kneeOf(W, 'r'), dorsi: dorsiOf(W, 'r'), armD: dist(W.shoulder_r.p, WR), legD: dist(W.hip_r.p, AR), minY: L.shapeMinY(W),
-      handW: 2 * handZ, shW: dist(W.shoulder_r.p, W.shoulder_l.p), wristY: W.wrist_r.p[1], drawnElbow: meshElbow(W, 'r', WR), meshReach: meshReach(W, 'r', WR),
+      handW: 2 * handZ, shW: dist(W.shoulder_r.p, W.shoulder_l.p), wristY: W.wrist_r.p[1],
     };
   }
   // Sweep: planted wrist / ankle error (weight-1 frames), floor, dorsi / knee range and clearance above box props
@@ -188,12 +170,11 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
     return out;
   }
   // One repetition like push.js rep(): top -> eased lowering keys -> bottom -> pause -> pressing keys -> top.
-  // meshSlack: the top is solved so the drawn (skinned) arm is that many cm short of its full reach (palms on the floor,
-  // arms straight on screen); without it the rig arm is set to topElbow degrees of flexion.
-  const topKey = (handX, { topElbow = 8, meshSlack = null, neck = 0 } = {}) => key(handX, meshSlack != null ? { meshD: MESH_ARM - meshSlack, u: 0, neck } : { armD: L.reach(topElbow), u: 0, neck });
-  function rep(handX, { topElbow = 8, meshSlack = null, botChest = 8, T, nDown = 6, nUp = 4, neck = 0 }) {
+  // The top is solved with the rig arm straight but not locked: shoulder to planted wrist = L.reach(topElbow).
+  const topKey = (handX, { topElbow = 8, neck = 0 } = {}) => key(handX, { armD: L.reach(topElbow), u: 0, neck });
+  function rep(handX, { topElbow = 8, botChest = 8, T, nDown = 6, nUp = 4, neck = 0 }) {
     const ease = (f) => f * f * (3 - 2 * f);
-    const top = topKey(handX, { topElbow, meshSlack, neck }).pose, bottom = key(handX, { chestY: handY + botChest, u: 1, neck }).pose;
+    const top = topKey(handX, { topElbow, neck }).pose, bottom = key(handX, { chestY: handY + botChest, u: 1, neck }).pose;
     const cTop = chestMinY(fk(top, contacts)), cBot = handY + botChest;
     const poses = { top, bottom };
     const t0 = T.hold, t1 = t0 + T.down, t2 = t1 + T.pause, t3 = t2 + T.up;
@@ -213,8 +194,15 @@ function makePushG({ handY = 0, handZ = 24, footY = 0, toeX = null, ankleZ = 8, 
 // Supine on the mat, head toward -X, knees bent with the feet flat (leg contacts), shoulder blades set back and down.
 function lieFloor({ knee = 80, footZ = 16, yaw = 8 } = {}) {
   const CA = require('./core-a');
-  const lie = CA.lie({ kneeFlex: 90, headRest: 'floor' });
+  const lie = CA.lie({ kneeFlex: 90, headRest: 'none' });
   let p = clone(lie.pose);
+  // Rig v2: the head sits forward of the upper back, so with a neutral neck the back of the head rests a little off the mat
+  // (as on a real person). Let it settle toward the mat within a relaxed neck extension (neck -14, head -11 at most).
+  p = solvePose(p, ['ch.neck_c7.flex', 'ch.head_c1.flex'], [
+    (W) => { const h = minOf(W, ['head', 'hair']) - 0.3; return [Math.min(0, h) * 4, Math.max(0, h) * 1]; },
+    L.obj.reg('ch.neck_c7.flex', 0, 0.2), L.obj.reg('ch.head_c1.flex', 0, 0.2),
+    (W, q) => [Math.min(0, q.ch.neck_c7.flex + 14) * 3, Math.min(0, q.ch.head_c1.flex + 11) * 3],
+  ]).pose;
   p.ch.sc_r = clone(C.SC); p.ch.sc_l = clone(C.SC);
   const contacts = C.footContacts(yaw);
   const fx = C.footXForKnee(p, contacts, footZ, knee);
@@ -251,5 +239,5 @@ function floorSweep(ex, { grips, n = 600, probe } = {}) {
 // Bisection on a monotone function f(x) for f(x) = 0 on [a, b]
 function bisect(f, a, b, it = 40) { let fa = f(a); for (let i = 0; i < it; i++) { const m = (a + b) / 2, fm = f(m); if ((fm > 0) === (fa > 0)) { a = m; fa = fm; } else b = m; } return (a + b) / 2; }
 
-module.exports = { MESH_SH, MESH_ARM, meshShoulder, meshReach, meshElbow, meshWristFK, PALM, LEG_KNEE, legLen, dist, trunkDir, midS, sag, shapeOf, shapeBottom, lowPoint, chestMinY, minOf, footMin, dorsiOf, kneeOf, elbowFlare, wristExt, elbowFlexOf,
+module.exports = { PALM, LEG_KNEE, legLen, dist, trunkDir, midS, sag, shapeOf, shapeBottom, lowPoint, chestMinY, minOf, footMin, dorsiOf, kneeOf, elbowFlare, wristExt, elbowFlexOf,
   matchLeg, matchArm, armFK, makePushG, lieFloor, ARM_SHAPES, armMinY, floorSweep, bisect };

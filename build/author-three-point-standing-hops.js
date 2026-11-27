@@ -88,7 +88,8 @@ function setTrunk(p, pitch) {
   p.ch.head_c1 = { rot: 0, flex: r1(x * 0.6) };
   return p;
 }
-const ARM = { wrist: [31, -4, 15], elbow: [12, -18, 20], w: { pron: 80, flex: 15, dev: 0 }, guess: [90, 15, 30] };
+const ARM = { wrist: [29.5, -6.4, 17.1], elbow: [16, -16.2, 21.5], // rig v2: same arm shape from the new (lower, wider) shoulder, scaled to the shorter arm
+  w: { pron: 80, flex: 15, dev: 0 }, guess: [90, 15, 30] };
 // Arms: elbows bent about 90-100 degrees, close to the ribs, loose hands in front of the chest.
 function armsUp(pose) {
   const W = L.fk(pose), T6 = W.spine_t6;

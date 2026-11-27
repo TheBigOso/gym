@@ -8,7 +8,7 @@ const { V, r1, clone } = L;
 const C = require('./families/b3-chest');
 const H = require('./families/hips');
 const meta = require('./meta/dumbbell-squeeze-press.json');
-const HALF_GAP = 6.6;   // dumbbell centre |z|: plates (6 cm radius) about 1 cm apart on the rig, i.e. pressed together on screen
+const HALF_GAP = 6.7;   // dumbbell centre |z|: plates (6 cm radius) about 1.4 cm apart on the rig, i.e. pressed together on screen
 const CLEAR = 4;        // bottom: plates this far above the highest point of the chest
 const T = C.phaseT(meta), { B, base, contacts, foot } = C.benchBase(0);
 const W0 = L.fk(base, contacts), F = C.trunkFrame(W0), ax = F.u;

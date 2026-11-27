@@ -2,7 +2,7 @@
 // seat, feet flat (planted leg contacts). Dumbbells hang beside the bench, palms in, elbows soft. Both arms rise forward:
 // they leave the sides a little outside the thighs and come in to shoulder width over the knees as they rise, palms turning
 // down, to shoulder height: 1.8 s up, 0.4 s pause, 2 s down (Coratella 2020 used 2-0.5-2). Bilateral, handle grip.
-// Seat placement as for the seated lateral raise (skinned mesh on the seat, b2/b3sh_mesh.mjs).
+// Seat placement on the rig shapes (rig v2 fits the body): buttocks on the seat, back and buttocks on one vertical line.
 const L = require('./lib');
 const { V, r1 } = L;
 const H = require('./families/hips');
@@ -10,7 +10,7 @@ const F = require('./families/b3-shoulders');
 const S = require('./families/b4-shoulders2');
 const meta = require('./meta/seated-dumbbell-front-raise.json');
 
-const base = S.benchEnd({ pitchAdj: -6, footAhead: -8, seatDrop: Number(process.env.SEAT_DROP ?? 3.0) });
+const base = S.benchEnd({ footAhead: -8 }); // rig v2: rig buttocks rest on the seat (no mesh drop)
 const E0 = Number(process.env.E0 ?? 22), P0 = Number(process.env.P0 ?? 18), P1 = 80;
 const sm = (x) => x * x * (3 - 2 * x);
 // plane swings in from beside the hips to straight forward over the first ~60% of the lift (dumbbells clear the thighs)

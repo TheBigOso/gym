@@ -11,7 +11,7 @@ const H = require('./families/hips');
 const F = require('./families/b4-calvesglutes');
 const meta = require('./meta/kneeling-leg-half-circle.json');
 
-const A = F.allFours(), { fours, contacts, Wf } = A;
+const A = P.allFours(), { fours, contacts, Wf } = A;
 const LEG = V.len(L.rig.byId.knee_r.offset) + V.len(L.rig.byId.ankle_r.offset);
 const AZ = +(process.env.AZ ?? 46), EL_TOP = +(process.env.ELTOP ?? 1), KNEE = 3, POINT = -45;
 const HIP = Wf.hip_r.p;

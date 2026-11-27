@@ -26,7 +26,7 @@ const lie = base, NECK0 = r1(lie.ch.neck_c7.flex + lie.ch.head_c1.flex);
 function curl(k, guess) {
   const p = CA.spine(clone(lie), lie, { l5: k.l5, t12: k.t12, t6: k.t6 });
   CA.neck(p, k.neck == null ? NECK0 : k.neck);
-  const out = CB.cradle(p, { floor: k.floor ? -M.MESH.arm : 1.0, elbowAnt: -3, elbowOut: 20, guess, ref: k.floor ? guess : null });
+  const out = CB.cradle(p, { floor: k.floor ? 0.2 : 1.0, elbowAnt: -3, elbowOut: 20, guess, ref: k.floor ? guess : null });
   return out;
 }
 const KEYS = [
@@ -49,7 +49,6 @@ const keyframes = [{ t: 0, pose: 'lie' }, { t: 0.8, pose: 'lie' }, { t: 1.2, pos
 const ex = CA.buildModule(meta, poses, keyframes, []);
 
 const rep = CA.scan(ex, { upper: (W) => CA.upperFromFloor(W), lowBack: (W) => CA.minOf(W, ['buttock_r', 'pelvis']) });
-M.meshFloor(ex, rep);
 const Wl = L.fk(lie), Wt = L.fk(poses.topHold), kin = ex.exercise.kinematics, d = (v) => `≈${Math.round(v)}°`, pk = poses.topHold, fr = foot(Wl, 'r');
 kin[0].setup = d(CA.upperFromFloor(Wl)); kin[0].peak = `${d(CA.upperFromFloor(Wt))} (C7 up ${r1(Wt.neck_c7.p[1] - Wl.neck_c7.p[1])} cm)`;
 kin[1].setup = d(lie.ch.spine_l5.flex) + ' (slight lordosis)'; kin[1].peak = `${d(pk.ch.spine_l5.flex)} (low back stays on the mat)`;
@@ -58,5 +57,5 @@ kin[3].setup = `Hip flexion ${d(lie.ch.hip_r.flex)}, abduction ${d(lie.ch.hip_r.
 kin[3].peak = 'Unchanged (pelvis and legs still)';
 kin[4].setup = 'Fingertips behind the head, elbows wide'; kin[4].peak = 'Unchanged; the hands only support the head';
 kin[5].setup = 'Rest 0.8 s'; kin[5].peak = '1.0 s up, 0.5 s squeeze, 1.6 s down, 1.1 s rest';
-console.log(`Frog crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} floorTol=${ex.checks.floorTolerance} legs=${JSON.stringify([lie.ch.hip_r, lie.ch.knee_r, lie.ch.ankle_r])} ankle=${Wl.ankle_r.p.map(r1)} knee=${Wl.knee_r.p.map(r1)}`);
+console.log(`Frog crunch: wrote ${L.write(ex)}\n  ${JSON.stringify(rep)} legs=${JSON.stringify([lie.ch.hip_r, lie.ch.knee_r, lie.ch.ankle_r])} ankle=${Wl.ankle_r.p.map(r1)} knee=${Wl.knee_r.p.map(r1)}`);
 M.guard('frog-crunch', ex, rep, [(CA.upperFromFloor(Wt) < 25 || CA.upperFromFloor(Wt) > 50) && 'upper-trunk curl outside 25-50 degrees']);

@@ -1,8 +1,8 @@
 // Chest-Supported Dumbbell Row (GymVisual #032712): adjustable bench at 40 degrees. Straddle the seat, chest on the pad
 // with the chin just over the top, legs either side of the seat with the balls of the feet planted on the floor behind.
 // The arms hang straight outside the pad, then row both dumbbells (neutral grip) to the lower ribs, elbows up and back
-// close to the body, shoulder blades squeezing; pause; lower slowly. The chest stays on the pad (the front of the
-// athlete's chest rests on the pad surface, measured on the skinned mesh); only the arms and shoulder blades move. Bilateral.
+// close to the body, shoulder blades squeezing; pause; lower slowly. The chest stays on the pad (the rig chest shapes rest
+// on the pad surface; rig v2 shapes match the drawn body); only the arms and shoulder blades move. Bilateral.
 const L = require('./lib');
 const { R, V, Q, r1, clone } = L;
 const B = require('./families/b3-back');
@@ -14,7 +14,7 @@ const meta = require('./meta/chest-supported-dumbbell-row.json');
 const SIZE = [32, 12, 12], DSZ = { length: SIZE[0], diameter: SIZE[1] };
 const ANG = 40, PAD = 80, BW = 28, SEAT = 40, BENCH_H = 45;
 const S_ALONG = +(process.env.SA ?? 23);                                   // pelvis this far up the pad (cm): the chin clears the top
-const CHEST_OFF = +(process.env.CO ?? 0);              // extra gap (cm) between the rig chest shapes and the pad (mesh fit)
+const CHEST_OFF = +(process.env.CO ?? 0);              // extra gap (cm) between the rig chest shapes and the pad
 const FOOT = [+(process.env.FX ?? -50), null, +(process.env.FZ ?? 26)];                          // balls of the feet behind and beside the seat
 const bench = DBH.bench({ x: -SEAT / 2, z: 0, seat: SEAT, height: BENCH_H, width: BW, angle: ANG, back: PAD, side: 1 });
 const boxes = B.benchBoxes(bench);
@@ -43,7 +43,7 @@ for (let it = 0; it < 40; it++) { const g = frontGap(L.fk(base(pos))) - CHEST_OF
 let body = base(pos.map((v) => +v.toFixed(2)));
 body = P.fitLeg(body, 'r', contacts, 'leg_r'); body = P.fitLeg(body, 'l', contacts, 'leg_l'); B.wrapPose(body);
 // rowing arms: hang straight outside the pad, row to the lower ribs
-const ROW = { top: { du: +(process.env.TDU ?? -12), dz: +(process.env.TDZ ?? 8), wz: 2, flex: +(process.env.TFL ?? 100), tilt: 10 }, sc: [{ protract: 8, elevate: 0 }, { protract: -16, elevate: -1 }], hang: [3, 6] };
+const ROW = { top: { du: +(process.env.TDU ?? -12), dz: +(process.env.TDZ ?? 10), wz: 2, flex: +(process.env.TFL ?? 100), tilt: 10 }, sc: [{ protract: 8, elevate: 0 }, { protract: -16, elevate: -1 }], hang: [3, 6] };
 const state = {};
 function at(f) { const q = B.rowArm(body, f, ROW, state); B.mirrorArm(q); return B.wrapPose(q); }
 const FS = [0, 0.2, 0.4, 0.6, 0.8, 1];
