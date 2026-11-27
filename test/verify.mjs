@@ -58,6 +58,13 @@ for (const f of fs.readdirSync('src/exercises')) {
   const viol = [];
   for (const [name, p] of Object.entries(ex.poses)) for (const j in p.ch) { const lim = rig.byId[j] && rig.byId[j].limits; if (!lim) continue; for (const c in p.ch[j]) if (lim[c] && (p.ch[j][c] < lim[c][0] - 0.5 || p.ch[j][c] > lim[c][1] + 0.5)) viol.push(`${name}.${j}.${c}=${p.ch[j][c]}`); }
   check(!viol.length, `${id}: joint limits ${viol.length ? viol.join(', ') : 'respected'}`);
+  // two-hand equipment (barbell, kettlebell by the horns, cable bar / rope, band in both hands): the hands stay on it
+  const twoHand = (ex.props || []).filter((pr) => pr.attach && pr.attach.joint && pr.attach.with && pr.kind !== 'band'); // a band stretches between the hands
+  if (twoHand.length) {
+    const EQ = require('../build/families/equip.js'); let wMin = 1e9, wMax = -1e9;
+    for (let k = 0; k <= 120; k++) { const W = R.evalPose(rig, tl.pose((tl.duration * k) / 120), ex.contacts), w = EQ.barAt(W, twoHand[0].attach.grip || (twoHand[0].kind === 'barbell' ? 'bar' : 'handle')).width; wMin = Math.min(wMin, w); wMax = Math.max(wMax, w); }
+    check(wMax - wMin <= 1.5, `${id}: hands stay on the two-hand ${twoHand.map((p) => p.kind).join(', ')} (grip width ${wMin.toFixed(1)}-${wMax.toFixed(1)} cm)`);
+  }
   check(fs.existsSync(`exports/${id}.glb`), `${id}: exports/${id}.glb present`);
 }
 const { browser, page, errors } = await openPlayer();
