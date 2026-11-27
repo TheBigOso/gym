@@ -1,4 +1,4 @@
-// Dumbbell Step-down (GymVisual #1173712): stand on a 24 cm box near its front edge with a dumbbell hanging in each hand
+// Dumbbell Step-down (GymVisual #1173712): stand on a 16 cm box near its front edge with a dumbbell hanging in each hand
 // (neutral grip, arms hanging straight down). Shift onto the right foot, then bend the right knee slowly (about 2 s) while the
 // left foot reaches forward over the edge and down until its heel lightly taps the floor in front of the box; straighten the
 // right leg to stand tall and bring the left foot back onto the box. The right foot stays planted on the box all loop; the
@@ -27,9 +27,9 @@ const bent = (lf, knee, pitch) => F.balance(sp([-6, 80 + LIFT, 8], pitch, { r: O
 const standOn = () => { let s = sp([-2, 88 + LIFT, 0], 0, { r: ON_R, l: ON_L }, { l5: 0, t12: 0, t6: 0 });
   for (let i = 0; i < 6; i++) { s = F.rootY(s, 4); s.root[0] = r1(s.root[0] - (com(F.fk(F.pose(s)))[0] - CX)); } return F.rootY(s, 4); };
 // heel tap: left foot toes up 20 degrees, the heel (lowest point of the foot) 0.3 cm over the floor just in front of
-// the box edge (ankle target from H.heelRaise); the right knee is found by bisection so the left leg (nearly straight,
+// the box edge (12 cm, so the rig v2 foot and shank clear the box front; ankle target from H.heelRaise); the right knee is found by bisection so the left leg (nearly straight,
 // about 6 degrees) just reaches it
-const TAP_PITCH = -20, TAP_Z = -8, HEEL_X = EDGE + +(process.env.HX ?? 6);
+const TAP_PITCH = -20, TAP_Z = -8, HEEL_X = EDGE + +(process.env.HX ?? 12);
 // ankle target for the toes-up foot: the lowest point of the foot shape 0.3 cm over the floor at x = HEEL_X
 const heelC = H.legC('l', { rot: H.footQ(TAP_PITCH, 6), id: 'heel_l' });
 const TAP = (() => {
@@ -37,8 +37,9 @@ const TAP = (() => {
   const x = L.R.solveLM([HEEL_X + 2, 7], res, { iters: 200 }).x;
   return { target: [r1(x[0]), r1(x[1]), TAP_Z] };
 })();
-const legReach = (kn) => Math.sqrt(42 * 42 + 41.5 * 41.5 + 2 * 42 * 41.5 * Math.cos(kn * Math.PI / 180));
-const tapPitch = (k) => -16 - (k - 40) * 0.25;
+const TH = L.V.len(L.rig.byId.knee_r.offset), SH = L.V.len(L.rig.byId.ankle_r.offset);   // rig v2 thigh and shank
+const legReach = (kn) => Math.sqrt(TH * TH + SH * SH + 2 * TH * SH * Math.cos(kn * Math.PI / 180));
+const tapPitch = (k) => -22 - (k - 40) * 0.25;   // rig v2: a little more trunk lean keeps the stance ankle inside its dorsiflexion limit (35)
 // the swinging left foot spec while the heel is near the floor (its channels are refitted to the toes-up foot below)
 const tapFoot = () => fl(TAP.target[0], TAP_Z, { lift: r1(TAP.target[1] - L.ANKLE_H + 2), w: 0, pitch: TAP_PITCH });
 function tapSpec() {
@@ -80,6 +81,14 @@ const rep = K.scan(ex, { holds: [{ side: 'r' }, { side: 'l' }], planted: ['leg_r
   const g = L.R.shapeWorld(W, L.rig.shapes.find((s) => s.id === 'foot_l'));
   for (let a = -1; a <= 1; a += 0.1) { const pnt = L.V.add(g.c, L.V.scale(g.axes[0], a)); if (pnt[0] < EDGE) { const d = pnt[1] - Math.hypot(g.axes[0][1], g.axes[1][1], g.axes[2][1]) * 0 - 3.6 - BOX_H; if (d < footBox) { footBox = d; footBoxAt = +t.toFixed(2); } } }
 } });
+// free shank and foot shapes vs the box (rig shapes = what the viewer draws): surface samples, box distance
+let legBox = 1e9, legBoxAt = null;
+{ const lo = [box.center[0] - box.size[0] / 2, 0, box.center[2] - box.size[2] / 2], hi = [box.center[0] + box.size[0] / 2, BOX_H, box.center[2] + box.size[2] / 2], tl = L.R.buildTimeline(ex), V = L.V;
+  for (let i = 0; i <= 400; i++) { const t = (meta.timeline.duration * i) / 400; if (t < 0.9 || t > 4.55) continue; const W = L.R.evalPose(L.rig, tl.pose(t), ex.contacts);
+    for (const s of L.rig.shapes.filter((x) => x.id === 'foot_l' || x.id === 'shank_l')) { const g = L.R.shapeWorld(W, s), pts = [];
+      if (g.kind === 'capsule') for (let k = 0; k <= 10; k++) pts.push([V.add(g.a, V.scale(V.sub(g.b, g.a), k / 10)), g.r[0] + ((g.r[1] - g.r[0]) * k) / 10]);
+      else for (let a = 0; a < 16; a++) for (let b = -3; b <= 3; b++) { const th = (a / 16) * 2 * Math.PI, ph = (b / 3) * (Math.PI / 2); pts.push([V.add(g.c, V.add(V.scale(g.axes[0], Math.cos(ph) * Math.cos(th)), V.add(V.scale(g.axes[1], Math.cos(ph) * Math.sin(th)), V.scale(g.axes[2], Math.sin(ph))))), 0]); }
+      for (const [q, r] of pts) { const d = Math.max(...[0, 1, 2].map((k) => Math.max(lo[k] - q[k], q[k] - hi[k]))) - r; if (d < legBox) { legBox = d; legBoxAt = [s.id, +t.toFixed(2)]; } } } } }
 const Ws = F.fk(poses.stand), Wt = F.fk(poses.tap);
 const set = (p, f, v) => { const k = ex.exercise.kinematics.find((x) => x.measure.startsWith(p)); if (k) k[f] = v; };
 set('Box height', 'setup', `${BOX_H} cm box, right toes about 2 cm from its front edge`); set('Box height', 'peak', 'Right foot stays flat on the box');
@@ -89,6 +98,6 @@ set('Trunk inclination', 'setup', `≈${Math.round(F.trunkLean(Ws))}°`); set('T
 set('Free foot', 'setup', 'On the box beside the right'); set('Free foot', 'peak', `Heel touches the floor ${HEEL_X - EDGE} cm in front of the box edge, toes up ${-TAP_PITCH}°`);
 set('Tempo', 'setup', 'Stand 0.8 s'); set('Tempo', 'peak', 'Shift 0.4 s, 2.0 s down, 0.2 s tap, 1.2 s up, 1.4 s on both feet');
 const c = (k) => com(F.fk(poses[k])).map(Math.round);
-console.log(`Dumbbell Step-down: wrote ${L.write(ex)} kneeTap ${r1(kTap)} tap ${TAP.target}\n  ${JSON.stringify(rep)}\n  footOverBox ${r1(footBox)} at ${footBoxAt} com stand ${c('stand')} tap ${c('tap')}`);
+console.log(`Dumbbell Step-down: wrote ${L.write(ex)} kneeTap ${r1(kTap)} tap ${TAP.target}\n  ${JSON.stringify(rep)}\n  footOverBox ${r1(footBox)} at ${footBoxAt} legBox ${r1(legBox)} ${legBoxAt} com stand ${c('stand')} tap ${c('tap')}`);
 K.gate('dumbbell-step-down', rep, { maxJump: 6 });
-if (footBox < 0) { console.error('FAIL: free foot passes through the box'); process.exitCode = 1; }
+if (footBox < 0 || legBox < -0.3) { console.error('FAIL: free foot passes through the box'); process.exitCode = 1; }

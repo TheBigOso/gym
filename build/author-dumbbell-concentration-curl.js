@@ -64,8 +64,9 @@ const TW = ENV('TW', 5), sh = p.ch.shoulder_r;
 const rArm = (a) => ({ plane: sh.plane, elev: sh.elev, axial: TW - sh.plane, flex: a.flex, pron: a.pron });
 const BOT = { flex: ENV('BFLEX', 10), pron: ENV('BPRON', 20) }, TOP = { flex: 124, pron: 0 }, SQZ = { flex: 127, pron: -3 };
 const withArm = (a) => C.setArm(clone(p), 'r', rArm(a));
-// the trunk lean already tips the face down toward the arm; the neck stays near neutral so the head is clear of the dumbbell at the top
-p.ch.neck_c7 = { rot: 0, flex: ENV('NECK', -4) }; p.ch.head_c1 = { rot: 0, flex: ENV('HEAD', 2) };
+// the trunk lean already tips the face down toward the arm; the neck is held slightly extended (eyes on the arm, chin up) so
+// the jaw clears the dumbbell at the top (the v2 rig's shorter upper arm brings the top of the curl closer to the face)
+p.ch.neck_c7 = { rot: 0, flex: ENV('NECK', -17) }; p.ch.head_c1 = { rot: 0, flex: ENV('HEAD', -8) };
 const poses = { bottom: withArm(BOT), up50: withArm(C.mixArm(BOT, TOP, 0.5)), top: withArm(TOP), squeeze: withArm(SQZ), down66: withArm(C.mixArm(BOT, TOP, 0.66)), down33: withArm(C.mixArm(BOT, TOP, 0.33)) };
 const ph = (id) => C.phase(meta, id);
 const keyframes = [{ t: 0, pose: 'bottom' }, { t: ph('lift').start, pose: 'bottom' }, { t: 1.2, pose: 'up50' }, { t: ph('top').start, pose: 'top' }, { t: ph('top').end, pose: 'squeeze' },

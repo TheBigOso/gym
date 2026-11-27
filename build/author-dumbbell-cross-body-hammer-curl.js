@@ -16,11 +16,11 @@ const { contacts, base } = C.standing({});
 const FS = [0, 0.2, 0.4, 0.6, 0.8, 1];
 const down = [0, -1, 0], sm = (u) => u * u * (3 - 2 * u), beta = (f) => B0 + (BETA - B0) * sm(f);
 const fwd = (f) => [Math.cos(beta(f)), 0, -Math.sin(beta(f))];
-const flex1 = ENV('FLEX', 112);
+const flex1 = ENV('FLEX', 135); // arc angle of the handle about the elbow (rig v2 arm: elbow range ≈125°)
 let a0 = 0;
 // thumb axis: forward at the bottom, then perpendicular to the forearm in the turned curl plane (top plate toward the shoulder)
 const axis = (f) => { const a = a0 + flex1 * f * R.DEG, b = f < 0.3 ? beta(f) * (f / 0.3) : beta(f), fw = [Math.cos(b), 0, -Math.sin(b)]; return V.norm(V.add(V.scale(down, -Math.sin(a)), V.scale(fw, Math.cos(a)))); };
-const A = K.arcCurl(base, { handle0: [ENV('HX', 4), ENV('HY', 80), ENV('HZ', 27)], axis, palm: (f) => (f === 0 ? [0, 0, -1] : null), flex1, drift: [ENV('DX', 8), ENV('DY', 2), -ENV('DZ', 4)], FS, contacts, fwd, down, guess: [40, 12, -40, 8, 90], armOpt: { axialW: ENV('AXW', 0.02), minElev: ENV('MINEL', 11) } });
+const A = K.arcCurl(base, { handle0: [ENV('HX', 4), ENV('HY', 77), ENV('HZ', 27)], axis, palm: (f) => (f === 0 ? [0, 0, -1] : null), flex1, drift: [ENV('DX', 10), ENV('DY', 2), -ENV('DZ', 4)], FS, contacts, fwd, down, guess: [40, 12, -40, 8, 90], armOpt: { axialW: ENV('AXW', 0.02), minElev: ENV('MINEL', 11) } });
 const right = A.poses;
 const bottom = clone(right[0]); delete bottom.__cost; K.mirrorArmTo(bottom);
 const poses = { bottom }, kf = [{ t: 0, pose: 'bottom' }];
@@ -46,11 +46,11 @@ const rep = K.report(ex, { skip: ['thigh_r', 'thigh_l', 'quad_r', 'quad_l'] });
 const Wb = L.fk(poses.bottom, contacts), Wt = L.fk(poses.rSqueeze, contacts);
 C.fillCurlKin(ex, Wb, Wt, poses.bottom, poses.rSqueeze, 'r', ['Arms straight 0.5 s', 'Per arm: 1.1 s up, 0.2 s squeeze, 2.0 s down; right rep then left rep']);
 const ht = D.dumbbellAt(Wt, 'r', 'handle').c;
-C.setKin(ex, 'Forearm rotation', 'peak', `${poses.rSqueeze.ch.wrist_r.pron}° channel; handle centre ends ${r1(-ht[2])} cm left of the midline, ${r1(ht[1])} cm high (in front of the left chest)`);
+C.setKin(ex, 'Forearm rotation', 'peak', `${poses.rSqueeze.ch.wrist_r.pron}° channel; handle centre ends ${Math.abs(r1(ht[2]))} cm ${ht[2] > 0 ? 'right' : 'left'} of the midline, ${r1(ht[1])} cm high (in front of the chest, forearm across the body)`);
 console.log(`Dumbbell Cross Body Hammer Curl: wrote ${L.write(ex)}\n  ${JSON.stringify(Object.assign(rep, { topHandle: ht.map(r1) }))}`);
 K.fail(rep, 'cross body hammer curl');
 if (process.env.DEBUG) {
   const p = right[FS.length - 1], W = L.fk(p, contacts), f = 1;
-  const E = V.add(A.E0, [ENV('DX', 8), ENV('DY', 2), -ENV('DZ', 4)]);
+  const E = V.add(A.E0, [ENV('DX', 10), ENV('DY', 2), -ENV('DZ', 4)]);
   console.log('elbow err', V.sub(W.elbow_r.p, E).map(r1), 'axis', L.Q.rot(W.wrist_r.q, [0, 0, 1]).map((v) => +v.toFixed(2)), 'want', axis(1).map((v) => +v.toFixed(2)), 'E0', A.E0.map(r1), 'S', W.shoulder_r.p.map(r1));
 }

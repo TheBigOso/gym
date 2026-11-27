@@ -20,8 +20,9 @@ const u = bench.padDir, n = V.norm([u[1], -u[0], 0]);   // u: hinge -> tip; n: f
 const tip = bench.tip;
 // Upper arm over the pad: the armpit hooks over the top edge, so the shoulder joint sits BEYOND cm past the edge (along the
 // pad) and ARM_OFF cm off the front-face plane; the elbow rests on the face (its joint ELB_OFF cm off it) further down. The
-// upper arm passes over the edge and lies on the face. Offsets set from the skinned mesh (measured in the player).
-const ARM_OFF = ENV('ARM_OFF', -1.5), BEYOND = ENV('BEYOND', 15), ELB_OFF = ENV('ELB_OFF', 6);
+// upper arm passes over the edge and lies on the face. Offsets on the rig shapes (rig v2 matches the mesh): the elbow joint sits
+// one upper-arm radius (4 cm) off the face, and the shoulder 5 cm behind the face plane so the ribcage clears the pad's back.
+const ARM_OFF = ENV('ARM_OFF', -5), BEYOND = ENV('BEYOND', 15), ELB_OFF = ENV('ELB_OFF', 4);
 const S = V.add(V.add(tip, V.scale(n, ARM_OFF)), V.scale(u, BEYOND));
 const UA = V.len(L.rig.byId.elbow_r.offset), sAlong = Math.sqrt(UA * UA - (ARM_OFF - ELB_OFF) ** 2) - BEYOND;
 const E = V.add(V.sub(tip, V.scale(u, sAlong)), V.scale(n, ELB_OFF));
@@ -55,9 +56,10 @@ const p0 = K.handleArm(p, V.add(E, V.scale(dir(FLEXB), FA)), { axis: axisB, elbo
 const LT = V.add(V.add(tip, [0, 0, -ENV('LZ', 18)]), V.add(V.scale(n, -ENV('LN', 3)), V.scale(u, -ENV('LALONG', 18))));
 function leftHand(q) {
   const paths = K.ARM('l');
-  const objs = [L.obj.at('wrist_l', LT, 3), (Wx) => V.sub(Q.rot(Wx.wrist_l.q, [1, 0, 0]), [0, 0, 1]).map((v) => v * 2), L.obj.reg('ch.wrist_l.flex', 0, 0.05), L.obj.reg('ch.wrist_l.dev', 0, 0.05), L.obj.reg('ch.shoulder_l.axial', 0, 0.01)];
+  const objs = [L.obj.at('wrist_l', LT, 3), (Wx) => V.sub(Q.rot(Wx.wrist_l.q, [1, 0, 0]), [0, 0, 1]).map((v) => v * 2), L.obj.reg('ch.wrist_l.flex', 0, 0.05), L.obj.reg('ch.wrist_l.dev', 0, 0.05), L.obj.reg('ch.shoulder_l.axial', 0, 0.01),
+    (Wx, q) => [Math.min(0, q.ch.shoulder_l.elev - 3) * 3, Math.max(0, q.ch.shoulder_l.plane - 138) * 3, q.ch.shoulder_l.elev * 0.01]]; // inside the shoulder limits (elev >= 0, plane <= 140); elbow low by the side
   let best = null;
-  for (const g of [[80, 70, 0, 40, 90], [60, 80, 30, 60, 120], [100, 60, -30, 30, 60]]) {
+  for (const g of [[80, 70, 0, 40, 90], [60, 80, 30, 60, 120], [100, 60, -30, 30, 60], [130, 40, 0, 90, 90], [130, 60, 40, 90, 60], [120, 30, -40, 100, 120]]) {
     const q0 = clone(q); q0.ch.shoulder_l = { plane: g[0], elev: g[1], axial: g[2] }; q0.ch.elbow_l = { flex: g[3] }; q0.ch.wrist_l = { pron: g[4], flex: 0, dev: 0 };
     const r = L.solvePose(q0, paths, objs, { contacts, iters: 300 }); if (!best || r.cost < best.cost) best = r;
   }
@@ -94,4 +96,4 @@ const tf = B3.trunkLean(Wb);
 ex.checks.measure = { name: 'trunkFlexion', min: Math.floor(tf - 3), max: Math.ceil(tf + 3) };
 const dS = V.len(V.sub(Wb.shoulder_r.p, S)), dE = V.len(V.sub(Wb.elbow_r.p, E)), dL = V.len(V.sub(Wb.wrist_l.p, LT));
 console.log(`Single Arm Dumbbell Curl over Incline Bench: wrote ${L.write(ex)}\n  ${JSON.stringify(Object.assign(rep, { sw: { dbBox: sw.dbBox, bodyBox: sw.bodyBox, bodyBoxAt: sw.bodyBoxAt, drift: sw.drift, knee: sw.kneeR }, trunk: r1(tf), errS: r1(dS), errE: r1(dE), errL: r1(dL), faClear, solveCost: +sol.cost.toFixed(2), root: p.root, feet: [p.ik.leg_r.target, p.ik.leg_l.target], tip: tip.map(r1) }))}`);
-K.fail(rep, 'curl over incline', [[sw.drift < 0.05, 'pelvis, feet or left hand drift'], [sw.dbBox >= 0, 'dumbbell into the bench'], [dS < 1 && dE < 1.5, 'upper arm not on the pad']]);
+K.fail(rep, 'curl over incline', [[sw.drift < 0.05, 'pelvis, feet or left hand drift'], [sw.dbBox >= 0, 'dumbbell into the bench'], [sw.bodyBox >= -0.5, `body into the bench ${sw.bodyBox} ${sw.bodyBoxAt}`], [dS < 1 && dE < 1.5, 'upper arm not on the pad']]);

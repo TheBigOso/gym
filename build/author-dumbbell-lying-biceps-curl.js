@@ -1,5 +1,5 @@
 // Dumbbell Lying Biceps Curl (GymVisual #035012, lying supine curl): lying on the back on a flat bench (glutes, upper back
-// and head on the pad; the batch 3 flat-bench lying base, measured on the skinned mesh), feet planted. The arms hang below
+// and head on the pad; the batch 3 flat-bench lying base), feet planted. The arms hang below
 // the bench out to the sides (shoulders extended and a little abducted so the plates clear the floor on a 45 cm bench), palms
 // toward the feet (supinated). Both forearms curl up about the elbow hinge toward the shoulders while the upper arms stay where
 // they hang; short squeeze, slow lower, pause in the stretch. Bilateral.
@@ -19,12 +19,12 @@ base.ch.sc_r = { protract: 0, elevate: 0 }; base.ch.sc_l = { protract: 0, elevat
 const W0 = L.fk(base, contacts), S = W0.shoulder_r.p;
 const FS = [0, 0.2, 0.4, 0.6, 0.8, 1];
 // bottom: handle below and out from the shoulder, plates FLOOR cm above the floor, arm nearly straight
-const FLOOR = ENV('FLOOR', 3), REACH = ENV('REACH', 60.5), DX = ENV('DX', 2);
+const FLOOR = ENV('FLOOR', 3), REACH = ENV('REACH', 56), DX = ENV('DX', 2); // rig v2: shoulder to handle centre is 57 cm with the arm straight
 const hy = FLOOR + 6, dy = S[1] - hy, dz = Math.sqrt(Math.max(0, REACH * REACH - dy * dy - DX * DX));
 const axisB = [0, 0, 1];          // thumb out to the side: palm toward the feet
 const p0 = K.handleArm(base, [S[0] + DX, hy, S[2] + dz], { axis: axisB, guesses: [[-30, 90, 0, 8, 0], [0, 100, 0, 8, 0], [-60, 80, 40, 8, 0]], contacts, minElev: 8 });
 // top: the dumbbell finishes above the shoulder, a little toward the feet, at the end of a pure elbow hinge
-const TGT = V.add(S, [ENV('TGX', 10), ENV('TGY', -2), ENV('TGZ', 14)]);
+const TGT = V.add(S, [ENV('TGX', 4), ENV('TGY', -2), ENV('TGZ', 14)]); // rig v2: closer over the shoulder so the plates clear the ribcage
 const keysR = K.hingeCurl(p0, { flexTop: ENV('FLEX', 128), target: TGT, axisB, FS, contacts, flexB: ENV('FLEXB', 8) });
 const poses = {}, names = [];
 keysR.forEach((q, i) => {
@@ -47,7 +47,7 @@ const fit = C3.benchFit(B, Wb);
 const ua = V.norm(V.sub(Wb.elbow_r.p, Wb.shoulder_r.p));
 C.setKin(ex, 'Upper arm', 'setup', `≈${Math.round(Math.asin(-ua[1]) / R.DEG)}° below horizontal (below the bench line), ≈${Math.round(Math.atan2(ua[2], -ua[1]) / R.DEG)}° out from straight down`);
 C.setKin(ex, 'Upper arm', 'peak', 'Unchanged: pure elbow hinge');
-C.setKin(ex, 'Back on the bench', 'setup', 'Glutes, upper back and head on the pad (batch 3 flat-bench base; skinned mesh within about 1 cm)');
+C.setKin(ex, 'Back on the bench', 'setup', 'Glutes and upper back on the pad, head resting with a small neutral lift (batch 3 flat-bench base)');
 C.setKin(ex, 'Back on the bench', 'peak', 'Unchanged');
 const tf = V.angle(V.sub(Wb.neck_c7.p, Wb.pelvis.p), [0, 1, 0]);
 ex.checks.measure = { name: 'trunkFlexion', min: Math.floor(tf - 3), max: Math.ceil(tf + 3) };

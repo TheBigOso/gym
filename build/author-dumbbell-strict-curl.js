@@ -1,7 +1,7 @@
 // Dumbbell Strict Curl (wall curl; GymVisual #1199712 is the nearest catalog match, an alternating hammer version): standing
 // with the glutes, upper back and head against a wall, heels a few centimetres forward. The upper arms hang a little behind
 // the trunk so the backs of the elbows touch the wall; both arms curl (palms forward/up) with the elbows staying on the wall,
-// short squeeze, slow lower. The wall face is placed from the skinned mesh (measured in the player). Bilateral.
+// short squeeze, slow lower. The wall face and elbows are placed on the rig shapes (rig v2 matches the mesh). Bilateral.
 const L = require('./lib');
 const { V, r1 } = L;
 const C = require('./families/b3-curls');
@@ -10,10 +10,9 @@ const D = require('./families/dumbbell');
 const meta = require('./meta/dumbbell-strict-curl.json');
 
 const ENV = (k, d) => +(process.env[k] ?? d);
-// Wall face x (rig cm). Measured on the Studio clay male in this pose: the rearmost mesh points are the upper back at
-// x ≈ WALL + 0.2 and the glutes / back of the head within about 1 cm (see the report); the elbows are placed to touch it.
+// Wall face x (rig cm), on the rig shapes in this pose: the backs of the thighs reach x -8.6, the traps -8.1, the buttocks -7.8.
 const WALL = ENV('WALL', -8.5);
-const EX = ENV('EX', -7.0), EZ = ENV('EZ', 22.5); // elbow joint target: the back of the skinned elbow on the wall face
+const EX = ENV('EX', -4.5), EZ = ENV('EZ', 22.5); // elbow joint target: the upper-arm capsule (r 4.0 at the elbow) touching the wall face
 const { contacts, base } = C.standing({}, { sc: { protract: -6, elevate: 0 } });
 base.ch.neck_c7 = { rot: 0, flex: ENV('NECK', -20) }; base.ch.head_c1 = { rot: 0, flex: ENV('HEAD', 19) };
 const FS = [0, 0.2, 0.4, 0.6, 0.8, 1];
@@ -38,7 +37,7 @@ const rep = K.report(ex, { boxes: [K.wallBox(wall)], armBoxes: true, skip: ['thi
 const Wb = L.fk(poses.c0, contacts), Wt = L.fk(poses.squeeze, contacts);
 C.fillCurlKin(ex, Wb, Wt, poses.c0, poses.squeeze, 'r', ['Arms straight 0.6 s', '1.2 s up, 0.3 s squeeze, 2.4 s down, 0.9 s at the bottom']);
 C.setKin(ex, 'Back on the wall', 'setup', `Wall face ${r1(-WALL)} cm behind the pelvis centre; heels ≈${r1(L.fk(base, contacts).ankle_r.p[0] - 6 - WALL)} cm from the wall`);
-C.setKin(ex, 'Back on the wall', 'peak', 'Unchanged: trunk and elbows stay on the wall (mesh gaps in the report)');
+C.setKin(ex, 'Back on the wall', 'peak', 'Unchanged: trunk and elbows stay on the wall');
 const elbowDrift = V.len(V.sub(Wb.elbow_r.p, Wt.elbow_r.p));
 console.log(`Dumbbell Strict Curl: wrote ${L.write(ex)}\n  ${JSON.stringify(Object.assign(rep, { elbowDrift: r1(elbowDrift), elbow: Wb.elbow_r.p.map(r1) }))}`);
 K.fail(rep, 'strict curl', [[elbowDrift < 1.5, 'elbow leaves the wall']]);
