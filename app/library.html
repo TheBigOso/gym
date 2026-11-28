@@ -1,0 +1,27 @@
+<div class="app">
+<aside class="lib" id="lib" aria-label="Exercise library">
+  <div class="libhead"><h2>Exercise library</h2><button class="btn libclose" id="libClose" aria-label="Close library">Close</button></div>
+  <input type="search" id="q" class="libsearch" placeholder="Search name or alias" aria-label="Search exercises" autocomplete="off">
+  <div class="filters">
+    <label>Body part<select id="fBody"></select></label>
+    <label>Target muscle<select id="fMuscle"></select></label>
+    <label>Equipment<select id="fEquip"></select></label>
+    <label>Difficulty<select id="fDiff"></select></label>
+    <label>Laterality<select id="fLat"></select></label>
+    <label>Test status<select id="fStatus"></select></label>
+  </div>
+  <div class="counts"><span id="cShown"></span><button class="linkbtn" id="fReset">Reset filters</button></div>
+  <div class="progress" aria-hidden="true"><i class="pp" id="barPass"></i><i class="pf" id="barFix"></i></div>
+  <p class="counts sub" id="cTested"></p>
+  <ul class="list" id="list" role="listbox" aria-label="Exercises"></ul>
+  <div class="libfoot">
+    <button class="btn" id="expCsv">Export CSV</button><button class="btn" id="expJson">Export JSON</button><button class="btn" id="impJson">Import</button>
+    <input type="file" id="impFile" accept="application/json,.json" hidden>
+  </div>
+</aside>
+<div class="libshade" id="libShade"></div>
+<div class="appmain">
+<button class="btn libopen" id="libOpen" aria-label="Open exercise library">☰ Library</button>
+<!--MAIN-->
+</div>
+</div>

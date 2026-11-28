@@ -509,6 +509,7 @@ function buildStatic() {
 const sideLabel = () => (META.authoredSide === 'bilateral' ? `Both sides · ${S.side === 'R' ? 'right' : 'left'} view` : `${S.side === 'R' ? 'Right' : 'Left'} side`);
 function buildPanel() {
   $('title').textContent = META.name;
+  seg($('camSeg'), Object.entries(EX.camera.presets).map(([k, p]) => [k, p.label || k]), EX.camera.default, (v) => setCamera(v)); // camera presets for this exercise
   $('sideTag').textContent = sideLabel();
   $('meta').innerHTML = [META.type, META.bodyPart, META.equipment[0], META.difficulty, `${META.plane} plane`].map((x) => `<span class="tag">${esc(x)}</span>`).join('');
   const ref = META.reference;
