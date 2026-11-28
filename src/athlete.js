@@ -457,14 +457,15 @@ export function buildAthlete(sh, ch, posBuf, rig, look) {
   function gripFrame(s, kind = 'handle', off) {
     // t is the little-finger side of the right hand; flipped for the left so offsets mirror exactly between hands
     const f = FR[s].f, n = FR[s].n, t0 = V.norm(V.cross(n, f)), t = s === 'l' ? V.scale(t0, -1) : t0;
-    const o = off || { handle: [7.2, 2.2, 0], bar: [4.2, 2.6, 0], goblet: [6.5, 7.5, 2], end: [8, 4, 0] }[kind] || [7.2, 2.2, 0]; // bar: a barbell in the heel of the palm
+    const o = off || { handle: [7.2, 2.2, 0], rack: [7.2, 2.2, 0], bar: [4.2, 2.6, 0], goblet: [6.5, 7.5, 2], end: [8, 4, 0] }[kind] || [7.2, 2.2, 0]; // bar: a barbell in the heel of the palm
     const p = [f[0] * o[0] + n[0] * o[1] + t[0] * o[2], f[1] * o[0] + n[1] * o[1] + t[1] * o[2], f[2] * o[0] + n[2] * o[1] + t[2] * o[2]];
     const axis = kind === 'goblet' || kind === 'end' ? f : t;
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(...axis).normalize());
     // full frame for items that are not round about their handle: +X along the handle (the little-finger side of the right
     // hand, mirrored for the left), +Y back along the fingers (so -Y points past the knuckles, where a hanging bell sits),
     // +Z = X x Y (out of the palm side)
-    const X = V.norm(t), Y0 = V.scale(f, -1), Y = V.norm(V.sub(Y0, V.scale(X, V.dot(Y0, X)))), Z = V.cross(X, Y);
+    // rack: the item's -Y points to the back of the hand / forearm (a racked kettlebell), not past the knuckles
+    const X = V.norm(t), Y0 = kind === 'rack' ? n.slice() : V.scale(f, -1), Y = V.norm(V.sub(Y0, V.scale(X, V.dot(Y0, X)))), Z = V.cross(X, Y);
     const qf = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(...X), new THREE.Vector3(...Y), new THREE.Vector3(...Z)));
     return { bone: bones[bi('hand_' + s)], pos: new THREE.Vector3(p[0] * U, p[1] * U, p[2] * U), quat: q, quatFull: qf, palm: n };
   }

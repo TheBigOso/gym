@@ -6,7 +6,7 @@
 const L = require('../lib');
 const { R, V, Q, rig } = L;
 
-const GRIP = { handle: { off: [2.2, -7.2, 0], axis: [0, 0, 1] }, bar: { off: [2.6, -4.2, 0], axis: [0, 0, 1] }, goblet: { off: [7.5, -6.5, 0], axis: [0, -1, 0] }, end: { off: [4, -8, 0], axis: [0, -1, 0] } };
+const GRIP = { handle: { off: [2.2, -7.2, 0], axis: [0, 0, 1] }, bar: { off: [2.6, -4.2, 0], axis: [0, 0, 1] }, rack: { off: [2.2, -7.2, 0], axis: [0, 0, 1] }, goblet: { off: [7.5, -6.5, 0], axis: [0, -1, 0] }, end: { off: [4, -8, 0], axis: [0, -1, 0] } };
 const DB = { length: 32, diameter: 12 }; // cm, a medium hex dumbbell
 
 // Dumbbell centre, axis and end-plate centres in world cm for the hand on `side` ('r' | 'l')

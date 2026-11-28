@@ -92,7 +92,23 @@
               "hurdle",
               "wall",
               "rack",
-              "pullup_bar"
+              "pullup_bar",
+              "smith",
+              "lever_machine",
+              "cable_machine",
+              "preacher_bench",
+              "decline_bench",
+              "hyperextension_bench",
+              "dip_station",
+              "landmine",
+              "ez_bar",
+              "trap_bar",
+              "rings",
+              "sled",
+              "ab_wheel",
+              "plate",
+              "stability_ball",
+              "bosu"
             ]
           },
           "center": {
@@ -105,7 +121,8 @@
             "type": "object",
             "properties": {
               "joint": {
-                "type": "string"
+                "type": "string",
+                "description": "Rig joint the item is attached to: wrist_r / wrist_l = held in the hand; any other joint (e.g. knee_r, ankle_l, hip_r) = body-mounted (ankle strap, dumbbell on the lap), placed at the joint plus attach.offset in that joint's frame."
               },
               "offset": {
                 "$ref": "#/$defs/vec3"
@@ -115,9 +132,10 @@
                   "handle",
                   "bar",
                   "goblet",
-                  "end"
+                  "end",
+                  "rack"
                 ],
-                "description": "How a held prop sits in the hand (attach.joint wrist_r / wrist_l). bar: a barbell in the heel of the palm (the default for a barbell); handle: in the fingers (dumbbell, kettlebell, cable handle)."
+                "description": "How a held prop sits in the hand (attach.joint wrist_r / wrist_l). bar: a barbell in the heel of the palm (the default for a barbell); handle: in the fingers (dumbbell, kettlebell, cable handle). rack: a kettlebell racked on the back of the forearm (bell behind the hand)."
               },
               "with": {
                 "type": "string",
@@ -160,7 +178,9 @@
             "enum": [
               "handle",
               "bar",
-              "rope"
+              "rope",
+              "ankle_strap",
+              "vbar"
             ],
             "description": "cable: the attachment in the hand(s) (default handle; bar and rope are two-hand)."
           },
@@ -177,6 +197,10 @@
             "minimum": 0,
             "maximum": 6,
             "description": "barbell: plates per side (default 1); size[1] is the plate diameter (default 45)"
+          },
+          "params": {
+            "type": "object",
+            "description": "Free-form settings for a gear plug-in prop (src/gear/*.js), e.g. machine type, pad heights, lever lengths. Each plug-in documents its own keys."
           }
         }
       },

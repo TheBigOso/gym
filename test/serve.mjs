@@ -17,7 +17,7 @@ export async function openPlayer(opts = {}) {
   });
   await page.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ body: '', contentType: 'text/css' }));
   await page.goto('file://' + path.join(root, 'player.html'));
-  await page.waitForFunction(() => window.__rr, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__rr, null, { timeout: 180000 }); // the page carries every exercise; give it time on slow machines
   await page.waitForTimeout(400);
   return { browser, page, errors, root };
 }

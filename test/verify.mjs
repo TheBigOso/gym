@@ -68,7 +68,21 @@ for (const f of fs.readdirSync('src/exercises')) {
   check(fs.existsSync(`exports/${id}.glb`), `${id}: exports/${id}.glb present`);
 }
 const { browser, page, errors } = await openPlayer();
-const res = await page.evaluate(() => { __rr.S.playing = false; const out = [], bad = []; for (let i = 0; i < RR_DATA.exercises.length; i++) { __rr.load(i); __rr.setT(4.4); const title = document.getElementById('title').textContent; out.push(title); if (/\bundefined\b|\bNaN\b/.test(document.body.innerText)) bad.push(title); } out.bad = bad; return { out, bad }; }).then((r) => Object.assign(r.out, { bad: r.bad }));
+// Speed (checked first, on a freshly loaded page): compare animation time against the player's own frame clock (S.clock), so a slow
+// machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
+await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });
+// Wait until the player has actually drawn about a second of frames (slow CI GPUs can stall early frames), up to 20 s.
+for (let i = 0; i < 80; i++) { await page.waitForTimeout(250); const c = await page.evaluate(() => __rr.S.clock - window.__c0); if (c > 1.0 && i >= 5) break; }
+const sp = await page.evaluate(() => { const S = __rr.S; const c = S.clock - window.__c0; const out = { r: S.t / c, c, wall: (performance.now() - window.__w0) / 1000 }; S.playing = false; return out; });
+check(sp.c > 0.3 && Math.abs(sp.r - 1.5) < 0.05, `1.5× speed plays at ${sp.r.toFixed(2)}× of the player clock (${sp.c.toFixed(2)} s of frames in ${sp.wall.toFixed(2)} s wall)`);
+// Load every exercise in batches of 50 so the page can yield between batches (one long synchronous
+// loop over hundreds of exercises can starve the browser's frame scheduling on slow CI runners).
+const res = []; res.bad = [];
+const nEx = await page.evaluate(() => { __rr.S.playing = false; return RR_DATA.exercises.length; });
+for (let s0 = 0; s0 < nEx; s0 += 50) {
+  const r = await page.evaluate(([a, b]) => { const out = [], bad = []; for (let i = a; i < b; i++) { __rr.load(i); __rr.setT(4.4); const title = document.getElementById('title').textContent; out.push(title); if (/\bundefined\b|\bNaN\b/.test(document.body.innerText)) bad.push(title); } return { out, bad }; }, [s0, Math.min(nEx, s0 + 50)]);
+  res.push(...r.out); res.bad.push(...r.bad);
+}
 check(res.length === fs.readdirSync('src/exercises').length, `player loads all exercises: ${res.join(' | ')}`);
 check(!res.bad.length, `player text has no 'undefined' or 'NaN'${res.bad.length ? ': ' + res.bad.join(', ') : ''}`);
 // Athlete: the Studio clay body is on stage, the target muscles light up, and the female variant is ready.
@@ -76,13 +90,6 @@ const ath = await page.evaluate(() => { __rr.load(0); __rr.setT(4.4); const A = 
 check(ath.name === 'Body' && ath.skinned && ath.verts > 10000, `Studio clay athlete on stage (${ath.verts} vertices, ${ath.key === 'm' ? 'male' : ath.key})`);
 check(ath.lit > 200, `target and synergist muscles glow on the athlete (${ath.lit} vertices lit)`);
 check(ath.variants.includes('f'), 'female variant ships in the character data for a later switch');
-// Speed: compare animation time against the player's own frame clock (S.clock), so a slow
-// machine that stalls frames cannot skew the ratio. Also require that playback actually advanced.
-await page.evaluate(() => { const S = __rr.S; S.t = 0; S.speed = 1.5; S.playing = true; window.__c0 = S.clock; window.__w0 = performance.now(); });
-// Wait until the player has actually drawn about a second of frames (slow CI GPUs can stall early frames), up to 20 s.
-for (let i = 0; i < 80; i++) { await page.waitForTimeout(250); const c = await page.evaluate(() => __rr.S.clock - window.__c0); if (c > 1.0 && i >= 5) break; }
-const sp = await page.evaluate(() => { const S = __rr.S; const c = S.clock - window.__c0; const out = { r: S.t / c, c, wall: (performance.now() - window.__w0) / 1000 }; S.playing = false; return out; });
-check(sp.c > 0.3 && Math.abs(sp.r - 1.5) < 0.05, `1.5× speed plays at ${sp.r.toFixed(2)}× of the player clock (${sp.c.toFixed(2)} s of frames in ${sp.wall.toFixed(2)} s wall)`);
 check(!errors.length, `no page errors ${errors.length ? JSON.stringify(errors) : ''}`);
 await browser.close();
 process.exit(fail ? 1 : 0);

@@ -88,9 +88,10 @@ function barClear(W, opt = {}) {
 /* ---------------- kettlebell ---------------- */
 // One hand ('handle' grip): bell hangs past the knuckles (rig wrist frame: fingers -Y). Two hands on the handle: bell
 // below the midpoint of the grips. Returns the bell centre and radius.
-function kettlebellAt(W, side = 'r', { two = false, size = KB } = {}) {
+function kettlebellAt(W, side = 'r', { two = false, size = KB, grip = 'handle' } = {}) {
   const drop = 6 + size.bell * 0.42, rad = (size.bell / 2) * 0.96;
-  if (!two) { const w = W[`wrist_${side}`], h = gripPoint(W, side).p; return { handle: h, c: V.add(h, Q.rot(w.q, [0, -drop, 0])), r: rad }; }
+  // one hand: 'handle' hangs past the knuckles (fingers -Y); 'rack' rests on the back of the hand / forearm (palm +X, so -X)
+  if (!two) { const w = W[`wrist_${side}`], h = gripPoint(W, side, grip).p; return { handle: h, c: V.add(h, Q.rot(w.q, grip === 'rack' ? [-drop, 0, 0] : [0, -drop, 0])), r: rad }; }
   // two hands: the bell hangs past the knuckles of both hands (as the player draws it), i.e. along the mean finger
   // direction, perpendicular to the handle
   const b = barAt(W), f0 = V.add(Q.rot(W.wrist_r.q, [0, -1, 0]), Q.rot(W.wrist_l.q, [0, -1, 0])), f1 = V.sub(f0, V.scale(b.ax, V.dot(f0, b.ax)));
