@@ -1,0 +1,772 @@
+{
+  "schemaVersion": "1.0.0",
+  "rig": {
+    "ref": "reprig-studio-clay-v2"
+  },
+  "exercise": {
+    "id": "lever-leg-extension",
+    "name": "Lever Leg Extension",
+    "aliases": [
+      "Leg extension",
+      "Machine leg extension",
+      "Seated leg extension",
+      "Knee extension machine"
+    ],
+    "reference": {
+      "source": "GymVisual",
+      "productRef": "4360",
+      "title": "Lever Leg Extension",
+      "url": "https://gymvisual.com/videos/4360-lever-leg-extension.html",
+      "listing": "Video (movement reference; the page was not opened from the authoring environment, so the data sheet was not read and the movement was taken from the exercise name and standard coaching)",
+      "note": "Reference used only to identify the movement. No GymVisual media is stored here; this rig, model and animation are original."
+    },
+    "type": "Strength",
+    "bodyPart": "Thighs",
+    "secondaryBodyParts": [
+      "Front of the thighs",
+      "Knees"
+    ],
+    "equipment": [
+      "Leg extension machine (selectorized lever)"
+    ],
+    "difficulty": "Beginner",
+    "mechanics": "Isolation (knee extension)",
+    "plane": "Sagittal",
+    "laterality": "Bilateral",
+    "authoredSide": "bilateral",
+    "muscles": {
+      "target": [
+        "quads_r",
+        "quads_l"
+      ],
+      "synergist": [],
+      "stabilizer": [
+        "core",
+        "forearm_flexors_r",
+        "forearm_flexors_l",
+        "hip_flexors_r",
+        "hip_flexors_l"
+      ],
+      "lengthened": [
+        "hamstrings_r",
+        "hamstrings_l"
+      ]
+    },
+    "breathing": {
+      "pattern": "Breathe out as the legs straighten, breathe in as they come back down.",
+      "cadence": "About 1.2 s up, short squeeze, about 2.3 s down"
+    },
+    "prescription": {
+      "sets": "2-4",
+      "reps": "10-15",
+      "effort": "Stop 1-3 reps short of failure (RIR 1-3, clinical opinion)",
+      "tempo": "1.2-0.6-2.3-0.4 (up-squeeze-down-pause, seconds)",
+      "rest": "60-90 s",
+      "frequency": "1-2 times a week",
+      "load": "Stack load is user-chosen: pick a weight you can lift to straight legs without the hips lifting off the seat.",
+      "progression": "Add reps, then one plate; slower lowering"
+    },
+    "cues": [
+      {
+        "id": "c1",
+        "phase": "setup",
+        "text": "Sit with your back on the pad and the knee joints in line with the machine pivot; the roller rests on the front of the shins just above the ankles; hold the side handles."
+      },
+      {
+        "id": "c2",
+        "phase": "lift",
+        "text": "Breathe out and straighten both knees, lifting the roller in an arc until the legs are long."
+      },
+      {
+        "id": "c3",
+        "phase": "top",
+        "text": "Squeeze the front of the thighs at the top for a moment; keep the hips down on the seat."
+      },
+      {
+        "id": "c4",
+        "phase": "lower",
+        "text": "Breathe in and lower slowly under control until the knees are back at about 90 degrees."
+      },
+      {
+        "id": "c5",
+        "phase": "reset",
+        "text": "Pause briefly at the bottom without letting the stack touch down."
+      }
+    ],
+    "mistakes": [
+      {
+        "id": "m1",
+        "mistake": "Knees out of line with the pivot",
+        "fix": "Set the back pad so the knee joint lines up with the machine axis; the roller then stays put on the shin."
+      },
+      {
+        "id": "m2",
+        "mistake": "Kicking the weight up",
+        "fix": "Lift smoothly; pause at the top instead of swinging."
+      },
+      {
+        "id": "m3",
+        "mistake": "Hips lifting off the seat",
+        "fix": "Pull down on the side handles and lighten the stack."
+      },
+      {
+        "id": "m4",
+        "mistake": "Dropping the weight on the way down",
+        "fix": "Take about two seconds to lower."
+      }
+    ],
+    "kinematics": [
+      {
+        "measure": "Knee flexion",
+        "setup": "≈90° at the bottom",
+        "peak": "≈8° at the top",
+        "norm": "From about 90 degrees to nearly straight (clinical opinion)",
+        "sources": []
+      },
+      {
+        "measure": "Knee axis",
+        "setup": "Lever pivot on the knee joint (21.9, 56.1 cm)",
+        "peak": "Knee joint still; roller within 0.04 cm of its arc",
+        "norm": "Knee joint in line with the machine pivot so the roller does not slide on the shin (clinical opinion)",
+        "sources": []
+      },
+      {
+        "measure": "Roller",
+        "setup": "On the front of the shins, 80% of the way from knee to ankle",
+        "peak": "Lever 81.8° up at the top",
+        "norm": "On the front of the lower shin, just above the ankle (clinical opinion)",
+        "sources": []
+      },
+      {
+        "measure": "Hip",
+        "setup": "Seated, back on the 10° pad, hips ≈82°",
+        "peak": "Unchanged",
+        "norm": "Seated, back on the pad; hips do not move (clinical opinion)",
+        "sources": []
+      },
+      {
+        "measure": "Knee load",
+        "setup": "–",
+        "peak": "Highest near straight legs (open chain)",
+        "norm": "Open-chain knee extension loads the knee most near full extension, unlike the squat (Escamilla et al. 1998)",
+        "sources": [
+          "escamilla1998"
+        ]
+      },
+      {
+        "measure": "Tempo",
+        "setup": "Pause 0.5 s with the knees bent",
+        "peak": "1.2 s up, 0.6 s squeeze, 2.3 s down",
+        "norm": "Controlled, about 1-1.5 s up and 2-3 s down (clinical opinion)",
+        "sources": []
+      }
+    ],
+    "sources": [
+      {
+        "id": "gymvisual",
+        "title": "GymVisual, Lever Leg Extension, video (movement reference)",
+        "url": "https://gymvisual.com/videos/4360-lever-leg-extension.html"
+      },
+      {
+        "id": "escamilla1998",
+        "title": "Escamilla et al. 1998, biomechanics of the knee during closed kinetic chain and open kinetic chain exercises (Med Sci Sports Exerc 30(4):556-569; PubMed 9565938)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/9565938/"
+      }
+    ],
+    "safety": {
+      "cautions": [
+        "Stop if sharp pain, numbness or tingling occurs.",
+        "The stack load is user-chosen: start light and lift without jerking.",
+        "Knee pain at the front of the knee: shorten the range (stop short of full extension) or skip the exercise and ask a clinician.",
+        "Muscle glow colours and activation curves are illustrative, not measured EMG."
+      ],
+      "modify": [
+        "Front-of-knee discomfort: work in a shorter range, for example from 90 to 45 degrees.",
+        "Uneven legs: one leg at a time with half the load."
+      ],
+      "regressions": [
+        "Lighter stack.",
+        "Seated knee extension with no load."
+      ],
+      "progressions": [
+        "Heavier stack.",
+        "Slower lowering with a 2 s pause at the top.",
+        "Single-leg extension."
+      ]
+    },
+    "muscleNotes": {
+      "quads_r": "Prime mover: straightens the knee; open-chain extension works the quadriceps hardest near straight legs (Escamilla et al. 1998).",
+      "quads_l": "Prime mover: straightens the knee; open-chain extension works the quadriceps hardest near straight legs (Escamilla et al. 1998).",
+      "hamstrings_r": "Lengthen at the top with the knee straight; they do not lift the load.",
+      "hamstrings_l": "Lengthen at the top with the knee straight; they do not lift the load.",
+      "core": "Keeps the pelvis still on the seat.",
+      "forearm_flexors_r": "Hold the side handles to keep the hips down.",
+      "forearm_flexors_l": "Hold the side handles to keep the hips down.",
+      "hip_flexors_r": "Keep the thighs on the seat.",
+      "hip_flexors_l": "Keep the thighs on the seat."
+    }
+  },
+  "camera": {
+    "default": "threeQuarter",
+    "presets": {
+      "threeQuarter": {
+        "yaw": 35,
+        "pitch": 14,
+        "label": "3/4"
+      },
+      "side": {
+        "yaw": 0,
+        "pitch": 6,
+        "label": "Side"
+      },
+      "front": {
+        "yaw": 90,
+        "pitch": 10,
+        "label": "Front"
+      },
+      "back": {
+        "yaw": -130,
+        "pitch": 18,
+        "label": "Back"
+      },
+      "top": {
+        "yaw": 60,
+        "pitch": 70,
+        "label": "Top"
+      }
+    }
+  },
+  "props": [
+    {
+      "id": "machine",
+      "kind": "lever_machine",
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "params": {
+        "type": "leg_extension",
+        "pivot": [
+          21.9,
+          56.1,
+          0
+        ],
+        "end": [
+          32.1,
+          22.2,
+          0
+        ],
+        "armZ": 27,
+        "endSize": [
+          40,
+          5
+        ],
+        "follow": {
+          "joints": [
+            "knee_r",
+            "ankle_r"
+          ],
+          "t": 0.8,
+          "off": 8.9
+        },
+        "range": [
+          -5,
+          100
+        ],
+        "pads": [
+          {
+            "c": [
+              -10.6,
+              52,
+              24
+            ],
+            "size": [
+              22,
+              1.6
+            ],
+            "kind": "bar",
+            "rot": [
+              0,
+              90,
+              0
+            ]
+          },
+          {
+            "c": [
+              -10.6,
+              52,
+              -24
+            ],
+            "size": [
+              22,
+              1.6
+            ],
+            "kind": "bar",
+            "rot": [
+              0,
+              90,
+              0
+            ]
+          }
+        ]
+      },
+      "size": [
+        130,
+        115,
+        84
+      ]
+    },
+    {
+      "id": "hand_on_machine_r",
+      "kind": "lever_machine",
+      "attach": {
+        "joint": "wrist_r"
+      }
+    },
+    {
+      "id": "hand_on_machine_l",
+      "kind": "lever_machine",
+      "attach": {
+        "joint": "wrist_l"
+      }
+    }
+  ],
+  "contacts": [],
+  "timeline": {
+    "duration": 5,
+    "fps": 60,
+    "loop": true,
+    "interpolation": "monotoneCubic",
+    "phases": [
+      {
+        "id": "setup",
+        "label": "Knees bent",
+        "start": 0,
+        "end": 0.5,
+        "breath": "natural",
+        "cue": "c1"
+      },
+      {
+        "id": "lift",
+        "label": "Straighten",
+        "start": 0.5,
+        "end": 1.7,
+        "breath": "exhale",
+        "cue": "c2"
+      },
+      {
+        "id": "top",
+        "label": "Squeeze",
+        "start": 1.7,
+        "end": 2.3,
+        "breath": "hold",
+        "cue": "c3"
+      },
+      {
+        "id": "lower",
+        "label": "Lower",
+        "start": 2.3,
+        "end": 4.6,
+        "breath": "inhale",
+        "cue": "c4"
+      },
+      {
+        "id": "reset",
+        "label": "Pause",
+        "start": 4.6,
+        "end": 5,
+        "breath": "natural",
+        "cue": "c5"
+      }
+    ]
+  },
+  "poses": {
+    "bottom": {
+      "root": {
+        "pos": [
+          -18.6,
+          54.7,
+          0
+        ],
+        "rot": {
+          "pitch": 10
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": 2
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": 4
+        },
+        "sc_r": {
+          "protract": 2,
+          "elevate": 0
+        },
+        "sc_l": {
+          "protract": 2,
+          "elevate": 0
+        },
+        "shoulder_r": {
+          "plane": 14.5,
+          "elev": 46,
+          "axial": 85.1
+        },
+        "shoulder_l": {
+          "plane": 14.5,
+          "elev": 46,
+          "axial": 85.1
+        },
+        "elbow_r": {
+          "flex": 65
+        },
+        "elbow_l": {
+          "flex": 65
+        },
+        "ankle_r": {
+          "dorsi": 2
+        },
+        "ankle_l": {
+          "dorsi": 2
+        },
+        "hip_r": {
+          "flex": 82,
+          "abd": 4,
+          "rot": -2
+        },
+        "hip_l": {
+          "flex": 82,
+          "abd": 4,
+          "rot": -2
+        },
+        "knee_r": {
+          "flex": 90
+        },
+        "knee_l": {
+          "flex": 90
+        },
+        "wrist_r": {
+          "pron": -15,
+          "flex": -0.1,
+          "dev": -1.2
+        },
+        "wrist_l": {
+          "pron": -15,
+          "flex": -0.1,
+          "dev": -1.2
+        }
+      }
+    },
+    "top": {
+      "root": {
+        "pos": [
+          -18.6,
+          54.7,
+          0
+        ],
+        "rot": {
+          "pitch": 10
+        }
+      },
+      "ch": {
+        "spine_l5": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t12": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "spine_t6": {
+          "rot": 0,
+          "flex": 0,
+          "latFlex": 0
+        },
+        "neck_c7": {
+          "rot": 0,
+          "flex": 2
+        },
+        "head_c1": {
+          "rot": 0,
+          "flex": 4
+        },
+        "sc_r": {
+          "protract": 2,
+          "elevate": 0
+        },
+        "sc_l": {
+          "protract": 2,
+          "elevate": 0
+        },
+        "shoulder_r": {
+          "plane": 14.5,
+          "elev": 46,
+          "axial": 85.1
+        },
+        "shoulder_l": {
+          "plane": 14.5,
+          "elev": 46,
+          "axial": 85.1
+        },
+        "elbow_r": {
+          "flex": 65
+        },
+        "elbow_l": {
+          "flex": 65
+        },
+        "ankle_r": {
+          "dorsi": 8
+        },
+        "ankle_l": {
+          "dorsi": 8
+        },
+        "hip_r": {
+          "flex": 82,
+          "abd": 4,
+          "rot": -2
+        },
+        "hip_l": {
+          "flex": 82,
+          "abd": 4,
+          "rot": -2
+        },
+        "knee_r": {
+          "flex": 8
+        },
+        "knee_l": {
+          "flex": 8
+        },
+        "wrist_r": {
+          "pron": -15,
+          "flex": -0.1,
+          "dev": -1.2
+        },
+        "wrist_l": {
+          "pron": -15,
+          "flex": -0.1,
+          "dev": -1.2
+        }
+      }
+    }
+  },
+  "keyframes": [
+    {
+      "t": 0,
+      "pose": "bottom"
+    },
+    {
+      "t": 0.5,
+      "pose": "bottom"
+    },
+    {
+      "t": 1.7,
+      "pose": "top"
+    },
+    {
+      "t": 2.3,
+      "pose": "top"
+    },
+    {
+      "t": 4.6,
+      "pose": "bottom"
+    },
+    {
+      "t": 5,
+      "pose": "bottom"
+    }
+  ],
+  "activation": {
+    "quads_r": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.5,
+        0.35
+      ],
+      [
+        1.2,
+        0.75
+      ],
+      [
+        1.7,
+        0.95
+      ],
+      [
+        2.3,
+        0.9
+      ],
+      [
+        3.5,
+        0.6
+      ],
+      [
+        4.6,
+        0.35
+      ],
+      [
+        5,
+        0.3
+      ]
+    ],
+    "quads_l": [
+      [
+        0,
+        0.3
+      ],
+      [
+        0.5,
+        0.35
+      ],
+      [
+        1.2,
+        0.75
+      ],
+      [
+        1.7,
+        0.95
+      ],
+      [
+        2.3,
+        0.9
+      ],
+      [
+        3.5,
+        0.6
+      ],
+      [
+        4.6,
+        0.35
+      ],
+      [
+        5,
+        0.3
+      ]
+    ],
+    "core": [
+      [
+        0,
+        0.15
+      ],
+      [
+        1.7,
+        0.25
+      ],
+      [
+        5,
+        0.15
+      ]
+    ],
+    "forearm_flexors_r": [
+      [
+        0,
+        0.2
+      ],
+      [
+        1.7,
+        0.3
+      ],
+      [
+        5,
+        0.2
+      ]
+    ],
+    "forearm_flexors_l": [
+      [
+        0,
+        0.2
+      ],
+      [
+        1.7,
+        0.3
+      ],
+      [
+        5,
+        0.2
+      ]
+    ],
+    "hip_flexors_r": [
+      [
+        0,
+        0.1
+      ],
+      [
+        1.7,
+        0.2
+      ],
+      [
+        5,
+        0.1
+      ]
+    ],
+    "hip_flexors_l": [
+      [
+        0,
+        0.1
+      ],
+      [
+        1.7,
+        0.2
+      ],
+      [
+        5,
+        0.1
+      ]
+    ]
+  },
+  "guides": [
+    {
+      "id": "anklePath",
+      "kind": "path",
+      "joint": "ankle_r",
+      "from": 0.5,
+      "to": 1.7,
+      "label": "Arc about the knee"
+    },
+    {
+      "id": "kneeAngle",
+      "kind": "jointAngle",
+      "joint": "knee_r",
+      "normBand": [
+        0,
+        90
+      ],
+      "label": "From 90 degrees to nearly straight"
+    }
+  ],
+  "checks": {
+    "plantedContacts": [],
+    "stillJoints": [
+      "pelvis",
+      "knee_r",
+      "knee_l"
+    ],
+    "measure": {
+      "name": "kneeFlexion",
+      "min": 85,
+      "max": 95
+    },
+    "floorTolerance": 0.5
+  }
+}
