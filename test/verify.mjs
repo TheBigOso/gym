@@ -2,7 +2,7 @@
 // schema validity, planted contacts, floor clearance, joint limits, GLB contents, page errors.
 import { createRequire } from 'module';
 import fs from 'fs';
-import { openPlayer } from './serve.mjs';
+import { openPlayer, openApp } from './serve.mjs';
 const require = createRequire(import.meta.url);
 const L = require('../build/lib.js');
 const { R, V, rig } = L;
@@ -92,4 +92,49 @@ check(ath.lit > 200, `target and synergist muscles glow on the athlete (${ath.li
 check(ath.variants.includes('f'), 'female variant ships in the character data for a later switch');
 check(!errors.length, `no page errors ${errors.length ? JSON.stringify(errors) : ''}`);
 await browser.close();
+// Library app (app/dist): it loads with a small first page, every exercise opens on demand, filters and test mode work.
+if (fs.existsSync('app/dist/index.html')) {
+  const firstMB = fs.statSync('app/dist/index.html').size / 1048576;
+  check(firstMB < 3, `app first load is small (${firstMB.toFixed(2)} MB; exercises load on demand)`);
+  const exFiles = fs.readdirSync('app/dist/ex').filter((f) => f.endsWith('.json')).length;
+  check(exFiles === fs.readdirSync('src/exercises').length, `app has one data file per exercise (${exFiles})`);
+  const appT = await openApp();
+  const ap = appT.page;
+  const cat = await ap.evaluate(() => ({ n: RR_CATALOG.length, listed: document.querySelectorAll('#list li[data-i]').length, loaded: RR_DATA.exercises.filter(Boolean).length }));
+  check(cat.n === exFiles && cat.listed === cat.n, `app library lists all ${cat.n} exercises`);
+  check(cat.loaded <= 1, `app loads only the opening exercise up front (${cat.loaded} loaded)`);
+  // open every exercise through the library, in batches so the page can draw between them
+  const opened = [], badOpen = [];
+  for (let s0 = 0; s0 < cat.n; s0 += 25) {
+    const r = await ap.evaluate(async ([a, b]) => {
+      const out = [], bad = [];
+      for (let i = a; i < b; i++) {
+        await RR_FETCH(i); window.__app.open(i);
+        await new Promise((res) => { const t0 = performance.now(); (function wait() { if (__rr.S.ex === i || performance.now() - t0 > 4000) res(); else setTimeout(wait, 5); })(); });
+        const title = document.getElementById('title').textContent;
+        if (__rr.S.ex !== i || title !== RR_CATALOG[i].name || /\bundefined\b|\bNaN\b/.test(document.querySelector('.panel').innerText)) bad.push(RR_CATALOG[i].id); else out.push(RR_CATALOG[i].id);
+      }
+      return { out, bad };
+    }, [s0, Math.min(cat.n, s0 + 25)]);
+    opened.push(...r.out); badOpen.push(...r.bad);
+  }
+  check(!badOpen.length && opened.length === cat.n, `app opens every exercise (${opened.length} of ${cat.n})${badOpen.length ? ': failed ' + badOpen.join(', ') : ''}`);
+  const flow = await ap.evaluate(async () => {
+    const set = (id, v) => { const el = document.getElementById(id); el.value = v; el.onchange ? el.onchange() : el.dispatchEvent(new Event('input')); };
+    set('fEquip', 'Barbell'); const barbell = window.__app.view.length;
+    const allBarbell = window.__app.view.every((i) => RR_CATALOG[i].equip.includes('Barbell'));
+    document.getElementById('fReset').click();
+    document.getElementById('tAuto').checked = false;
+    window.__app.open(window.__app.view[3]); await new Promise((r) => setTimeout(r, 300));
+    window.__app.mark('pass'); const id = RR_CATALOG[__rr.S.ex].id; const saved = JSON.parse(localStorage.getItem('reprig-tests') || '{}')[id];
+    const counts = document.getElementById('cTested').textContent;
+    window.__app.mark('pass'); const cleared = !JSON.parse(localStorage.getItem('reprig-tests') || '{}')[id];
+    return { barbell, allBarbell, saved: saved && saved.status, counts, cleared, cams: document.querySelectorAll('#camSeg button').length };
+  });
+  check(flow.barbell > 0 && flow.allBarbell, `app equipment filter works (${flow.barbell} barbell exercises)`);
+  check(flow.saved === 'pass' && /^1 tested/.test(flow.counts) && flow.cleared, `app test mode saves a Pass to localStorage and counts it (${flow.counts})`);
+  check(flow.cams >= 2, `app shows the camera presets (${flow.cams})`);
+  check(!appT.errors.length, `app has no page errors ${appT.errors.length ? JSON.stringify(appT.errors.slice(0, 5)) : ''}`);
+  await appT.browser.close(); appT.server.close();
+} else check(false, 'app/dist/index.html present (run npm run app:build)');
 process.exit(fail ? 1 : 0);
